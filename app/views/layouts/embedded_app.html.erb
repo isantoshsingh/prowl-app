@@ -274,6 +274,15 @@
   </head>
 
   <body>
+    <!-- Shopify App Navigation Menu -->
+    <s-app-nav>
+      <s-link href="<%= root_path(host: @host) %>" rel="home">Dashboard</s-link>
+      <s-link href="<%= product_pages_path(host: @host) %>">Monitored Pages</s-link>
+      <s-link href="<%= issues_path(host: @host) %>">Issues</s-link>
+      <s-link href="<%= scans_path(host: @host) %>">Scan History</s-link>
+      <s-link href="<%= settings_path(host: @host) %>">Settings</s-link>
+    </s-app-nav>
+
     <div class="app-wrapper">
       <% if flash[:success] %>
         <div class="flash-message flash-success">
