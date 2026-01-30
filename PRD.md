@@ -161,3 +161,13 @@ MVP is complete when:
 - Issues are actionable
 - App feels calm
 - System is stable for 30 days
+
+---
+
+## 13. Pricing & Trial Requirements
+- App must require payment approval during install
+- 14-day free trial
+- Billing handled via Shopify Billing API
+- No functionality lock during trial
+- Alerts + scans fully enabled during trial
+

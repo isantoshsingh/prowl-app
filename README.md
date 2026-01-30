@@ -51,6 +51,25 @@ Think:
 
 ---
 
+## 💰 Pricing (Phase 1)
+
+Silent Profit is a paid app to ensure we serve serious merchants and maintain reliability.
+
+- $10/month
+- 14-day free trial
+- No free plan
+- Cancel anytime
+
+Why paid from day one?
+- Reduces noise
+- Improves alert quality
+- Ensures sustainability
+- Aligns with merchant ROI
+
+If Silent Profit saves even one sale, it pays for itself.
+
+---
+
 ### 🧠 Issue Detection Engine
 - Rule-based detection for common breakages
 - Severity scoring (High / Medium / Low)

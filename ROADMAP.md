@@ -37,6 +37,12 @@ Goal: Detect broken PDPs & alert merchants reliably.
 - <5% false positives
 - Merchants trust alerts
 
+### Monetization
+- Paid-only app from launch
+- $10/month with 14-day free trial
+- No free plan in Phase 1
+- Pricing increases in Phase 2 based on value tiers
+
 ---
 
 # Phase 2 — Scale (3–12 Months)
