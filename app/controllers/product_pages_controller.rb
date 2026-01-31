@@ -20,12 +20,30 @@ class ProductPagesController < AuthenticatedController
     @product_pages = @shop.product_pages.order(created_at: :desc)
     @can_add_more = @shop.can_add_monitored_page?
     @host = params[:host]
+
+    respond_to do |format|
+      format.html { render layout: "react_app" }
+      format.json do
+        render json: {
+          product_pages: @product_pages.map { |pp| product_page_json(pp) },
+          can_add_more: @can_add_more,
+          max_pages: @shop.shop_setting&.max_monitored_pages || 5
+        }
+      end
+    end
   end
 
   def show
     @recent_scans = @product_page.scans.recent.limit(10)
     @open_issues = @product_page.open_issues.order(severity: :asc, last_detected_at: :desc)
     @host = params[:host]
+
+    respond_to do |format|
+      format.html { render layout: "react_app" }
+      format.json do
+        render json: product_page_json(@product_page, include_details: true)
+      end
+    end
   end
 
   def new
@@ -45,6 +63,18 @@ class ProductPagesController < AuthenticatedController
     @monitored_product_gids = @monitored_product_ids.map { |id| "gid://shopify/Product/#{id}" }
 
     @host = params[:host]
+
+    respond_to do |format|
+      format.html { render layout: "react_app" }
+      format.json do
+        render json: {
+          remaining_slots: @remaining_slots,
+          max_pages: max_pages,
+          current_count: current_count,
+          monitored_product_ids: @monitored_product_ids
+        }
+      end
+    end
   end
 
   def create
@@ -156,20 +186,37 @@ class ProductPagesController < AuthenticatedController
   end
 
   def destroy
+    title = @product_page.title
     @product_page.destroy
-    flash[:success] = "#{@product_page.title} removed from monitoring."
-    redirect_to product_pages_path(host: params[:host])
+
+    respond_to do |format|
+      format.html do
+        flash[:success] = "#{title} removed from monitoring."
+        redirect_to product_pages_path(host: params[:host])
+      end
+      format.json { render json: { success: true, message: "#{title} removed from monitoring" } }
+    end
   end
 
   def rescan
     if @product_page.scans.running.any?
-      flash[:notice] = "A scan is already in progress for this page."
+      respond_to do |format|
+        format.html do
+          flash[:notice] = "A scan is already in progress for this page."
+          redirect_to product_page_path(@product_page, host: params[:host])
+        end
+        format.json { render json: { success: false, message: "A scan is already in progress" }, status: :unprocessable_entity }
+      end
     else
       ScanPdpJob.perform_later(@product_page.id)
-      flash[:success] = "Manual scan started for #{@product_page.title}."
+      respond_to do |format|
+        format.html do
+          flash[:success] = "Manual scan started for #{@product_page.title}."
+          redirect_to product_page_path(@product_page, host: params[:host])
+        end
+        format.json { render json: { success: true, message: "Scan queued successfully" } }
+      end
     end
-
-    redirect_to product_page_path(@product_page, host: params[:host])
   end
 
   private
@@ -221,5 +268,47 @@ class ProductPagesController < AuthenticatedController
       flash[:error] = product_page.errors.full_messages.join(", ")
       redirect_to new_product_page_path(host: params[:host])
     end
+  end
+
+  def product_page_json(product_page, include_details: false)
+    data = {
+      id: product_page.id,
+      shopify_product_id: product_page.shopify_product_id,
+      title: product_page.title,
+      handle: product_page.handle,
+      url: product_page.url,
+      status: product_page.status,
+      monitoring_enabled: product_page.monitoring_enabled,
+      last_scanned_at: product_page.last_scanned_at&.iso8601,
+      created_at: product_page.created_at&.iso8601,
+      open_issues_count: product_page.open_issues.count
+    }
+
+    if include_details
+      data[:issues] = product_page.issues.order(status: :asc, severity: :asc).map do |issue|
+        {
+          id: issue.id,
+          title: issue.title,
+          issue_type: issue.issue_type,
+          severity: issue.severity,
+          status: issue.status,
+          occurrence_count: issue.occurrence_count,
+          last_detected_at: issue.last_detected_at&.iso8601
+        }
+      end
+
+      data[:recent_scans] = product_page.scans.recent.limit(10).map do |scan|
+        {
+          id: scan.id,
+          status: scan.status,
+          page_load_time_ms: scan.page_load_time_ms,
+          completed_at: scan.completed_at&.iso8601,
+          created_at: scan.created_at&.iso8601,
+          issues_count: scan.issues.count
+        }
+      end
+    end
+
+    data
   end
 end

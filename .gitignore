@@ -29,6 +29,11 @@
 !/tmp/storage/.keep
 
 /public/assets
+/public/frontend
+
+# Frontend (React)
+/frontend/node_modules
+/frontend/dist
 
 # Ignore key files for decrypting credentials and more.
 /config/*.key

@@ -13,18 +13,35 @@ class SettingsController < AuthenticatedController
   def show
     @settings = @shop.shop_setting || @shop.create_shop_setting!
     @host = params[:host]
+
+    respond_to do |format|
+      format.html { render layout: "react_app" }
+      format.json { render json: settings_json(@settings) }
+    end
   end
 
   def update
     @settings = @shop.shop_setting
 
     if @settings.update(settings_params)
-      flash[:success] = "Settings saved successfully."
+      respond_to do |format|
+        format.html do
+          flash[:success] = "Settings saved successfully."
+          redirect_to settings_path(host: params[:host])
+        end
+        format.json { render json: { success: true, settings: settings_json(@settings) } }
+      end
     else
-      flash[:error] = @settings.errors.full_messages.join(", ")
+      respond_to do |format|
+        format.html do
+          flash[:error] = @settings.errors.full_messages.join(", ")
+          redirect_to settings_path(host: params[:host])
+        end
+        format.json do
+          render json: { success: false, errors: @settings.errors.full_messages }, status: :unprocessable_entity
+        end
+      end
     end
-
-    redirect_to settings_path(host: params[:host])
   end
 
   private
@@ -43,5 +60,19 @@ class SettingsController < AuthenticatedController
       :alert_email,
       :scan_frequency
     )
+  end
+
+  def settings_json(settings)
+    {
+      email_alerts_enabled: settings.email_alerts_enabled,
+      admin_alerts_enabled: settings.admin_alerts_enabled,
+      alert_email: settings.alert_email,
+      scan_frequency: settings.scan_frequency,
+      max_monitored_pages: settings.max_monitored_pages,
+      billing_status: settings.billing_status,
+      trial_ends_at: settings.trial_ends_at&.iso8601,
+      trial_days_remaining: settings.trial_days_remaining,
+      subscription_charge_id: settings.subscription_charge_id
+    }
   end
 end

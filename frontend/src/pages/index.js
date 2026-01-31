@@ -1,0 +1,9 @@
+export { default as Dashboard } from './Dashboard';
+export { default as ProductPagesList } from './ProductPagesList';
+export { default as ProductPageShow } from './ProductPageShow';
+export { default as ProductPagesNew } from './ProductPagesNew';
+export { default as IssuesList } from './IssuesList';
+export { default as IssueShow } from './IssueShow';
+export { default as ScansList } from './ScansList';
+export { default as ScanShow } from './ScanShow';
+export { default as Settings } from './Settings';

@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 # BillingController handles the Shopify Billing API flow.
-# 
+#
 # Flow:
 #   1. Merchant installs app
 #   2. App redirects to create subscription
@@ -18,13 +18,22 @@ class BillingController < AuthenticatedController
   # Initiates the billing flow
   def create
     billing_service = BillingService.new(@shop)
-    
+
     begin
       confirmation_url = billing_service.create_subscription
-      redirect_to confirmation_url, allow_other_host: true
+
+      respond_to do |format|
+        format.html { redirect_to confirmation_url, allow_other_host: true }
+        format.json { render json: { confirmation_url: confirmation_url } }
+      end
     rescue BillingService::BillingError => e
-      flash[:error] = "Could not start subscription: #{e.message}"
-      redirect_to root_path(host: params[:host])
+      respond_to do |format|
+        format.html do
+          flash[:error] = "Could not start subscription: #{e.message}"
+          redirect_to root_path(host: params[:host])
+        end
+        format.json { render json: { error: e.message }, status: :unprocessable_entity }
+      end
     end
   end
 
@@ -41,7 +50,7 @@ class BillingController < AuthenticatedController
     end
 
     billing_service = BillingService.new(@shop)
-    
+
     if billing_service.handle_callback(charge_id)
       flash[:success] = "Subscription activated! Silent Profit is now monitoring your store."
     else
