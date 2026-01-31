@@ -1,0 +1,40 @@
+<%# Scans Index - Scan history %>
+
+<s-page heading="Scan History">
+  <s-link slot="breadcrumb-actions" href="<%= root_path(host: @host) %>">Dashboard</s-link>
+  <% if @scans.count > 0 %>
+    <s-badge slot="accessory" tone="info"><%= @scans.count %> scans</s-badge>
+  <% end %>
+</s-page>
+
+<div class="issues-list">
+  <% if @scans.any? %>
+    <% @scans.each do |scan| %>
+      <%= link_to scan_path(scan, host: @host), class: "issue-item" do %>
+        <div class="issue-severity <%= scan.status == 'completed' ? 'medium' : (scan.status == 'failed' ? 'high' : 'low') %>"></div>
+        <div class="issue-content">
+          <p class="issue-title"><%= scan.product_page.title %></p>
+          <p class="issue-meta">
+            Scan #<%= scan.id %> • 
+            <%= scan.created_at.strftime("%B %d, %Y at %H:%M") %>
+            <% if scan.page_load_time_ms %>
+              • <%= (scan.page_load_time_ms / 1000.0).round(1) %>s load time
+            <% end %>
+            <% if scan.issues.any? %>
+              • <%= scan.issues.count %> issue<%= scan.issues.count > 1 ? 's' : '' %> detected
+            <% end %>
+          </p>
+        </div>
+        <span class="badge badge-<%= scan.status == 'completed' ? 'healthy' : (scan.status == 'failed' ? 'critical' : 'pending') %>">
+          <%= scan.status.capitalize %>
+        </span>
+      <% end %>
+    <% end %>
+  <% else %>
+    <div class="empty-state">
+      <div class="empty-state-icon">🔍</div>
+      <h3 class="empty-state-title">No scans yet</h3>
+      <p class="empty-state-description">Scans will appear here once your monitored pages are scanned.</p>
+    </div>
+  <% end %>
+</div>

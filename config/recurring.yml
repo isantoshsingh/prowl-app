@@ -1,0 +1,12 @@
+# frozen_string_literal: true
+
+# Solid Queue recurring jobs configuration
+#
+# These jobs run on a schedule. The scheduled_scan job triggers
+# daily scanning of all monitored product pages.
+
+# Daily scan at 6am UTC
+scheduled_scan:
+  class: ScheduledScanJob
+  schedule: every day at 6am
+  description: "Queue daily scans for all monitored product pages"

@@ -1,0 +1,56 @@
+<%# Product Pages Index - List of monitored PDPs %>
+
+<s-page heading="Monitored Pages">
+  <% if @can_add_more %>
+    <s-link slot="primary-action" href="<%= new_product_page_path(host: @host) %>">Add Product</s-link>
+  <% end %>
+  <s-link slot="breadcrumb-actions" href="<%= root_path(host: @host) %>">Dashboard</s-link>
+  <s-badge slot="accessory" tone="info"><%= @product_pages.count %>/<%= @shop.shop_setting&.max_monitored_pages || 5 %></s-badge>
+</s-page>
+
+<div class="issues-list">
+  <% if @product_pages.any? %>
+    <% @product_pages.each do |page| %>
+      <div class="issue-item" style="cursor: default;">
+        <div class="issue-severity <%= page.status %>"></div>
+        <div class="issue-content">
+          <%= link_to product_page_path(page, host: @host), style: "text-decoration: none; color: inherit;" do %>
+            <p class="issue-title"><%= page.title %></p>
+            <p class="issue-meta">
+              <%= page.handle %> • 
+              <% if page.last_scanned_at %>
+                Last scanned <%= time_ago_in_words(page.last_scanned_at) %> ago
+              <% else %>
+                Never scanned
+              <% end %>
+              <% if page.high_severity_issues_count > 0 %>
+                • <%= page.high_severity_issues_count %> critical issue<%= page.high_severity_issues_count > 1 ? 's' : '' %>
+              <% end %>
+            </p>
+          <% end %>
+        </div>
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <span class="badge badge-<%= page.status == 'healthy' ? 'healthy' : (page.status == 'critical' ? 'critical' : (page.status == 'warning' ? 'warning' : 'pending')) %>">
+            <%= page.status.capitalize %>
+          </span>
+          <%= link_to product_page_path(page, host: @host), class: "button-secondary" do %>
+            View
+          <% end %>
+          <%= button_to rescan_product_page_path(page, host: @host), method: :post, class: "button-secondary", form: { style: "display: inline;" } do %>
+            Rescan
+          <% end %>
+          <%= button_to product_page_path(page, host: @host), method: :delete, class: "button-secondary", form: { style: "display: inline;" }, data: { confirm: "Remove #{page.title} from monitoring?" } do %>
+            Remove
+          <% end %>
+        </div>
+      </div>
+    <% end %>
+  <% else %>
+    <div class="empty-state">
+      <div class="empty-state-icon">📦</div>
+      <h3 class="empty-state-title">No product pages monitored yet</h3>
+      <p class="empty-state-description">Add up to 5 product pages to start monitoring their health.</p>
+      <%= link_to "Add Product Page", new_product_page_path(host: @host), class: "button-primary" %>
+    </div>
+  <% end %>
+</div>

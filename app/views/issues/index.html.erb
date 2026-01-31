@@ -1,0 +1,60 @@
+<%# Issues Index - All issues across monitored pages %>
+
+<s-page heading="Issues">
+  <s-link slot="breadcrumb-actions" href="<%= root_path(host: @host) %>">Dashboard</s-link>
+  <% if @issues.count > 0 %>
+    <s-badge slot="accessory" tone="<%= @issues.any? { |i| i.status == 'open' } ? 'warning' : 'success' %>"><%= @issues.count %> total</s-badge>
+  <% end %>
+</s-page>
+
+<!-- Filters -->
+<div style="display: flex; gap: 12px; margin-bottom: 16px;">
+  <%= link_to issues_path(host: @host), class: "badge #{params[:status].blank? ? 'badge-healthy' : 'badge-pending'}" do %>
+    All
+  <% end %>
+  <%= link_to issues_path(status: "open", host: @host), class: "badge #{params[:status] == 'open' ? 'badge-critical' : 'badge-pending'}" do %>
+    Open
+  <% end %>
+  <%= link_to issues_path(status: "acknowledged", host: @host), class: "badge #{params[:status] == 'acknowledged' ? 'badge-warning' : 'badge-pending'}" do %>
+    Acknowledged
+  <% end %>
+  <%= link_to issues_path(status: "resolved", host: @host), class: "badge #{params[:status] == 'resolved' ? 'badge-healthy' : 'badge-pending'}" do %>
+    Resolved
+  <% end %>
+</div>
+
+<div class="issues-list">
+  <% if @issues.any? %>
+    <% @issues.each do |issue| %>
+      <%= link_to issue_path(issue, host: @host), class: "issue-item" do %>
+        <div class="issue-severity <%= issue.severity %>"></div>
+        <div class="issue-content">
+          <p class="issue-title"><%= issue.title %></p>
+          <p class="issue-meta">
+            <%= issue.product_page.title %> • 
+            <%= issue.severity_label %> • 
+            <%= issue.status.capitalize %>
+            <% if issue.occurrence_count > 1 %>
+              • Seen <%= issue.occurrence_count %> times
+            <% end %>
+          </p>
+        </div>
+        <span class="badge badge-<%= issue.status == 'resolved' ? 'healthy' : (issue.status == 'acknowledged' ? 'warning' : 'critical') %>">
+          <%= issue.status.capitalize %>
+        </span>
+      <% end %>
+    <% end %>
+  <% else %>
+    <div class="empty-state">
+      <div class="empty-state-icon">✓</div>
+      <h3 class="empty-state-title">No issues found</h3>
+      <p class="empty-state-description">
+        <% if params[:status].present? %>
+          No <%= params[:status] %> issues at this time.
+        <% else %>
+          All your product pages are healthy.
+        <% end %>
+      </p>
+    </div>
+  <% end %>
+</div>

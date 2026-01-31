@@ -6,95 +6,40 @@ Instead of guessing why conversions dropped, merchants get **clear alerts, diagn
 
 ---
 
-## 🚀 Problem
+## 🚀 Phase 1 (MVP) Features
 
-Shopify stores break silently all the time due to:
-- App conflicts
-- Theme updates
-- Script injections
-- Liquid errors
-- JavaScript overrides
-- CSS layout shifts
-
-Merchants usually notice **after revenue drops**.
-
-There is no reliable tool that:
-- Monitors PDP health
-- Detects breakage automatically
-- Explains the root cause
-- Alerts immediately
-
-Silent Profit fixes that.
-
----
-
-## 💡 Solution
-
-Silent Profit acts like **monitoring + diagnostics + alerting** for Shopify stores.
-
-Think:
-> Datadog + Snyk + PagerDuty for Shopify product pages
-
----
-
-## ✨ Core Features (Phase 1 - MVP)
-
-### 🔍 Automated PDP Scanning
+### Automated PDP Scanning
 - Daily scan of 3–5 product pages
-- Headless browser checks for:
+- Headless browser (Puppeteer) checks for:
   - Add-to-cart functionality
   - Variant selector errors
   - Missing price or images
   - JS errors
   - Liquid errors
-  - Performance red flags
+  - Page load performance
 
----
-
-## 💰 Pricing (Phase 1)
-
-Silent Profit is a paid app to ensure we serve serious merchants and maintain reliability.
-
-- $10/month
-- 14-day free trial
-- No free plan
-- Cancel anytime
-
-Why paid from day one?
-- Reduces noise
-- Improves alert quality
-- Ensures sustainability
-- Aligns with merchant ROI
-
-If Silent Profit saves even one sale, it pays for itself.
-
----
-
-### 🧠 Issue Detection Engine
+### Issue Detection Engine
 - Rule-based detection for common breakages
 - Severity scoring (High / Medium / Low)
-- Change detection (today vs yesterday)
+- 2-scan confirmation to avoid false positives
 
----
-
-### 📸 Visual Snapshot
-- Screenshot captured for each scan
-- (Optional) AI visual inspection for UI breakage
-
----
-
-### 🚨 Alerts
+### Alerts
 - Email alerts for critical issues
 - Shopify admin notifications
 - Clear, human-readable explanations
+- No spam: only alerts after issue persists across 2 scans
 
----
-
-### 📊 Simple Dashboard
+### Dashboard
 - PDP health overview
 - Issue list & detail view
-- 7-day trend
+- Scan history
 - Manual rescan button
+- Settings management
+
+### Billing
+- $10/month subscription
+- 14-day free trial
+- Shopify Billing API integration
 
 ---
 
@@ -102,81 +47,171 @@ If Silent Profit saves even one sale, it pays for itself.
 
 ### Backend
 - Ruby on Rails 8.1
-- Shopify_app gem
+- shopify_app gem 23.0+
 - PostgreSQL
 - Solid Queue (background jobs)
 - Puppeteer Ruby gem
+
+### Frontend
+- Shopify Polaris Web Components
+- App Bridge
+- ERB templates
 
 ### Scanning
 - Headless Chromium
 - Screenshot capture
 - JS / network error logging
 
-### Frontend
-- Shopify Polaris
-- App Bridge (https://shopify.dev/docs/api/app-bridge)
-- ERB (Polaris web components)
-
-### AI (Optional in MVP)
-- Vision model for UI detection
-- Text model for explanation & guidance
-
 ---
 
-## 📦 Project Structure (Suggested)
+## 📦 Getting Started
 
+### Prerequisites
+- Ruby 3.3+
+- PostgreSQL
+- Node.js (for Puppeteer/Chrome)
+- Shopify Partner account
+
+### Installation
+
+1. Clone the repository:
+```bash
+git clone <repository-url>
+cd PDP-Diagnostics
 ```
 
-/app
-/models
-/controllers
-/views
-/services
-/jobs
-/policies
-/lib
-/scanners
-/detectors
-/alerts
-/ai
-/docs
-README.md
-agent.md
+2. Install dependencies:
+```bash
+bundle install
+```
 
+3. Setup environment:
+```bash
+cp .env.sample .env
+# Edit .env with your Shopify credentials
+```
+
+4. Create database:
+```bash
+bin/rails db:create db:migrate
+```
+
+5. Start the server:
+```bash
+bin/rails server
+```
+
+6. Start Solid Queue worker (in another terminal):
+```bash
+bin/rails solid_queue:start
+```
+
+### Environment Variables
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `SHOPIFY_API_KEY` | Your Shopify app API key | Yes |
+| `SHOPIFY_API_SECRET` | Your Shopify app API secret | Yes |
+| `HOST` | Your app's public URL (e.g., ngrok) | Yes |
+| `SHOPIFY_TEST_CHARGES` | Set to "true" for test billing | No |
+
+---
+
+## 📁 Project Structure
+
+```
+app/
+├── controllers/     # Request handling
+│   ├── home_controller.rb          # Dashboard
+│   ├── product_pages_controller.rb # Monitored pages
+│   ├── issues_controller.rb        # Issue management
+│   ├── settings_controller.rb      # Configuration
+│   ├── billing_controller.rb       # Subscription flow
+│   └── scans_controller.rb         # Scan history
+├── models/          # Data models
+│   ├── shop.rb           # Merchant store
+│   ├── product_page.rb   # Monitored PDP
+│   ├── scan.rb           # Scan record
+│   ├── issue.rb          # Detected problem
+│   ├── alert.rb          # Notification record
+│   └── shop_setting.rb   # Configuration
+├── services/        # Business logic
+│   ├── pdp_scanner_service.rb  # Puppeteer scanning
+│   ├── detection_service.rb    # Issue detection
+│   ├── alert_service.rb        # Notifications
+│   └── billing_service.rb      # Subscription management
+├── jobs/            # Background jobs
+│   ├── scan_pdp_job.rb       # Single page scan
+│   └── scheduled_scan_job.rb # Daily scheduler
+├── mailers/         # Email notifications
+│   └── alert_mailer.rb
+└── views/           # UI templates (Polaris)
 ```
 
 ---
 
-## 📈 Roadmap
+## 🧪 Running Tests
 
-### Phase 1 (MVP)
-- PDP scanning
-- Alerts
-- Dashboard
-- Manual rescan
-- 3–5 monitored pages
-
-### Phase 2 (Scale)
-- Real-time monitoring
-- AI auto-fix suggestions
-- Theme integrity monitoring
-- Agency dashboard
-- Revenue impact estimation
-- Uptime monitoring
-
-### Phase 3 (Dominance)
-- Auto-fix engine
-- Multi-platform (Woo, BigCommerce)
-- Shopify Plus deep integrations
-- Enterprise reliability platform
+```bash
+bin/rails test
+```
 
 ---
 
-## 🎯 Success Metrics (MVP)
-- 100 installs
-- 20 paid merchants
-- <5% false positives
-- Merchants report saved revenue
+## 🔧 Configuration
+
+### Solid Queue
+
+Background jobs are processed by Solid Queue. Configuration is in `config/solid_queue.yml`.
+
+Queues:
+- `default` - Standard priority
+- `scans` - PDP scanning (resource-intensive)
+- `mailers` - Email delivery
+
+### Recurring Jobs
+
+Daily scans are scheduled via `config/recurring.yml`:
+- `scheduled_scan` runs at 6am UTC
+
+---
+
+## 📊 Models
+
+### Shop
+The merchant store. Created during OAuth install.
+- Has many product_pages
+- Has one shop_setting
+- Tracks billing status via shop_setting
+
+### ProductPage
+A product page being monitored.
+- Belongs to shop
+- Has many scans and issues
+- Status: pending, healthy, warning, critical, error
+
+### Scan
+A single PDP scan run.
+- Captures screenshot, HTML, JS errors, network errors
+- Status: pending, running, completed, failed
+
+### Issue
+A detected problem.
+- Linked to product_page and scan
+- Types: missing_add_to_cart, js_error, liquid_error, etc.
+- Severity: high, medium, low
+- Only alerts after 2+ occurrences
+
+### Alert
+A notification sent to the merchant.
+- Types: email, admin
+- Tracks delivery status
+
+### ShopSetting
+Configuration for each shop.
+- Alert preferences
+- Scan frequency
+- Billing status
 
 ---
 
@@ -193,11 +228,19 @@ We value:
 
 ---
 
-## 🤝 Contributing
-This project is currently in private build mode.
-Architecture, scope, and principles are intentionally strict to avoid bloat.
+## 🔒 Security
+
+See [SECURITY.md](SECURITY.md) for security policy.
+
+Key points:
+- Minimal scopes (read_products only)
+- No customer PII access
+- Scans run as public visitor
+- Screenshots stored with signed URLs
+- All data encrypted at rest
 
 ---
 
 ## 📄 License
+
 Private / Proprietary

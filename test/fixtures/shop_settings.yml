@@ -1,0 +1,9 @@
+# test/fixtures/shop_settings.yml
+test_shop_settings:
+  shop: test_shop
+  email_alerts_enabled: true
+  admin_alerts_enabled: true
+  scan_frequency: "daily"
+  max_monitored_pages: 5
+  billing_status: "trial"
+  trial_ends_at: <%= 14.days.from_now %>

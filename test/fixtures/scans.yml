@@ -1,0 +1,7 @@
+# test/fixtures/scans.yml
+completed_scan:
+  product_page: test_page
+  status: "completed"
+  started_at: <%= 1.hour.ago %>
+  completed_at: <%= Time.current %>
+  page_load_time_ms: 2500

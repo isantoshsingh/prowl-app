@@ -1,0 +1,148 @@
+<%# Home/Dashboard - App Home Page per Shopify UX guidelines %>
+<%# This is the main dashboard showing PDP health overview %>
+
+<s-page heading="PDP Diagnostics">
+  <s-link slot="primary-action" href="<%= new_product_page_path(host: @host) %>">Add Products</s-link>
+  <s-link slot="secondary-actions" href="<%= settings_path(host: @host) %>">Settings</s-link>
+</s-page>
+
+<% if @billing_required %>
+  <% if @trial_expired %>
+    <div class="billing-banner">
+      <h2>Your trial has ended</h2>
+      <p>Subscribe to continue monitoring your product pages and receive alerts.</p>
+      <%= link_to "Subscribe for $10/month", create_billing_path(host: @host), class: "button-primary" %>
+    </div>
+  <% else %>
+    <div class="billing-banner" style="background: linear-gradient(135deg, #008060 0%, #004d33 100%);">
+      <h2>You're in your 14-day free trial</h2>
+      <p><%= @shop.shop_setting&.trial_days_remaining || 14 %> days remaining. Subscribe anytime to continue after the trial.</p>
+      <%= link_to "Subscribe for $10/month", create_billing_path(host: @host), class: "button-primary" %>
+    </div>
+  <% end %>
+<% end %>
+
+<!-- Health Overview Cards -->
+<div class="card-grid">
+  <div class="stat-card">
+    <div class="stat-card-header">
+      <h3 class="stat-card-title">Monitored Pages</h3>
+    </div>
+    <p class="stat-card-value"><%= @total_pages %></p>
+    <p style="font-size: 13px; color: #6d7175; margin: 8px 0 0 0;">
+      of <%= @shop.shop_setting&.max_monitored_pages || 5 %> available
+    </p>
+  </div>
+  
+  <div class="stat-card">
+    <div class="stat-card-header">
+      <h3 class="stat-card-title">Healthy</h3>
+      <span class="badge badge-healthy">Good</span>
+    </div>
+    <p class="stat-card-value healthy"><%= @healthy_pages %></p>
+    <p style="font-size: 13px; color: #6d7175; margin: 8px 0 0 0;">
+      pages with no issues
+    </p>
+  </div>
+  
+  <div class="stat-card">
+    <div class="stat-card-header">
+      <h3 class="stat-card-title">Needs Attention</h3>
+      <% if @warning_pages > 0 %>
+        <span class="badge badge-warning">Review</span>
+      <% end %>
+    </div>
+    <p class="stat-card-value warning"><%= @warning_pages %></p>
+    <p style="font-size: 13px; color: #6d7175; margin: 8px 0 0 0;">
+      pages with medium issues
+    </p>
+  </div>
+  
+  <div class="stat-card">
+    <div class="stat-card-header">
+      <h3 class="stat-card-title">Critical</h3>
+      <% if @critical_pages > 0 %>
+        <span class="badge badge-critical">Action needed</span>
+      <% end %>
+    </div>
+    <p class="stat-card-value critical"><%= @critical_pages %></p>
+    <p style="font-size: 13px; color: #6d7175; margin: 8px 0 0 0;">
+      pages with high severity issues
+    </p>
+  </div>
+</div>
+
+<!-- Open Issues -->
+<div class="issues-list">
+  <div class="issues-list-header">
+    <h2 class="issues-list-title">Open Issues (<%= @open_issues_count %>)</h2>
+    <% if @open_issues_count > 0 %>
+      <%= link_to "View all", issues_path(host: @host), class: "button-secondary" %>
+    <% end %>
+  </div>
+  
+  <% if @open_issues.any? %>
+    <% @open_issues.each do |issue| %>
+      <%= link_to issue_path(issue, host: @host), class: "issue-item" do %>
+        <div class="issue-severity <%= issue.severity %>"></div>
+        <div class="issue-content">
+          <p class="issue-title"><%= issue.title %></p>
+          <p class="issue-meta">
+            <%= issue.product_page.title %> • 
+            Detected <%= time_ago_in_words(issue.first_detected_at) %> ago
+            <% if issue.occurrence_count > 1 %>
+              • Seen <%= issue.occurrence_count %> times
+            <% end %>
+          </p>
+        </div>
+        <span class="badge badge-<%= issue.severity == 'high' ? 'critical' : issue.severity %>">
+          <%= issue.severity_label %>
+        </span>
+      <% end %>
+    <% end %>
+  <% else %>
+    <div class="empty-state">
+      <div class="empty-state-icon">✓</div>
+      <h3 class="empty-state-title">All clear!</h3>
+      <p class="empty-state-description">No issues detected on your product pages.</p>
+    </div>
+  <% end %>
+</div>
+
+<!-- Recent Scans -->
+<% if @recent_scans.any? %>
+  <div class="issues-list" style="margin-top: 24px;">
+    <div class="issues-list-header">
+      <h2 class="issues-list-title">Recent Scans</h2>
+      <%= link_to "View all", scans_path(host: @host), class: "button-secondary" %>
+    </div>
+    
+    <% @recent_scans.each do |scan| %>
+      <%= link_to scan_path(scan, host: @host), class: "issue-item" do %>
+        <div class="issue-severity <%= scan.status == 'completed' ? 'medium' : (scan.status == 'failed' ? 'high' : 'low') %>"></div>
+        <div class="issue-content">
+          <p class="issue-title"><%= scan.product_page.title %></p>
+          <p class="issue-meta">
+            <%= scan.status.capitalize %> • 
+            <%= time_ago_in_words(scan.created_at) %> ago
+            <% if scan.page_load_time_ms %>
+              • <%= (scan.page_load_time_ms / 1000.0).round(1) %>s load time
+            <% end %>
+          </p>
+        </div>
+        <span class="badge badge-<%= scan.status == 'completed' ? 'healthy' : (scan.status == 'failed' ? 'critical' : 'pending') %>">
+          <%= scan.status.capitalize %>
+        </span>
+      <% end %>
+    <% end %>
+  </div>
+<% elsif @total_pages == 0 %>
+  <div class="issues-list" style="margin-top: 24px;">
+    <div class="empty-state">
+      <div class="empty-state-icon">📦</div>
+      <h3 class="empty-state-title">No product pages monitored yet</h3>
+      <p class="empty-state-description">Add up to 5 product pages to start monitoring their health.</p>
+      <%= link_to "Add Product Pages", new_product_page_path(host: @host), class: "button-primary" %>
+    </div>
+  </div>
+<% end %>

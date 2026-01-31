@@ -1,0 +1,33 @@
+<h1 style="font-size: 24px; color: #202223; margin-bottom: 16px;">
+  We noticed something on your product page
+</h1>
+
+<p style="margin-bottom: 16px;">
+  Hi there,
+</p>
+
+<p style="margin-bottom: 16px;">
+  Silent Profit detected a potential issue on <strong><%= @product_page.title %></strong> that may affect your customers' ability to purchase.
+</p>
+
+<div style="background-color: #fef3cd; border-left: 4px solid #f0b429; padding: 16px; margin-bottom: 24px; border-radius: 4px;">
+  <strong style="color: #856404;"><%= @issue.title %></strong>
+  <p style="margin: 8px 0 0 0; color: #856404;"><%= @issue.description %></p>
+</div>
+
+<p style="margin-bottom: 8px;">
+  <strong>What this means:</strong>
+</p>
+<p style="margin-bottom: 16px;">
+  This issue has been detected multiple times, suggesting it may be a real problem rather than a temporary glitch. We recommend reviewing the page to ensure customers can complete their purchase.
+</p>
+
+<p style="margin-bottom: 24px;">
+  <a href="<%= @app_url %>" class="button" style="display: inline-block; background-color: #008060; color: #ffffff !important; text-decoration: none; padding: 12px 24px; border-radius: 4px; font-weight: 500;">
+    View Issue Details
+  </a>
+</p>
+
+<p style="margin-bottom: 16px; color: #6d7175; font-size: 14px;">
+  <em>We only alert you when we're confident there's a real issue. This helps us avoid false alarms.</em>
+</p>

@@ -1,0 +1,135 @@
+<%# Issue Detail %>
+
+<s-page heading="<%= @issue.title %>">
+  <% if @issue.status == "open" %>
+    <s-button slot="primary-action" onclick="document.getElementById('acknowledge-form').submit()">Acknowledge</s-button>
+  <% end %>
+  <s-link slot="breadcrumb-actions" href="<%= issues_path(host: @host) %>">Issues</s-link>
+  <s-badge slot="accessory" tone="<%= @issue.status == 'resolved' ? 'success' : (@issue.status == 'acknowledged' ? 'warning' : 'critical') %>"><%= @issue.status.capitalize %></s-badge>
+</s-page>
+
+<!-- Hidden acknowledge form for the button -->
+<%= form_with url: acknowledge_issue_path(@issue, host: @host), method: :post, id: "acknowledge-form", style: "display: none;" do %>
+<% end %>
+
+<!-- Issue Details Card -->
+<div class="stat-card" style="margin-bottom: 24px;">
+  <h3 style="font-size: 16px; margin: 0 0 16px 0;">What we detected</h3>
+  <p style="margin: 0 0 16px 0; line-height: 1.6;"><%= @issue.description %></p>
+  
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+    <div>
+      <p class="stat-card-title">First Detected</p>
+      <p style="margin: 4px 0 0 0; font-weight: 500;">
+        <%= @issue.first_detected_at.strftime("%B %d, %Y at %H:%M") %>
+      </p>
+    </div>
+    <div>
+      <p class="stat-card-title">Last Detected</p>
+      <p style="margin: 4px 0 0 0; font-weight: 500;">
+        <%= @issue.last_detected_at.strftime("%B %d, %Y at %H:%M") %>
+      </p>
+    </div>
+    <div>
+      <p class="stat-card-title">Occurrence Count</p>
+      <p style="margin: 4px 0 0 0; font-weight: 500;">
+        <%= @issue.occurrence_count %> time<%= @issue.occurrence_count > 1 ? 's' : '' %>
+      </p>
+    </div>
+    <div>
+      <p class="stat-card-title">Issue Type</p>
+      <p style="margin: 4px 0 0 0; font-weight: 500;">
+        <%= @issue.issue_type.humanize %>
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- Product Info -->
+<div class="stat-card" style="margin-bottom: 24px;">
+  <h3 style="font-size: 16px; margin: 0 0 16px 0;">Affected Product</h3>
+  <p style="margin: 0;">
+    <%= link_to @product_page.title, product_page_path(@product_page, host: @host), style: "color: #008060; text-decoration: none; font-weight: 500;" %>
+    <span style="color: #6d7175;"> (<%= @product_page.handle %>)</span>
+  </p>
+</div>
+
+<!-- What to do -->
+<div class="stat-card" style="margin-bottom: 24px;">
+  <h3 style="font-size: 16px; margin: 0 0 16px 0;">What you can do</h3>
+  
+  <% case @issue.issue_type %>
+  <% when "missing_add_to_cart" %>
+    <ul style="margin: 0; padding-left: 20px; line-height: 1.8;">
+      <li>Visit your product page and try adding to cart yourself</li>
+      <li>Check if any recently installed apps might be interfering</li>
+      <li>Review your theme's product template for errors</li>
+      <li>Test with different browsers to rule out browser-specific issues</li>
+    </ul>
+  <% when "js_error" %>
+    <ul style="margin: 0; padding-left: 20px; line-height: 1.8;">
+      <li>Open your browser's developer console on the product page to see the errors</li>
+      <li>Check if any recently installed apps are causing JavaScript conflicts</li>
+      <li>Try disabling third-party apps one by one to isolate the issue</li>
+      <li>Contact your theme developer if the error is in theme code</li>
+    </ul>
+  <% when "variant_selector_error" %>
+    <ul style="margin: 0; padding-left: 20px; line-height: 1.8;">
+      <li>Test selecting different variants on the product page</li>
+      <li>Check if all variant options have associated prices and images</li>
+      <li>Review any customizations made to the variant selector</li>
+      <li>Ensure your product has properly configured variants in Shopify admin</li>
+    </ul>
+  <% when "missing_images" %>
+    <ul style="margin: 0; padding-left: 20px; line-height: 1.8;">
+      <li>Check that all product images are properly uploaded in Shopify admin</li>
+      <li>Verify image URLs are accessible (not blocked or expired)</li>
+      <li>Look for any CDN or hosting issues</li>
+      <li>Check your theme settings for image display options</li>
+    </ul>
+  <% when "missing_price" %>
+    <ul style="margin: 0; padding-left: 20px; line-height: 1.8;">
+      <li>Verify the product has a price set in Shopify admin</li>
+      <li>Check your theme settings for price display options</li>
+      <li>Look for any customizations that might hide prices</li>
+      <li>Ensure the currency format is correctly configured</li>
+    </ul>
+  <% when "liquid_error" %>
+    <ul style="margin: 0; padding-left: 20px; line-height: 1.8;">
+      <li>Check your theme's Liquid templates for syntax errors</li>
+      <li>Review any recent theme customizations</li>
+      <li>Look for missing translation strings</li>
+      <li>Contact your theme developer for assistance</li>
+    </ul>
+  <% when "slow_page_load" %>
+    <ul style="margin: 0; padding-left: 20px; line-height: 1.8;">
+      <li>Optimize image sizes (compress large product images)</li>
+      <li>Review installed apps that might slow down the page</li>
+      <li>Consider lazy-loading images below the fold</li>
+      <li>Check your theme's performance settings</li>
+    </ul>
+  <% else %>
+    <ul style="margin: 0; padding-left: 20px; line-height: 1.8;">
+      <li>Visit the product page and check for obvious issues</li>
+      <li>Try the page in private/incognito mode</li>
+      <li>Contact support if the issue persists</li>
+    </ul>
+  <% end %>
+</div>
+
+<!-- Evidence (if available) -->
+<% if @issue.evidence.present? %>
+  <div class="stat-card">
+    <h3 style="font-size: 16px; margin: 0 0 16px 0;">Technical Details</h3>
+    <pre style="background: #f6f6f7; padding: 16px; border-radius: 4px; overflow-x: auto; font-size: 12px; margin: 0;"><%= JSON.pretty_generate(@issue.evidence) rescue @issue.evidence %></pre>
+  </div>
+<% end %>
+
+<!-- Link to scan -->
+<div style="margin-top: 24px;">
+  <p style="color: #6d7175; font-size: 13px;">
+    Detected in 
+    <%= link_to "Scan ##{@scan.id}", scan_path(@scan, host: @host), style: "color: #008060;" %>
+    on <%= @scan.created_at.strftime("%B %d, %Y at %H:%M") %>
+  </p>
+</div>

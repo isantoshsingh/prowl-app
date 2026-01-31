@@ -1,0 +1,41 @@
+# frozen_string_literal: true
+
+# Solid Queue configuration for Silent Profit
+# 
+# Queues:
+#   - default: Standard priority jobs
+#   - scans: PDP scanning jobs (resource-intensive)
+#   - mailers: Email delivery jobs
+#
+# Recurring:
+#   - scheduled_scan: Runs daily at 6am UTC to queue all product page scans
+
+default: &default
+  dispatchers:
+    - polling_interval: 1
+      batch_size: 500
+  workers:
+    - queues: [default, scans, mailers]
+      threads: 3
+      polling_interval: 0.1
+
+development:
+  <<: *default
+
+test:
+  <<: *default
+
+production:
+  dispatchers:
+    - polling_interval: 1
+      batch_size: 500
+  workers:
+    - queues: [default]
+      threads: 2
+      polling_interval: 0.1
+    - queues: [scans]
+      threads: 2
+      polling_interval: 0.5
+    - queues: [mailers]
+      threads: 1
+      polling_interval: 0.2

@@ -1,0 +1,5 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
+[commands]
+dev = "bin/rails server -b 0.0.0.0 -e development"
+build = "RAILS_ENV=production bin/rails assets:precompile"

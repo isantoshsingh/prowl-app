@@ -1,0 +1,182 @@
+<%# Add New Product Page - Using Shopify Resource Picker %>
+
+<s-page heading="Add Products">
+  <s-link slot="breadcrumb-actions" href="<%= product_pages_path(host: @host) %>">Monitored Pages</s-link>
+  <s-badge slot="accessory" tone="info"><%= @remaining_slots %> slots available</s-badge>
+</s-page>
+
+<div class="stat-card" style="text-align: center; padding: 48px 24px;">
+  <div class="empty-state-icon" style="font-size: 64px; margin-bottom: 24px;">📦</div>
+  <h3 style="font-size: 18px; margin: 0 0 12px 0;">Select Products to Monitor</h3>
+  <p style="color: #6d7175; margin: 0 0 24px 0; max-width: 400px; margin-left: auto; margin-right: auto;">
+    Use Shopify's product picker to select up to <%= @remaining_slots %> products. 
+    We'll start monitoring their pages immediately.
+  </p>
+  
+  <button 
+    id="open-product-picker" 
+    class="button-primary" 
+    style="font-size: 16px; padding: 12px 24px;"
+  >
+    Select Products
+  </button>
+  
+  <div id="loading-indicator" style="display: none; margin-top: 16px;">
+    <p style="color: #6d7175;">Adding products...</p>
+  </div>
+</div>
+
+<!-- Already monitored products info -->
+<% if @monitored_product_ids.any? %>
+  <div style="margin-top: 24px; padding: 16px; background: #f6f6f7; border-radius: 8px;">
+    <p style="margin: 0; color: #6d7175; font-size: 13px;">
+      <strong><%= @monitored_product_ids.count %></strong> product<%= @monitored_product_ids.count > 1 ? 's' : '' %> already being monitored
+    </p>
+  </div>
+<% end %>
+
+<!-- Store data for JavaScript -->
+<div id="picker-config" 
+     data-create-url="<%= product_pages_path %>"
+     data-redirect-url="<%= product_pages_path(host: @host) %>"
+     data-monitored-gids="<%= @monitored_product_gids.to_json %>"
+     data-max-selections="<%= @remaining_slots %>"
+     data-csrf-token="<%= form_authenticity_token %>"
+     style="display: none;">
+</div>
+
+<% content_for :javascript do %>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const openPickerBtn = document.getElementById('open-product-picker');
+    const loadingIndicator = document.getElementById('loading-indicator');
+    const config = document.getElementById('picker-config');
+    
+    // Get configuration from data attributes
+    const createUrl = config.dataset.createUrl;
+    const redirectUrl = config.dataset.redirectUrl;
+    const monitoredProductIds = JSON.parse(config.dataset.monitoredGids || '[]');
+    const maxSelections = parseInt(config.dataset.maxSelections, 10);
+    const csrfToken = config.dataset.csrfToken;
+    
+    openPickerBtn.addEventListener('click', async function() {
+      try {
+        // Open the Shopify Resource Picker for products
+        const selected = await shopify.resourcePicker({
+          type: 'product',
+          action: 'select',
+          multiple: maxSelections > 1 ? maxSelections : false,
+          filter: {
+            draft: false,
+            archived: false,
+            variants: false
+          }
+        });
+        
+        console.log('Resource Picker returned:', selected);
+        
+        if (selected && selected.length > 0) {
+          // Filter out already monitored products
+          const newProducts = selected.filter(product => 
+            !monitoredProductIds.includes(product.id)
+          );
+          
+          if (newProducts.length === 0) {
+            shopify.toast.show('All selected products are already being monitored', {
+              duration: 3000
+            });
+            return;
+          }
+          
+          // Show loading state
+          openPickerBtn.disabled = true;
+          openPickerBtn.textContent = 'Adding...';
+          loadingIndicator.style.display = 'block';
+          
+          // Build URL-encoded form data (works better with Rails)
+          const params = new URLSearchParams();
+          params.append('authenticity_token', csrfToken);
+          
+          newProducts.forEach((product, index) => {
+            // Extract numeric ID from GID (gid://shopify/Product/12345 -> 12345)
+            const numericId = product.id.split('/').pop();
+            
+            params.append(`products[${index}][shopify_product_id]`, numericId);
+            params.append(`products[${index}][handle]`, product.handle);
+            params.append(`products[${index}][title]`, product.title);
+          });
+          
+          console.log('Submitting to:', createUrl);
+          console.log('Products:', newProducts.map(p => ({ id: p.id, handle: p.handle, title: p.title })));
+          
+          // Get session token for authenticated request
+          let token;
+          try {
+            token = await shopify.idToken();
+            console.log('Got session token');
+          } catch (tokenError) {
+            console.warn('Could not get session token:', tokenError);
+          }
+          
+          // Prepare headers
+          const headers = {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRF-Token': csrfToken,
+            'Accept': 'application/json, text/html'
+          };
+          
+          if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+          }
+          
+          // Submit via fetch
+          const response = await fetch(createUrl, {
+            method: 'POST',
+            headers: headers,
+            body: params.toString(),
+            credentials: 'same-origin'
+          });
+          
+          console.log('Response status:', response.status);
+          
+          if (response.ok) {
+            let result;
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+              result = await response.json();
+              console.log('JSON response:', result);
+            }
+            
+            shopify.toast.show(`Added ${newProducts.length} product(s) to monitoring!`, {
+              duration: 3000
+            });
+            
+            // Redirect to product pages list
+            setTimeout(() => {
+              window.location.href = redirectUrl;
+            }, 500);
+          } else if (response.redirected) {
+            // Follow redirect
+            window.location.href = response.url;
+          } else {
+            const errorText = await response.text();
+            console.error('Failed to add products:', response.status, errorText);
+            throw new Error(`Server returned ${response.status}`);
+          }
+        }
+      } catch (error) {
+        console.error('Error:', error);
+        shopify.toast.show('Failed to add products. Please try again.', {
+          duration: 3000,
+          isError: true
+        });
+        
+        // Reset button state
+        openPickerBtn.disabled = false;
+        openPickerBtn.textContent = 'Select Products';
+        loadingIndicator.style.display = 'none';
+      }
+    });
+  });
+</script>
+<% end %>

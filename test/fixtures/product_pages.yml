@@ -1,0 +1,9 @@
+# test/fixtures/product_pages.yml
+test_page:
+  shop: test_shop
+  shopify_product_id: 12345678
+  handle: "test-product"
+  title: "Test Product"
+  url: "/products/test-product"
+  monitoring_enabled: true
+  status: "healthy"

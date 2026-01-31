@@ -1,0 +1,128 @@
+<%# Scan Detail %>
+
+<s-page heading="Scan #<%= @scan.id %>">
+  <s-link slot="secondary-actions" href="<%= product_page_path(@product_page, host: @host) %>">View Product Page</s-link>
+  <s-link slot="breadcrumb-actions" href="<%= scans_path(host: @host) %>">Scan History</s-link>
+  <s-badge slot="accessory" tone="<%= @scan.status == 'completed' ? 'success' : (@scan.status == 'failed' ? 'critical' : 'info') %>"><%= @scan.status.capitalize %></s-badge>
+</s-page>
+
+<!-- Scan Summary -->
+<div class="card-grid" style="margin-bottom: 24px;">
+  <div class="stat-card">
+    <h3 class="stat-card-title">Status</h3>
+    <p style="margin: 8px 0 0 0;">
+      <span class="badge badge-<%= @scan.status == 'completed' ? 'healthy' : (@scan.status == 'failed' ? 'critical' : 'pending') %>" style="font-size: 14px; padding: 4px 12px;">
+        <%= @scan.status.capitalize %>
+      </span>
+    </p>
+  </div>
+  
+  <div class="stat-card">
+    <h3 class="stat-card-title">Page Load Time</h3>
+    <p class="stat-card-value" style="font-size: 24px;">
+      <% if @scan.page_load_time_ms %>
+        <%= (@scan.page_load_time_ms / 1000.0).round(2) %>s
+      <% else %>
+        —
+      <% end %>
+    </p>
+  </div>
+  
+  <div class="stat-card">
+    <h3 class="stat-card-title">Issues Found</h3>
+    <p class="stat-card-value <%= @issues.any? ? 'critical' : 'healthy' %>" style="font-size: 24px;">
+      <%= @issues.count %>
+    </p>
+  </div>
+  
+  <div class="stat-card">
+    <h3 class="stat-card-title">Duration</h3>
+    <p class="stat-card-value" style="font-size: 24px;">
+      <% if @scan.duration_seconds %>
+        <%= @scan.duration_seconds %>s
+      <% else %>
+        —
+      <% end %>
+    </p>
+  </div>
+</div>
+
+<!-- Scan Info -->
+<div class="stat-card" style="margin-bottom: 24px;">
+  <h3 style="font-size: 16px; margin: 0 0 16px 0;">Scan Details</h3>
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+    <div>
+      <p class="stat-card-title">Product</p>
+      <p style="margin: 4px 0 0 0; font-weight: 500;">
+        <%= link_to @product_page.title, product_page_path(@product_page, host: @host), style: "color: #008060; text-decoration: none;" %>
+      </p>
+    </div>
+    <div>
+      <p class="stat-card-title">Scanned At</p>
+      <p style="margin: 4px 0 0 0; font-weight: 500;">
+        <%= @scan.created_at.strftime("%B %d, %Y at %H:%M") %>
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- Error Message (if failed) -->
+<% if @scan.status == 'failed' && @scan.error_message.present? %>
+  <div class="stat-card" style="margin-bottom: 24px; border-left: 4px solid #d72c0d;">
+    <h3 style="font-size: 16px; margin: 0 0 8px 0; color: #d72c0d;">Scan Failed</h3>
+    <p style="margin: 0;"><%= @scan.error_message %></p>
+  </div>
+<% end %>
+
+<!-- Issues from this scan -->
+<div class="issues-list" style="margin-bottom: 24px;">
+  <div class="issues-list-header">
+    <h2 class="issues-list-title">Issues Detected</h2>
+  </div>
+  
+  <% if @issues.any? %>
+    <% @issues.each do |issue| %>
+      <%= link_to issue_path(issue, host: @host), class: "issue-item" do %>
+        <div class="issue-severity <%= issue.severity %>"></div>
+        <div class="issue-content">
+          <p class="issue-title"><%= issue.title %></p>
+          <p class="issue-meta"><%= issue.severity_label %> • <%= issue.status.capitalize %></p>
+        </div>
+        <span class="badge badge-<%= issue.severity == 'high' ? 'critical' : issue.severity %>">
+          View →
+        </span>
+      <% end %>
+    <% end %>
+  <% else %>
+    <div class="empty-state">
+      <div class="empty-state-icon">✓</div>
+      <h3 class="empty-state-title">No issues detected</h3>
+      <p class="empty-state-description">This scan completed without finding any problems.</p>
+    </div>
+  <% end %>
+</div>
+
+<!-- Technical Details -->
+<% if @scan.status == 'completed' %>
+  <div class="stat-card">
+    <h3 style="font-size: 16px; margin: 0 0 16px 0;">Technical Details</h3>
+    
+    <% if @scan.has_js_errors? %>
+      <div style="margin-bottom: 16px;">
+        <h4 style="font-size: 14px; margin: 0 0 8px 0;">JavaScript Errors (<%= @scan.parsed_js_errors.count %>)</h4>
+        <pre style="background: #f6f6f7; padding: 12px; border-radius: 4px; overflow-x: auto; font-size: 12px; margin: 0;"><%= @scan.parsed_js_errors.map { |e| e["message"] }.join("\n") %></pre>
+      </div>
+    <% end %>
+    
+    <% if @scan.has_network_errors? %>
+      <div style="margin-bottom: 16px;">
+        <h4 style="font-size: 14px; margin: 0 0 8px 0;">Network Errors (<%= @scan.parsed_network_errors.count %>)</h4>
+        <pre style="background: #f6f6f7; padding: 12px; border-radius: 4px; overflow-x: auto; font-size: 12px; margin: 0;"><%= @scan.parsed_network_errors.map { |e| "#{e['url']}: #{e['failure']}" }.join("\n") %></pre>
+      </div>
+    <% end %>
+    
+    <% unless @scan.has_js_errors? || @scan.has_network_errors? %>
+      <p style="color: #6d7175;">No JavaScript or network errors captured during this scan.</p>
+    <% end %>
+  </div>
+<% end %>

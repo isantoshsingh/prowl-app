@@ -1,0 +1,12 @@
+# test/fixtures/issues.yml
+high_severity_issue:
+  product_page: test_page
+  scan: completed_scan
+  issue_type: "missing_add_to_cart"
+  severity: "high"
+  title: "Add to Cart button may not be working"
+  description: "Test issue"
+  occurrence_count: 2
+  first_detected_at: <%= 1.day.ago %>
+  last_detected_at: <%= Time.current %>
+  status: "open"

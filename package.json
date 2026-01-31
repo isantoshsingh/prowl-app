@@ -1,0 +1,10 @@
+{
+  "name": "pdp-diagnostics",
+  "version": "1.0.0",
+  "description": "PDP Diagnostics app built with Rails",
+  "scripts": {},
+  "dependencies": {},
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
