@@ -5,10 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <% application_name = ShopifyApp.configuration.application_name || "Silent Profit" %>
     <title><%= application_name %></title>
+
+    <meta name="shopify-api-key" content="<%= ShopifyApp.configuration.api_key %>" />
     
     <!-- Shopify Polaris Web Components -->
-    <script type="module" src="https://cdn.shopify.com/shopifycloud/web/assets/polaris-web-components.en.min.js"></script>
+    <script src="https://cdn.shopify.com/shopifycloud/polaris.js"></script>
     <link rel="stylesheet" href="https://cdn.shopify.com/shopifycloud/web/assets/polaris.css" />
+
+    <!-- Shopify App Bridge -->
+    <script src="https://cdn.shopify.com/shopifycloud/app-bridge.js"></script>
     
     <%= stylesheet_link_tag "application" %>
     <%= javascript_importmap_tags %>
@@ -304,9 +309,6 @@
         <%= yield %>
       </main>
     </div>
-
-    <!-- Shopify App Bridge -->
-    <script src="https://cdn.shopify.com/shopifycloud/app-bridge.js"></script>
     
     <%= content_tag(:div, nil, id: 'shopify-app-init', data: {
       api_key: ShopifyApp.configuration.api_key,
