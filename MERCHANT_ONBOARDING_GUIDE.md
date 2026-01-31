@@ -429,97 +429,270 @@ Plan: $10/month after trial
 
 ## Setup Guide Component
 
-### Implementation Spec
+### Shopify Official Design Guidelines
 
-#### Step Definitions
+Based on Shopify's official homepage patterns:
+
+**Onboarding Requirements:**
+- ✅ Must be brief and direct with clear instructions
+- ✅ Only request information that's necessary
+- ✅ Make it dismissible if not essential
+- ✅ Maximum of 5 steps (avoid user drop-off)
+- ✅ Allow completion at a later time for long/complex onboarding
+
+**Components Used:**
+`Badge`, `Banner`, `Box`, `Button`, `Checkbox`, `Clickable`, `Divider`, `Grid`, `Heading`, `Image`, `Link`, `Paragraph`, `Section`, `Stack`, `Text`
+
+---
+
+### Implementation - Rails/ERB Pattern
+
+#### Step Definitions (Ruby Model/Helper)
 
 ```ruby
-# In ShopSetting model or service
-def setup_steps
-  [
-    {
-      id: 'select_products',
-      title: 'Select products to monitor',
-      description: 'Choose up to 5 of your most important product pages',
-      completed: shop.product_pages.count > 0,
-      cta_text: shop.product_pages.count > 0 ? 'Add More Products' : 'Add Your First Product',
-      cta_url: new_product_page_path,
-      progress: "#{shop.product_pages.count}/5"
-    },
-    {
-      id: 'configure_alerts',
-      title: 'Configure alert preferences',
-      description: 'Set up email alerts for critical issues',
-      completed: alert_email.present?,
-      cta_text: 'Set Up Alerts',
-      cta_url: settings_path,
-      progress: alert_email.present? ? 'Complete' : 'Not Started'
-    },
-    {
-      id: 'first_scan',
-      title: 'Review your first scan',
-      description: 'See health insights for your product pages',
-      completed: shop.scans.completed.any?,
-      cta_text: 'View Dashboard',
-      cta_url: root_path,
-      progress: shop.scans.completed.any? ? 'Complete' : 'Waiting for scan'
-    }
-  ]
-end
+# app/models/shop_setting.rb or app/helpers/onboarding_helper.rb
+module OnboardingHelper
+  def setup_steps
+    [
+      {
+        id: 'select_products',
+        label: 'Select products to monitor',
+        description: 'Choose up to 5 of your most important product pages for monitoring',
+        completed: shop.product_pages.count > 0,
+        cta_text: shop.product_pages.count > 0 ? 'Add more products' : 'Add your first product',
+        cta_url: new_product_page_path,
+        cta_variant: 'primary',
+        progress: "#{shop.product_pages.count}/5"
+      },
+      {
+        id: 'configure_alerts',
+        label: 'Configure alert preferences',
+        description: 'Set up email and Shopify admin notifications for critical issues',
+        completed: alert_email.present?,
+        cta_text: 'Set up alerts',
+        cta_url: settings_path,
+        cta_variant: 'primary',
+        progress: alert_email.present? ? 'Complete' : 'Not started'
+      },
+      {
+        id: 'review_first_scan',
+        label: 'Review your first scan',
+        description: 'View health insights and detected issues for your product pages',
+        completed: shop.scans.completed.any?,
+        cta_text: 'View results',
+        cta_url: root_path,
+        cta_variant: 'primary',
+        progress: shop.scans.completed.any? ? 'Complete' : 'Pending scan'
+      }
+    ]
+  end
 
-def setup_progress_percentage
-  completed_steps = setup_steps.count { |step| step[:completed] }
-  (completed_steps.to_f / setup_steps.count * 100).round
+  def setup_progress
+    completed = setup_steps.count { |step| step[:completed] }
+    total = setup_steps.count
+    { completed: completed, total: total, percentage: (completed.to_f / total * 100).round }
+  end
+
+  def setup_complete?
+    setup_progress[:completed] == setup_progress[:total]
+  end
 end
 ```
 
-#### UI Component
+---
+
+### Full Setup Guide Component (Official Shopify Pattern)
 
 ```erb
 <!-- app/views/shared/_setup_guide.html.erb -->
-<% if @shop_setting.setup_progress_percentage < 100 %>
-  <s-card>
-    <s-heading>Get Started with PDP Diagnostics</s-heading>
+<%#
+  Setup Guide Component - Shopify Homepage Pattern
+  Only show if setup is incomplete and not dismissed
+  Store dismissal in shop_settings.setup_guide_dismissed_at
+%>
 
-    <s-progress-bar
-      value="<%= @shop_setting.setup_progress_percentage %>"
-      max="100"
-    ></s-progress-bar>
+<% unless setup_complete? || @shop_setting.setup_guide_dismissed_at.present? %>
+  <s-section id="setup-guide-section">
+    <s-grid gap="small">
 
-    <s-vertical-stack gap="4">
-      <% @shop_setting.setup_steps.each_with_index do |step, index| %>
-        <s-horizontal-stack gap="3" alignment="center">
-          <!-- Step indicator -->
-          <% if step[:completed] %>
-            <s-icon name="check-circle" color="success"></s-icon>
-          <% else %>
-            <s-icon name="circle" color="subdued"></s-icon>
+      <!-- Header with progress -->
+      <s-grid gap="small-200">
+        <s-grid gridTemplateColumns="1fr auto auto" gap="small-300" alignItems="center">
+          <s-heading>Setup Guide</s-heading>
+
+          <!-- Dismiss button -->
+          <s-button
+            accessibilityLabel="Dismiss Guide"
+            onClick="dismissSetupGuide()"
+            variant="tertiary"
+            tone="neutral"
+            icon="x"
+          ></s-button>
+
+          <!-- Collapse/Expand button -->
+          <s-button
+            id="toggle-guide-button"
+            accessibilityLabel="Toggle setup guide"
+            onClick="toggleSetupGuide()"
+            variant="tertiary"
+            tone="neutral"
+            icon="chevron-up"
+          ></s-button>
+        </s-grid>
+
+        <s-paragraph>
+          Use this personalized guide to get your store ready for product page monitoring.
+        </s-paragraph>
+
+        <s-paragraph color="subdued">
+          <%= setup_progress[:completed] %> out of <%= setup_progress[:total] %> steps completed
+        </s-paragraph>
+      </s-grid>
+
+      <!-- Steps Container -->
+      <s-box
+        id="steps-container"
+        borderRadius="base"
+        border="base"
+        background="base"
+      >
+
+        <% setup_steps.each_with_index do |step, index| %>
+          <!-- Step <%= index + 1 %> -->
+          <s-box>
+            <s-grid gridTemplateColumns="1fr auto" gap="base" padding="small">
+              <!-- Checkbox -->
+              <s-checkbox
+                label="<%= step[:label] %>"
+                <%= 'checked' if step[:completed] %>
+                disabled
+              ></s-checkbox>
+
+              <!-- Toggle details button -->
+              <s-button
+                id="toggle-step<%= index %>-button"
+                onClick="toggleStep(<%= index %>)"
+                accessibilityLabel="Toggle step <%= index + 1 %> details"
+                variant="tertiary"
+                icon="chevron-down"
+              ></s-button>
+            </s-grid>
+
+            <!-- Step details (initially hidden) -->
+            <s-box
+              id="step<%= index %>-details"
+              padding="small"
+              paddingBlockStart="none"
+              style="display: none;"
+            >
+              <s-box padding="base" background="subdued" borderRadius="base">
+                <s-grid gridTemplateColumns="1fr auto" gap="base" alignItems="center">
+                  <!-- Content -->
+                  <s-grid gap="small-200">
+                    <s-paragraph>
+                      <%= step[:description] %>
+                    </s-paragraph>
+
+                    <s-stack direction="inline" gap="small-200">
+                      <s-button variant="<%= step[:cta_variant] %>" href="<%= step[:cta_url] %>">
+                        <%= step[:cta_text] %>
+                      </s-button>
+
+                      <% if step[:id] == 'select_products' %>
+                        <s-button variant="tertiary" tone="neutral" href="/docs/selecting-products">
+                          Product selection tips
+                        </s-button>
+                      <% elsif step[:id] == 'configure_alerts' %>
+                        <s-button variant="tertiary" tone="neutral" href="/docs/alerts">
+                          Alert best practices
+                        </s-button>
+                      <% end %>
+                    </s-stack>
+                  </s-grid>
+
+                  <!-- Illustration -->
+                  <s-box maxBlockSize="80px" maxInlineSize="80px">
+                    <s-image
+                      src="<%= asset_path("setup-step-#{step[:id]}.svg") %>"
+                      alt="<%= step[:label] %> illustration"
+                    ></s-image>
+                  </s-box>
+                </s-grid>
+              </s-box>
+            </s-box>
+          </s-box>
+
+          <!-- Divider between steps (not after last step) -->
+          <% unless index == setup_steps.count - 1 %>
+            <s-divider></s-divider>
           <% end %>
+        <% end %>
 
-          <!-- Step content -->
-          <s-vertical-stack gap="1" class="flex-grow">
-            <s-text variant="headingSm"><%= step[:title] %></s-text>
-            <s-text color="subdued"><%= step[:description] %></s-text>
-          </s-vertical-stack>
+      </s-box>
+    </s-grid>
+  </s-section>
 
-          <!-- Progress/CTA -->
-          <% if step[:completed] %>
-            <s-badge status="success"><%= step[:progress] %></s-badge>
-          <% else %>
-            <s-button href="<%= step[:cta_url] %>" variant="primary" size="slim">
-              <%= step[:cta_text] %>
-            </s-button>
-          <% end %>
-        </s-horizontal-stack>
-      <% end %>
-    </s-vertical-stack>
+  <!-- JavaScript for interactive behavior -->
+  <script>
+    // Store state in window object
+    window.setupGuideState = {
+      expanded: true,
+      steps: [false, false, false] // Track which steps are expanded
+    };
 
-    <s-horizontal-stack gap="2" class="mt-4">
-      <s-link href="/docs">View Documentation</s-link>
-      <s-link href="/support">Contact Support</s-link>
-    </s-horizontal-stack>
-  </s-card>
+    function toggleSetupGuide() {
+      const container = document.getElementById('steps-container');
+      const button = document.getElementById('toggle-guide-button');
+
+      window.setupGuideState.expanded = !window.setupGuideState.expanded;
+
+      container.style.display = window.setupGuideState.expanded ? 'block' : 'none';
+      button.setAttribute('icon', window.setupGuideState.expanded ? 'chevron-up' : 'chevron-down');
+    }
+
+    function toggleStep(stepIndex) {
+      const details = document.getElementById(`step${stepIndex}-details`);
+      const button = document.getElementById(`toggle-step${stepIndex}-button`);
+
+      window.setupGuideState.steps[stepIndex] = !window.setupGuideState.steps[stepIndex];
+
+      details.style.display = window.setupGuideState.steps[stepIndex] ? 'block' : 'none';
+      button.setAttribute('icon', window.setupGuideState.steps[stepIndex] ? 'chevron-up' : 'chevron-down');
+    }
+
+    function dismissSetupGuide() {
+      // Make AJAX call to store dismissal
+      fetch('/settings/dismiss_setup_guide', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': document.querySelector('[name="csrf-token"]').content
+        }
+      }).then(() => {
+        document.getElementById('setup-guide-section').style.display = 'none';
+      });
+    }
+  </script>
 <% end %>
+```
+
+---
+
+### Controller Action for Dismissal
+
+```ruby
+# app/controllers/settings_controller.rb
+class SettingsController < AuthenticatedController
+  def dismiss_setup_guide
+    @shop_setting.update(setup_guide_dismissed_at: Time.current)
+    head :ok
+  end
+end
+```
+
+```ruby
+# config/routes.rb
+post 'settings/dismiss_setup_guide', to: 'settings#dismiss_setup_guide'
 ```
 
 ### Dismissal Behavior
@@ -648,7 +821,377 @@ Celebrate merchant achievements:
 
 ---
 
+## Complete Homepage Implementation (Official Shopify Pattern)
+
+Below is a complete homepage implementation following Shopify's official patterns for the PDP Diagnostics app:
+
+```erb
+<!-- app/views/home/index.html.erb -->
+<s-page>
+  <!-- Primary and secondary actions in page header -->
+  <s-button slot="primary-action" href="<%= new_product_page_path %>">
+    Add product
+  </s-button>
+  <s-button slot="secondary-actions" href="<%= scans_path %>">
+    View all scans
+  </s-button>
+  <s-button slot="secondary-actions" href="<%= settings_path %>">
+    Settings
+  </s-button>
+
+  <!-- === Trial Banner === -->
+  <!-- Use banners sparingly. Only one banner should be visible at a time. -->
+  <% if @shop_setting.billing_status == 'trial' %>
+    <s-banner tone="info">
+      Trial Active: <%= @shop_setting.trial_days_remaining %> days remaining.
+      <s-link href="<%= billing_path %>">Subscribe now</s-link> to continue monitoring after your trial ends.
+    </s-banner>
+  <% end %>
+
+  <!-- === Critical Issues Banner === -->
+  <% if @critical_issues.any? %>
+    <s-banner tone="critical">
+      <strong>⚠ <%= pluralize(@critical_issues.count, 'critical issue') %> detected!</strong><br>
+      These issues may be preventing customers from purchasing.
+      <s-link href="<%= issues_path(severity: 'high') %>">Review issues</s-link>
+    </s-banner>
+  <% end %>
+
+  <!-- === Setup Guide === -->
+  <%= render 'shared/setup_guide' %>
+
+  <!-- === Health Overview Metrics === -->
+  <s-section padding="small">
+    <s-grid
+      gridTemplateColumns="@container (inline-size <= 400px) 1fr, 1fr auto 1fr auto 1fr"
+      gap="small"
+    >
+      <s-clickable
+        href="<%= product_pages_path %>"
+        paddingBlock="small-400"
+        paddingInline="small-100"
+        borderRadius="base"
+      >
+        <s-grid gap="small-300">
+          <s-heading>Monitored Pages</s-heading>
+          <s-stack direction="inline" gap="small-200">
+            <s-text><%= @shop.product_pages.count %></s-text>
+            <s-badge tone="info"><%= @shop.product_pages.count %>/5</s-badge>
+          </s-stack>
+        </s-grid>
+      </s-clickable>
+
+      <s-divider direction="block"></s-divider>
+
+      <s-clickable
+        href="<%= product_pages_path(status: 'healthy') %>"
+        paddingBlock="small-400"
+        paddingInline="small-100"
+        borderRadius="base"
+      >
+        <s-grid gap="small-300">
+          <s-heading>Healthy</s-heading>
+          <s-stack direction="inline" gap="small-200">
+            <s-text><%= @healthy_count %></s-text>
+            <s-badge tone="success" icon="check-circle">
+              <%= percentage(@healthy_count, @shop.product_pages.count) %>%
+            </s-badge>
+          </s-stack>
+        </s-grid>
+      </s-clickable>
+
+      <s-divider direction="block"></s-divider>
+
+      <s-clickable
+        href="<%= issues_path(status: 'open') %>"
+        paddingBlock="small-400"
+        paddingInline="small-100"
+        borderRadius="base"
+      >
+        <s-grid gap="small-300">
+          <s-heading>Open Issues</s-heading>
+          <s-stack direction="inline" gap="small-200">
+            <s-text><%= @open_issues_count %></s-text>
+            <% if @open_issues_count > 0 %>
+              <s-badge tone="warning"><%= @open_issues_count %> active</s-badge>
+            <% else %>
+              <s-badge tone="success">All clear</s-badge>
+            <% end %>
+          </s-stack>
+        </s-grid>
+      </s-clickable>
+    </s-grid>
+  </s-section>
+
+  <!-- === Empty State (if no products) === -->
+  <% if @shop.product_pages.count == 0 %>
+    <s-section>
+      <s-box
+        padding="extra-large"
+        background="base"
+        border="base"
+        borderRadius="base"
+        textAlign="center"
+      >
+        <s-grid gap="base" justifyItems="center">
+          <s-box maxInlineSize="200px">
+            <s-image
+              src="<%= asset_path('empty-state-products.svg') %>"
+              alt="No products monitored"
+            ></s-image>
+          </s-box>
+
+          <s-heading>Start monitoring your product pages</s-heading>
+
+          <s-paragraph color="subdued">
+            Add your first product to start detecting issues that could be costing you sales.
+          </s-paragraph>
+
+          <s-button variant="primary" href="<%= new_product_page_path %>">
+            Add your first product
+          </s-button>
+
+          <s-grid gap="small-200" textAlign="left">
+            <s-text variant="headingSm">Not sure where to start? Monitor your:</s-text>
+            <s-paragraph color="subdued">• Best-selling products</s-paragraph>
+            <s-paragraph color="subdued">• Highest-traffic pages</s-paragraph>
+            <s-paragraph color="subdued">• Recently updated products</s-paragraph>
+          </s-grid>
+        </s-grid>
+      </s-box>
+    </s-section>
+  <% else %>
+
+    <!-- === Open Issues Section === -->
+    <% if @open_issues.any? %>
+      <s-section>
+        <s-grid gridTemplateColumns="1fr auto" alignItems="center" gap="base">
+          <s-heading>Open Issues</s-heading>
+          <s-link href="<%= issues_path %>">View all</s-link>
+        </s-grid>
+
+        <s-grid gap="small">
+          <% @open_issues.first(5).each do |issue| %>
+            <s-box border="base" borderRadius="base" padding="base">
+              <s-grid
+                gridTemplateColumns="auto 1fr auto"
+                gap="base"
+                alignItems="center"
+              >
+                <!-- Severity badge -->
+                <% if issue.severity == 'high' %>
+                  <s-badge tone="critical" icon="alert-triangle">Critical</s-badge>
+                <% elsif issue.severity == 'medium' %>
+                  <s-badge tone="warning">Warning</s-badge>
+                <% else %>
+                  <s-badge tone="info">Info</s-badge>
+                <% end %>
+
+                <!-- Issue details -->
+                <s-grid gap="small-200">
+                  <s-text variant="headingSm">
+                    <%= issue.issue_type.humanize %> on <%= issue.product_page.title %>
+                  </s-text>
+                  <s-text color="subdued">
+                    Detected <%= time_ago_in_words(issue.first_detected_at) %> ago
+                    · Occurred <%= pluralize(issue.occurrence_count, 'time') %>
+                  </s-text>
+                </s-grid>
+
+                <!-- Action button -->
+                <s-button href="<%= issue_path(issue) %>">
+                  Review
+                </s-button>
+              </s-grid>
+            </s-box>
+          <% end %>
+        </s-grid>
+      </s-section>
+    <% end %>
+
+    <!-- === Recent Scans Section === -->
+    <s-section>
+      <s-grid gridTemplateColumns="1fr auto" alignItems="center" gap="base">
+        <s-heading>Recent Scans</s-heading>
+        <s-link href="<%= scans_path %>">View all</s-link>
+      </s-grid>
+
+      <s-grid gridTemplateColumns="repeat(auto-fit, minmax(240px, 1fr))" gap="base">
+        <% @recent_scans.first(3).each do |scan| %>
+          <s-box border="base" borderRadius="base" overflow="hidden">
+            <!-- Product image -->
+            <s-clickable href="<%= scan_path(scan) %>">
+              <s-image
+                aspectRatio="16/9"
+                objectFit="cover"
+                alt="<%= scan.product_page.title %>"
+                src="<%= scan.product_page.image_url %>"
+              ></s-image>
+            </s-clickable>
+
+            <s-divider></s-divider>
+
+            <!-- Scan details -->
+            <s-grid
+              gridTemplateColumns="1fr auto"
+              background="base"
+              padding="small"
+              gap="small"
+              alignItems="center"
+            >
+              <s-grid gap="small-200">
+                <s-heading><%= scan.product_page.title %></s-heading>
+                <s-text color="subdued">
+                  <%= time_ago_in_words(scan.completed_at) %> ago
+                </s-text>
+              </s-grid>
+
+              <% if scan.status == 'completed' %>
+                <% if scan.issues_count == 0 %>
+                  <s-badge tone="success">Healthy</s-badge>
+                <% else %>
+                  <s-badge tone="warning"><%= scan.issues_count %> issues</s-badge>
+                <% end %>
+              <% elsif scan.status == 'running' %>
+                <s-badge tone="info">Scanning...</s-badge>
+              <% else %>
+                <s-badge tone="critical">Failed</s-badge>
+              <% end %>
+            </s-grid>
+          </s-box>
+        <% end %>
+      </s-grid>
+    </s-section>
+
+    <!-- === Callout Card: Upgrade Prompt === -->
+    <% if @shop.product_pages.count >= 4 && @shop_setting.billing_status == 'trial' %>
+      <s-section id="upgrade-callout">
+        <s-grid
+          gridTemplateColumns="1fr auto"
+          gap="small-400"
+          alignItems="start"
+        >
+          <s-grid
+            gridTemplateColumns="@container (inline-size <= 480px) 1fr, auto auto"
+            gap="base"
+            alignItems="center"
+          >
+            <s-grid gap="small-200">
+              <s-heading>You're using 4 of 5 monitoring slots</s-heading>
+              <s-paragraph>
+                Upgrade to the Pro plan to monitor unlimited product pages and get
+                advanced alerting features.
+              </s-paragraph>
+              <s-stack direction="inline" gap="small-200">
+                <s-button variant="primary" href="<%= billing_path %>">
+                  View plans
+                </s-button>
+                <s-button tone="neutral" variant="tertiary" href="/docs/pricing">
+                  Learn more
+                </s-button>
+              </s-stack>
+            </s-grid>
+          </s-grid>
+          <s-button
+            onClick="document.getElementById('upgrade-callout').style.display='none'"
+            icon="x"
+            tone="neutral"
+            variant="tertiary"
+            accessibilityLabel="Dismiss upgrade prompt"
+          ></s-button>
+        </s-grid>
+      </s-section>
+    <% end %>
+
+  <% end %>
+
+  <!-- === Quick Actions Footer === -->
+  <s-section>
+    <s-box
+      padding="base"
+      background="subdued"
+      borderRadius="base"
+    >
+      <s-grid gap="small-400">
+        <s-heading>Quick Actions</s-heading>
+        <s-stack direction="inline" gap="small-200" wrap>
+          <s-button href="<%= new_product_page_path %>">
+            Add products
+          </s-button>
+          <s-button href="<%= scans_path(trigger: 'manual') %>" variant="secondary">
+            Run manual scan
+          </s-button>
+          <s-button href="<%= issues_path %>" variant="secondary">
+            View all issues
+          </s-button>
+          <s-button href="<%= settings_path %>" variant="tertiary" tone="neutral">
+            Configure settings
+          </s-button>
+        </s-stack>
+      </s-grid>
+    </s-box>
+  </s-section>
+
+</s-page>
+```
+
+### Controller Setup
+
+```ruby
+# app/controllers/home_controller.rb
+class HomeController < AuthenticatedController
+  def index
+    @shop = current_shop
+    @shop_setting = @shop.shop_setting
+
+    # Metrics
+    @healthy_count = @shop.product_pages.healthy.count
+    @open_issues_count = @shop.issues.open.count
+    @critical_issues = @shop.issues.open.high_severity.limit(5)
+
+    # Recent activity
+    @open_issues = @shop.issues.open.order(severity: :desc, created_at: :desc).limit(5)
+    @recent_scans = @shop.scans.completed.order(completed_at: :desc).limit(6)
+  end
+
+  private
+
+  def percentage(part, whole)
+    return 0 if whole.zero?
+    ((part.to_f / whole) * 100).round
+  end
+  helper_method :percentage
+end
+```
+
+---
+
 ## Best Practices
+
+### Shopify Official Guidelines Summary
+
+**From Shopify Homepage Pattern Documentation:**
+
+1. **Onboarding Must Be:**
+   - Brief and direct
+   - Request only necessary information
+   - Dismissible if not essential
+   - Maximum 5 steps
+   - Allow later completion for complex flows
+
+2. **Visual Design:**
+   - Responsive across all screen sizes
+   - Looser spacing for low-density layouts
+   - Tighter spacing for high-density layouts
+   - High-resolution photos and images
+
+3. **Homepage Purpose:**
+   - Teach merchants how to use the app (onboarding, guides)
+   - Display app functionalities (CTAs, resource tables)
+   - Show updates (status banners, news)
+   - Provide daily value
+
+---
 
 ### 1. Progressive Disclosure
 
@@ -868,6 +1411,40 @@ The setup guide component, progressive disclosure, and clear CTAs ensure merchan
 
 ---
 
-**Document Version**: 1.0
+## References
+
+This guide is based on official Shopify documentation and best practices:
+
+1. **Shopify App Homepage Pattern**
+   - URL: https://shopify.dev/docs/api/app-home/patterns/templates/homepage
+   - Components: Badge, Banner, Box, Button, Checkbox, Clickable, Divider, Grid, Heading, Image, Link, Paragraph, Section, Stack, Text
+   - Key Guidelines: Onboarding must be brief (max 5 steps), dismissible, and request only necessary information
+
+2. **Shopify App Onboarding Guidelines**
+   - URL: https://shopify.dev/docs/apps/design/user-experience/onboarding
+   - Best Practices: Self-guided, easy to follow, allow later completion
+   - Visual Design: Responsive, proper spacing, high-resolution assets
+
+3. **Shopify Setup Guide Composition**
+   - URL: https://shopify.dev/docs/api/app-home/patterns/compositions/setup-guide
+   - Pattern: Checkbox-based progress tracking with expandable step details
+   - Behavior: Dismissible, collapsible, tracks completion state
+
+4. **Shopify Polaris Design System**
+   - URL: https://polaris.shopify.com/
+   - Web Components: Full Polaris component library for embedded apps
+   - Patterns: Official UX patterns and templates
+
+5. **Built for Shopify Requirements**
+   - URL: https://shopify.dev/docs/apps/launch/built-for-shopify/requirements
+   - Quality Standards: Performance, UX, accessibility requirements
+
+---
+
+**Document Version**: 2.0
 **Last Updated**: 2026-01-31
 **Maintained By**: Development Team
+
+**Changelog**:
+- v2.0 (2026-01-31): Added official Shopify patterns, complete homepage implementation, setup guide code examples
+- v1.0 (2026-01-31): Initial merchant onboarding framework
