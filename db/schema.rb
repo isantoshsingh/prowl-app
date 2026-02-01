@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_01_30_170814) do
+ActiveRecord::Schema[8.1].define(version: 2026_02_01_083507) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -93,28 +93,27 @@ ActiveRecord::Schema[8.1].define(version: 2026_01_30_170814) do
   create_table "shop_settings", force: :cascade do |t|
     t.boolean "admin_alerts_enabled", default: true, null: false
     t.string "alert_email"
-    t.string "billing_status", default: "trial", null: false
     t.datetime "created_at", null: false
     t.boolean "email_alerts_enabled", default: true, null: false
     t.integer "max_monitored_pages", default: 5, null: false
     t.string "scan_frequency", default: "daily", null: false
     t.bigint "shop_id", null: false
-    t.bigint "subscription_charge_id"
-    t.datetime "trial_ends_at"
     t.datetime "updated_at", null: false
-    t.index ["billing_status"], name: "index_shop_settings_on_billing_status"
     t.index ["shop_id"], name: "index_shop_settings_on_shop_id", unique: true
   end
 
   create_table "shops", force: :cascade do |t|
     t.string "access_scopes", default: "", null: false
+    t.boolean "billing_exempt", default: false, null: false
     t.datetime "created_at", null: false
+    t.string "exemption_reason"
     t.datetime "expires_at"
     t.string "refresh_token"
     t.datetime "refresh_token_expires_at"
     t.string "shopify_domain", null: false
     t.string "shopify_token", null: false
     t.datetime "updated_at", null: false
+    t.index ["billing_exempt"], name: "index_shops_on_billing_exempt"
     t.index ["shopify_domain"], name: "index_shops_on_shopify_domain", unique: true
   end
 
@@ -239,6 +238,25 @@ ActiveRecord::Schema[8.1].define(version: 2026_01_30_170814) do
     t.index ["key"], name: "index_solid_queue_semaphores_on_key", unique: true
   end
 
+  create_table "subscriptions", force: :cascade do |t|
+    t.datetime "activated_at"
+    t.datetime "cancelled_at"
+    t.string "charge_name"
+    t.datetime "created_at", null: false
+    t.string "currency_code"
+    t.decimal "price", precision: 10, scale: 2
+    t.bigint "shop_id", null: false
+    t.string "status", default: "pending", null: false
+    t.string "subscription_charge_id"
+    t.integer "trial_days"
+    t.datetime "trial_ends_at"
+    t.datetime "updated_at", null: false
+    t.index ["shop_id", "created_at"], name: "index_subscriptions_on_shop_id_and_created_at"
+    t.index ["shop_id", "status"], name: "index_subscriptions_on_shop_id_and_status"
+    t.index ["shop_id"], name: "index_subscriptions_on_shop_id"
+    t.index ["subscription_charge_id"], name: "index_subscriptions_on_subscription_charge_id", unique: true
+  end
+
   add_foreign_key "alerts", "issues"
   add_foreign_key "alerts", "shops"
   add_foreign_key "issues", "product_pages"
@@ -252,4 +270,5 @@ ActiveRecord::Schema[8.1].define(version: 2026_01_30_170814) do
   add_foreign_key "solid_queue_ready_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
   add_foreign_key "solid_queue_recurring_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
   add_foreign_key "solid_queue_scheduled_executions", "solid_queue_jobs", column: "job_id", on_delete: :cascade
+  add_foreign_key "subscriptions", "shops"
 end

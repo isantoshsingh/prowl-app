@@ -96,41 +96,5 @@
     </div>
   </div>
   
-  <!-- Billing Info -->
-  <div class="stat-card" style="margin-bottom: 24px;">
-    <h3 style="font-size: 16px; margin: 0 0 24px 0;">Subscription</h3>
-    
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
-      <div>
-        <p class="stat-card-title">Status</p>
-        <p style="margin: 4px 0 0 0;">
-          <span class="badge badge-<%= @settings.billing_active? ? 'healthy' : 'warning' %>">
-            <%= @settings.billing_status.capitalize %>
-          </span>
-        </p>
-      </div>
-      
-      <% if @settings.trial_active? %>
-        <div>
-          <p class="stat-card-title">Trial ends in</p>
-          <p style="margin: 4px 0 0 0; font-weight: 500;">
-            <%= @settings.trial_days_remaining %> days
-          </p>
-        </div>
-      <% end %>
-      
-      <div>
-        <p class="stat-card-title">Price</p>
-        <p style="margin: 4px 0 0 0; font-weight: 500;">
-          $10/month
-        </p>
-      </div>
-    </div>
-    
-    <% if @settings.trial_active? %>
-      <div style="margin-top: 16px;">
-        <%= link_to "Subscribe now", create_billing_path(host: @host), class: "button-primary" %>
-      </div>
-    <% end %>
-  </div>
 </form>
+

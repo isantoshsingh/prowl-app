@@ -15,6 +15,9 @@ class Shop < ActiveRecord::Base
   has_many :product_pages, dependent: :destroy
   has_one :shop_setting, dependent: :destroy
   has_many :alerts, dependent: :destroy
+  has_many :subscriptions, dependent: :destroy
+  has_one :active_subscription, -> { where(status: 'active') }, class_name: 'Subscription'
+  has_one :latest_subscription, -> { order(created_at: :desc) }, class_name: 'Subscription'
 
   # Callbacks
   after_create :create_default_settings
@@ -28,10 +31,27 @@ class Shop < ActiveRecord::Base
     "https://#{shopify_domain}"
   end
 
-  # Checks if the shop has an active subscription or is in trial
+  # Checks if the shop has active billing (subscription or exemption)
   def billing_active?
-    return true if shop_setting&.trial_active?
-    shop_setting&.subscription_active?
+    return true if billing_exempt?
+    return true if active_subscription&.active?
+    return true if latest_subscription&.in_trial?
+    false
+  end
+
+  # Checks if shop is exempt from billing
+  def billing_exempt?
+    billing_exempt == true
+  end
+
+  # Returns current subscription status for display
+  def subscription_status
+    return 'exempt' if billing_exempt?
+    return 'active' if active_subscription&.active?
+    return 'trial' if latest_subscription&.in_trial?
+    return 'expired' if latest_subscription&.status == 'expired'
+    return 'cancelled' if latest_subscription&.status == 'cancelled'
+    'none'
   end
 
   # Returns the number of product pages currently being monitored
@@ -51,9 +71,7 @@ class Shop < ActiveRecord::Base
       email_alerts_enabled: true,
       admin_alerts_enabled: true,
       scan_frequency: "daily",
-      max_monitored_pages: 5,
-      billing_status: "trial",
-      trial_ends_at: 14.days.from_now
+      max_monitored_pages: 5
     )
   end
 end

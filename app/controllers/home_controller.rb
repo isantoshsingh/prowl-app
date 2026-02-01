@@ -21,11 +21,8 @@ class HomeController < AuthenticatedController
       return
     end
 
-    # Check billing status
-    unless @shop.billing_active?
-      @billing_required = true
-      @trial_expired = @shop.shop_setting&.billing_status == "expired"
-    end
+
+
 
     # Dashboard metrics
     @product_pages = @shop.product_pages.monitoring_enabled.order(last_scanned_at: :desc)

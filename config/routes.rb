@@ -30,9 +30,10 @@ Rails.application.routes.draw do
   # Settings
   resource :settings, only: [:show, :update]
 
-  # Billing
-  get "/billing/create", to: "billing#create", as: :create_billing
-  get "/billing/callback", to: "billing#callback", as: :billing_callback
+  # Billing & Pricing
+  get "/billing", to: "billing#index", as: :billing
+
+
 
   # Health check
   get "up" => "rails/health#show", as: :rails_health_check
