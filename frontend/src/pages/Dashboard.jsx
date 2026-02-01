@@ -1,10 +1,10 @@
 /**
- * Dashboard Page - Main overview of PDP health
+ * Dashboard Page - Main overview of PDP health using Polaris Web Components
  */
 
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { StatCard, IssueItem, Loading, EmptyState, BillingBanner } from '../components';
+import { StatCard, IssueItem, Loading, EmptyState, BillingBanner, StatusBadge } from '../components';
 import { useToast } from '../hooks';
 import api from '../services/api';
 
@@ -62,11 +62,11 @@ export default function Dashboard() {
           trialDaysRemaining={stats?.trial_days_remaining}
           onSubscribe={handleSubscribe}
         />
+      </s-section>
 
-        <div className="section">
-          <div className="section__header">
-            <h2 className="section__title">Health Overview</h2>
-          </div>
+      <s-section>
+        <s-text variant="headingMd">Health Overview</s-text>
+        <s-box padding-block-start="400">
           <div className="card-grid">
             <StatCard
               label="Total Monitored Pages"
@@ -88,82 +88,80 @@ export default function Dashboard() {
               variant="critical"
             />
           </div>
-        </div>
+        </s-box>
       </s-section>
 
       <s-section>
-        <div className="section">
-          <div className="section__header">
-            <h2 className="section__title">Open Issues</h2>
-            <s-button variant="plain" onClick={() => navigate('/issues')}>
-              View all
-            </s-button>
-          </div>
+        <s-inline-stack align="space-between" block-align="center">
+          <s-text variant="headingMd">Open Issues</s-text>
+          <s-button variant="plain" onClick={() => navigate('/issues')}>
+            View all
+          </s-button>
+        </s-inline-stack>
+        <s-box padding-block-start="400">
           {openIssues.length > 0 ? (
-            <div className="detail-card" style={{ padding: 0, overflow: 'hidden' }}>
-              <div className="issue-list">
+            <s-card>
+              <s-resource-list>
                 {openIssues.map((issue) => (
                   <IssueItem key={issue.id} issue={issue} />
                 ))}
-              </div>
-            </div>
+              </s-resource-list>
+            </s-card>
           ) : (
             <EmptyState
-              icon="✅"
               title="No open issues"
               description="All your product pages are healthy."
             />
           )}
-        </div>
+        </s-box>
       </s-section>
 
       <s-section>
-        <div className="section">
-          <div className="section__header">
-            <h2 className="section__title">Recent Scans</h2>
-            <s-button variant="plain" onClick={() => navigate('/scans')}>
-              View all
-            </s-button>
-          </div>
+        <s-inline-stack align="space-between" block-align="center">
+          <s-text variant="headingMd">Recent Scans</s-text>
+          <s-button variant="plain" onClick={() => navigate('/scans')}>
+            View all
+          </s-button>
+        </s-inline-stack>
+        <s-box padding-block-start="400">
           {recentScans.length > 0 ? (
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Product</th>
-                  <th>Status</th>
-                  <th>Issues</th>
-                  <th>Time</th>
-                </tr>
-              </thead>
-              <tbody>
-                {recentScans.map((scan) => (
-                  <tr
-                    key={scan.id}
-                    className="clickable-row"
-                    onClick={() => navigate(`/scans/${scan.id}`)}
-                  >
-                    <td>{scan.product_page?.title || 'Unknown'}</td>
-                    <td>
-                      <span className={`status-badge status-badge--${scan.status}`}>
-                        {scan.status}
-                      </span>
-                    </td>
-                    <td>{scan.issues_count || 0}</td>
-                    <td>{formatDate(scan.completed_at || scan.created_at)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <s-card>
+              <s-data-table>
+                <s-data-table-header>
+                  <s-data-table-row>
+                    <s-data-table-cell>Product</s-data-table-cell>
+                    <s-data-table-cell>Status</s-data-table-cell>
+                    <s-data-table-cell>Issues</s-data-table-cell>
+                    <s-data-table-cell>Time</s-data-table-cell>
+                  </s-data-table-row>
+                </s-data-table-header>
+                <s-data-table-body>
+                  {recentScans.map((scan) => (
+                    <s-data-table-row
+                      key={scan.id}
+                      className="clickable-row"
+                      onClick={() => navigate(`/scans/${scan.id}`)}
+                    >
+                      <s-data-table-cell>{scan.product_page?.title || 'Unknown'}</s-data-table-cell>
+                      <s-data-table-cell>
+                        <StatusBadge status={scan.status} />
+                      </s-data-table-cell>
+                      <s-data-table-cell>{scan.issues_count || 0}</s-data-table-cell>
+                      <s-data-table-cell>{formatDate(scan.completed_at || scan.created_at)}</s-data-table-cell>
+                    </s-data-table-row>
+                  ))}
+                </s-data-table-body>
+              </s-data-table>
+            </s-card>
           ) : (
             <EmptyState
-              icon="🔍"
               title="No scans yet"
               description="Add product pages to start monitoring."
               actionLabel="Add Products"
               action={() => navigate('/product_pages/new')}
             />
           )}
-        </div>
+        </s-box>
       </s-section>
     </>
   );

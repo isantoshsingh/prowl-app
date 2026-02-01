@@ -1,11 +1,13 @@
 /**
- * Loading component using Shopify Polaris spinner
+ * Loading component using Polaris Web Components
  */
 
-export default function Loading({ size = 'default' }) {
+export default function Loading({ size = 'large' }) {
   return (
-    <div className="loading">
-      <s-spinner size={size} />
-    </div>
+    <s-box padding-block-start="800" padding-block-end="800">
+      <s-inline-stack align="center" block-align="center">
+        <s-spinner size={size}></s-spinner>
+      </s-inline-stack>
+    </s-box>
   );
 }

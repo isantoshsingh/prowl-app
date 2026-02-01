@@ -5,7 +5,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { TitleBar } from '@shopify/app-bridge-react';
-import { Loading, StatusBadge, EmptyState, IssueItem } from '../components';
+import { Loading, StatusBadge, EmptyState, IssueItem, StatCard } from '../components';
 import { useToast } from '../hooks';
 import api from '../services/api';
 
@@ -40,7 +40,7 @@ export default function ScanShow() {
   if (!scan) {
     return (
       <EmptyState
-        icon="❌"
+        icon="search"
         title="Scan not found"
         description="This scan may have been removed."
         actionLabel="Back to Scans"
@@ -62,55 +62,58 @@ export default function ScanShow() {
     duration = Math.round((end - start) / 1000);
   }
 
+  // Determine page load time status
+  const getLoadTimeTone = () => {
+    if (!scan.page_load_time_ms) return undefined;
+    if (scan.page_load_time_ms > 5000) return 'critical';
+    if (scan.page_load_time_ms > 3000) return 'warning';
+    return 'success';
+  };
+
   return (
     <>
       <TitleBar title="Scan Details" />
 
       <s-section>
-        <div className="detail-header">
-          <div className="detail-header__info">
-            <h1 className="detail-header__title">
-              Scan of {scan.product_page?.title || 'Unknown Product'}
-            </h1>
-            <div className="detail-header__meta">
-              Completed {formatDate(scan.completed_at || scan.created_at)}
-              {duration && ` • Duration: ${duration}s`}
-            </div>
-          </div>
-          <StatusBadge status={scan.status} />
-        </div>
+        <s-card>
+          <s-box padding="400">
+            <s-inline-stack align="space-between" block-align="center">
+              <s-block-stack gap="100">
+                <s-text variant="headingMd">
+                  Scan of {scan.product_page?.title || 'Unknown Product'}
+                </s-text>
+                <s-text variant="bodySm" tone="subdued">
+                  Completed {formatDate(scan.completed_at || scan.created_at)}
+                  {duration && ` • Duration: ${duration}s`}
+                </s-text>
+              </s-block-stack>
+              <StatusBadge status={scan.status} />
+            </s-inline-stack>
+          </s-box>
+        </s-card>
       </s-section>
 
       <s-section>
         <div className="card-grid">
-          <div className="stat-card">
-            <div className="stat-card__label">Status</div>
-            <div className="stat-card__value">
-              <StatusBadge status={scan.status} />
-            </div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-card__label">Page Load Time</div>
-            <div className={`stat-card__value ${
-              scan.page_load_time_ms > 5000 ? 'stat-card__value--critical' :
-              scan.page_load_time_ms > 3000 ? 'stat-card__value--warning' :
-              'stat-card__value--success'
-            }`}>
-              {scan.page_load_time_ms ? `${scan.page_load_time_ms}ms` : 'N/A'}
-            </div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-card__label">Issues Found</div>
-            <div className={`stat-card__value ${issues.length > 0 ? 'stat-card__value--critical' : 'stat-card__value--success'}`}>
-              {issues.length}
-            </div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-card__label">JS Errors</div>
-            <div className={`stat-card__value ${jsErrors.length > 0 ? 'stat-card__value--critical' : 'stat-card__value--success'}`}>
-              {jsErrors.length}
-            </div>
-          </div>
+          <StatCard
+            label="Status"
+            value={<StatusBadge status={scan.status} />}
+          />
+          <StatCard
+            label="Page Load Time"
+            value={scan.page_load_time_ms ? `${scan.page_load_time_ms}ms` : 'N/A'}
+            tone={getLoadTimeTone()}
+          />
+          <StatCard
+            label="Issues Found"
+            value={issues.length}
+            tone={issues.length > 0 ? 'critical' : 'success'}
+          />
+          <StatCard
+            label="JS Errors"
+            value={jsErrors.length}
+            tone={jsErrors.length > 0 ? 'critical' : 'success'}
+          />
         </div>
       </s-section>
 
@@ -124,125 +127,121 @@ export default function ScanShow() {
 
       {issues.length > 0 && (
         <s-section>
-          <div className="section">
-            <h2 className="section__title">Issues Detected</h2>
-            <div className="detail-card" style={{ padding: 0, overflow: 'hidden', marginTop: '12px' }}>
-              <div className="issue-list">
+          <s-block-stack gap="300">
+            <s-text variant="headingMd">Issues Detected</s-text>
+            <s-card>
+              <s-resource-list>
                 {issues.map((issue) => (
                   <IssueItem key={issue.id} issue={issue} />
                 ))}
-              </div>
-            </div>
-          </div>
+              </s-resource-list>
+            </s-card>
+          </s-block-stack>
         </s-section>
       )}
 
       {jsErrors.length > 0 && (
         <s-section>
-          <div className="section">
-            <h2 className="section__title">JavaScript Errors ({jsErrors.length})</h2>
-            <div className="detail-card" style={{ marginTop: '12px' }}>
-              {jsErrors.map((error, index) => (
-                <div
-                  key={index}
-                  style={{
-                    padding: '12px',
-                    background: '#fce9e8',
-                    borderRadius: '4px',
-                    marginBottom: index < jsErrors.length - 1 ? '8px' : 0,
-                    fontFamily: 'monospace',
-                    fontSize: '13px'
-                  }}
-                >
-                  <div style={{ color: '#d72c0d', fontWeight: 500 }}>
-                    {error.message || error}
-                  </div>
-                  {error.url && (
-                    <div style={{ color: '#6d7175', fontSize: '11px', marginTop: '4px' }}>
-                      {error.url}
-                      {error.line && `:${error.line}`}
-                      {error.column && `:${error.column}`}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
+          <s-block-stack gap="300">
+            <s-text variant="headingMd">JavaScript Errors ({jsErrors.length})</s-text>
+            <s-card>
+              <s-box padding="400">
+                <s-block-stack gap="300">
+                  {jsErrors.map((error, index) => (
+                    <s-box key={index} padding="300" background="bg-surface-critical">
+                      <s-block-stack gap="100">
+                        <s-text variant="bodyMd" fontWeight="semibold" tone="critical">
+                          {error.message || error}
+                        </s-text>
+                        {error.url && (
+                          <s-text variant="bodySm" tone="subdued">
+                            {error.url}
+                            {error.line && `:${error.line}`}
+                            {error.column && `:${error.column}`}
+                          </s-text>
+                        )}
+                      </s-block-stack>
+                    </s-box>
+                  ))}
+                </s-block-stack>
+              </s-box>
+            </s-card>
+          </s-block-stack>
         </s-section>
       )}
 
       {networkErrors.length > 0 && (
         <s-section>
-          <div className="section">
-            <h2 className="section__title">Network Errors ({networkErrors.length})</h2>
-            <div className="detail-card" style={{ marginTop: '12px' }}>
-              {networkErrors.map((error, index) => (
-                <div
-                  key={index}
-                  style={{
-                    padding: '12px',
-                    background: '#fef3cd',
-                    borderRadius: '4px',
-                    marginBottom: index < networkErrors.length - 1 ? '8px' : 0,
-                    fontFamily: 'monospace',
-                    fontSize: '13px'
-                  }}
-                >
-                  <div style={{ fontWeight: 500 }}>
-                    {error.url || error}
-                  </div>
-                  {error.failure && (
-                    <div style={{ color: '#6d7175', fontSize: '11px', marginTop: '4px' }}>
-                      {error.failure}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
+          <s-block-stack gap="300">
+            <s-text variant="headingMd">Network Errors ({networkErrors.length})</s-text>
+            <s-card>
+              <s-box padding="400">
+                <s-block-stack gap="300">
+                  {networkErrors.map((error, index) => (
+                    <s-box key={index} padding="300" background="bg-surface-warning">
+                      <s-block-stack gap="100">
+                        <s-text variant="bodyMd" fontWeight="semibold">
+                          {error.url || error}
+                        </s-text>
+                        {error.failure && (
+                          <s-text variant="bodySm" tone="subdued">
+                            {error.failure}
+                          </s-text>
+                        )}
+                      </s-block-stack>
+                    </s-box>
+                  ))}
+                </s-block-stack>
+              </s-box>
+            </s-card>
+          </s-block-stack>
         </s-section>
       )}
 
       {consoleLogs.length > 0 && (
         <s-section>
-          <div className="section">
-            <h2 className="section__title">Console Logs ({consoleLogs.length})</h2>
-            <div className="detail-card" style={{ marginTop: '12px' }}>
-              <div className="technical-details" style={{ maxHeight: '300px', overflow: 'auto' }}>
-                {consoleLogs.map((log, index) => (
-                  <div key={index} style={{ marginBottom: '4px' }}>
-                    <span style={{
-                      color: log.type === 'error' ? '#d72c0d' :
-                             log.type === 'warning' ? '#b98900' : '#6d7175'
-                    }}>
-                      [{log.type || 'log'}]
-                    </span>{' '}
-                    {log.text || log}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
+          <s-block-stack gap="300">
+            <s-text variant="headingMd">Console Logs ({consoleLogs.length})</s-text>
+            <s-card>
+              <s-box padding="400">
+                <s-scrollable className="console-logs-scroll">
+                  <s-block-stack gap="100">
+                    {consoleLogs.map((log, index) => (
+                      <s-inline-stack key={index} gap="200" wrap={false}>
+                        <s-badge
+                          tone={
+                            log.type === 'error' ? 'critical' :
+                            log.type === 'warning' ? 'warning' : 'info'
+                          }
+                          size="small"
+                        >
+                          {log.type || 'log'}
+                        </s-badge>
+                        <s-text variant="bodySm">{log.text || log}</s-text>
+                      </s-inline-stack>
+                    ))}
+                  </s-block-stack>
+                </s-scrollable>
+              </s-box>
+            </s-card>
+          </s-block-stack>
         </s-section>
       )}
 
       {scan.screenshot_url && (
         <s-section>
-          <div className="section">
-            <h2 className="section__title">Screenshot</h2>
-            <div className="detail-card" style={{ marginTop: '12px', textAlign: 'center' }}>
-              <img
-                src={scan.screenshot_url}
-                alt="Page screenshot"
-                style={{
-                  maxWidth: '100%',
-                  maxHeight: '600px',
-                  border: '1px solid #e1e3e5',
-                  borderRadius: '4px'
-                }}
-              />
-            </div>
-          </div>
+          <s-block-stack gap="300">
+            <s-text variant="headingMd">Screenshot</s-text>
+            <s-card>
+              <s-box padding="400">
+                <s-thumbnail
+                  source={scan.screenshot_url}
+                  alt="Page screenshot"
+                  size="large"
+                />
+              </s-box>
+            </s-card>
+          </s-block-stack>
         </s-section>
       )}
 

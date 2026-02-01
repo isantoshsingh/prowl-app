@@ -1,5 +1,5 @@
 /**
- * Product Pages List - Shows all monitored product pages
+ * Product Pages List - Shows all monitored product pages using Polaris Web Components
  */
 
 import { useState, useEffect } from 'react';
@@ -79,63 +79,62 @@ export default function ProductPagesList() {
 
       <s-section>
         {productPages.length > 0 ? (
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Product</th>
-                <th>Status</th>
-                <th>Open Issues</th>
-                <th>Last Scanned</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {productPages.map((page) => (
-                <tr
-                  key={page.id}
-                  className="clickable-row"
-                  onClick={() => navigate(`/product_pages/${page.id}`)}
-                >
-                  <td>
-                    <div>
-                      <strong>{page.title}</strong>
-                      <div style={{ fontSize: '12px', color: '#6d7175' }}>
-                        {page.handle}
-                      </div>
-                    </div>
-                  </td>
-                  <td>
-                    <StatusBadge status={page.status} />
-                  </td>
-                  <td>{page.open_issues_count || 0}</td>
-                  <td>{formatTimeAgo(page.last_scanned_at)}</td>
-                  <td onClick={(e) => e.stopPropagation()}>
-                    <s-button-group>
-                      <s-button
-                        size="slim"
-                        onClick={(e) => handleRescan(e, page.id)}
-                        disabled={rescanningId === page.id}
-                      >
-                        {rescanningId === page.id ? 'Scanning...' : 'Rescan'}
-                      </s-button>
-                      <s-button
-                        size="slim"
-                        tone="critical"
-                        variant="plain"
-                        onClick={(e) => handleDelete(e, page.id)}
-                        disabled={deletingId === page.id}
-                      >
-                        Remove
-                      </s-button>
-                    </s-button-group>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <s-card>
+            <s-data-table>
+              <s-data-table-header>
+                <s-data-table-row>
+                  <s-data-table-cell>Product</s-data-table-cell>
+                  <s-data-table-cell>Status</s-data-table-cell>
+                  <s-data-table-cell>Open Issues</s-data-table-cell>
+                  <s-data-table-cell>Last Scanned</s-data-table-cell>
+                  <s-data-table-cell>Actions</s-data-table-cell>
+                </s-data-table-row>
+              </s-data-table-header>
+              <s-data-table-body>
+                {productPages.map((page) => (
+                  <s-data-table-row
+                    key={page.id}
+                    className="clickable-row"
+                    onClick={() => navigate(`/product_pages/${page.id}`)}
+                  >
+                    <s-data-table-cell>
+                      <s-block-stack gap="100">
+                        <s-text variant="bodyMd" fontWeight="semibold">{page.title}</s-text>
+                        <s-text variant="bodySm" tone="subdued">{page.handle}</s-text>
+                      </s-block-stack>
+                    </s-data-table-cell>
+                    <s-data-table-cell>
+                      <StatusBadge status={page.status} />
+                    </s-data-table-cell>
+                    <s-data-table-cell>{page.open_issues_count || 0}</s-data-table-cell>
+                    <s-data-table-cell>{formatTimeAgo(page.last_scanned_at)}</s-data-table-cell>
+                    <s-data-table-cell onClick={(e) => e.stopPropagation()}>
+                      <s-inline-stack gap="200">
+                        <s-button
+                          size="slim"
+                          onClick={(e) => handleRescan(e, page.id)}
+                          disabled={rescanningId === page.id}
+                        >
+                          {rescanningId === page.id ? 'Scanning...' : 'Rescan'}
+                        </s-button>
+                        <s-button
+                          size="slim"
+                          tone="critical"
+                          variant="plain"
+                          onClick={(e) => handleDelete(e, page.id)}
+                          disabled={deletingId === page.id}
+                        >
+                          Remove
+                        </s-button>
+                      </s-inline-stack>
+                    </s-data-table-cell>
+                  </s-data-table-row>
+                ))}
+              </s-data-table-body>
+            </s-data-table>
+          </s-card>
         ) : (
           <EmptyState
-            icon="📦"
             title="No monitored pages"
             description="Add product pages to start monitoring their health."
             actionLabel="Add Products"

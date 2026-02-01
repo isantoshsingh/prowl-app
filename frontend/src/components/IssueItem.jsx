@@ -1,5 +1,5 @@
 /**
- * IssueItem component for displaying issues in lists
+ * IssueItem component using Polaris Web Components
  */
 
 import { useNavigate } from 'react-router-dom';
@@ -7,28 +7,26 @@ import { useNavigate } from 'react-router-dom';
 export default function IssueItem({ issue }) {
   const navigate = useNavigate();
 
-  const severityClass = `issue-item__severity--${issue.severity}`;
+  const severityClass = issue.severity === 'high' ? 'severity-dot--critical' :
+                        issue.severity === 'medium' ? 'severity-dot--warning' : 'severity-dot--info';
   const timeAgo = formatTimeAgo(issue.last_detected_at || issue.created_at);
 
   return (
-    <div
-      className="issue-item clickable-row"
-      onClick={() => navigate(`/issues/${issue.id}`)}
-    >
-      <div className={`issue-item__severity ${severityClass}`} />
-      <div className="issue-item__content">
-        <div className="issue-item__title">{issue.title}</div>
-        <div className="issue-item__meta">
-          {issue.product_page?.title && (
-            <span>{issue.product_page.title} • </span>
-          )}
-          <span>{timeAgo}</span>
-          {issue.occurrence_count > 1 && (
-            <span> • {issue.occurrence_count} occurrences</span>
-          )}
-        </div>
-      </div>
-    </div>
+    <s-resource-item onClick={() => navigate(`/issues/${issue.id}`)}>
+      <s-inline-stack gap="300" block-align="center" wrap={false}>
+        <div className={`severity-dot ${severityClass}`} />
+        <s-box min-width="0">
+          <s-block-stack gap="100">
+            <s-text variant="bodyMd" fontWeight="medium" truncate>{issue.title}</s-text>
+            <s-text variant="bodySm" tone="subdued">
+              {issue.product_page?.title && `${issue.product_page.title} • `}
+              {timeAgo}
+              {issue.occurrence_count > 1 && ` • ${issue.occurrence_count} occurrences`}
+            </s-text>
+          </s-block-stack>
+        </s-box>
+      </s-inline-stack>
+    </s-resource-item>
   );
 }
 

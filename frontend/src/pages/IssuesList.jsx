@@ -1,5 +1,5 @@
 /**
- * Issues List Page - Shows all detected issues with filtering
+ * Issues List Page - Shows all detected issues with filtering using Polaris Web Components
  */
 
 import { useState, useEffect } from 'react';
@@ -51,7 +51,6 @@ export default function IssuesList() {
       setIssues(issuesList);
       setHasMore(data?.has_more || false);
 
-      // Update URL params
       const newParams = new URLSearchParams();
       if (statusFilter) newParams.set('status', statusFilter);
       if (severityFilter) newParams.set('severity', severityFilter);
@@ -91,91 +90,80 @@ export default function IssuesList() {
       <TitleBar title="Issues" />
 
       <s-section>
-        <div className="flex items-center gap-4 mb-4">
-          <div className="form-group" style={{ marginBottom: 0 }}>
-            <select
-              value={statusFilter}
-              onChange={handleStatusChange}
-              style={{
-                padding: '8px 12px',
-                borderRadius: '4px',
-                border: '1px solid #c4cdd5',
-                fontSize: '14px'
-              }}
-            >
-              {STATUS_OPTIONS.map(opt => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
-              ))}
-            </select>
-          </div>
-          <div className="form-group" style={{ marginBottom: 0 }}>
-            <select
-              value={severityFilter}
-              onChange={handleSeverityChange}
-              style={{
-                padding: '8px 12px',
-                borderRadius: '4px',
-                border: '1px solid #c4cdd5',
-                fontSize: '14px'
-              }}
-            >
-              {SEVERITY_OPTIONS.map(opt => (
-                <option key={opt.value} value={opt.value}>{opt.label}</option>
-              ))}
-            </select>
-          </div>
+        <s-inline-stack gap="400" block-align="center">
+          <s-select
+            label="Status"
+            labelHidden
+            value={statusFilter}
+            onChange={handleStatusChange}
+          >
+            {STATUS_OPTIONS.map(opt => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </s-select>
+          <s-select
+            label="Severity"
+            labelHidden
+            value={severityFilter}
+            onChange={handleSeverityChange}
+          >
+            {SEVERITY_OPTIONS.map(opt => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </s-select>
           {hasFilters && (
             <s-button variant="plain" onClick={clearFilters}>
               Clear filters
             </s-button>
           )}
-        </div>
+        </s-inline-stack>
+      </s-section>
 
+      <s-section>
         {issues.length > 0 ? (
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Severity</th>
-                <th>Issue</th>
-                <th>Product</th>
-                <th>Status</th>
-                <th>Occurrences</th>
-                <th>Last Detected</th>
-              </tr>
-            </thead>
-            <tbody>
-              {issues.map((issue) => (
-                <tr
-                  key={issue.id}
-                  className="clickable-row"
-                  onClick={() => navigate(`/issues/${issue.id}`)}
-                >
-                  <td>
-                    <span className={`issue-item__severity issue-item__severity--${issue.severity}`}
-                      style={{ display: 'inline-block', width: 10, height: 10, borderRadius: '50%' }}
-                    />
-                  </td>
-                  <td>
-                    <div>
-                      <strong>{issue.title}</strong>
-                      <div style={{ fontSize: '12px', color: '#6d7175' }}>
-                        {issue.issue_type?.replace(/_/g, ' ')}
-                      </div>
-                    </div>
-                  </td>
-                  <td>{issue.product_page?.title || 'Unknown'}</td>
-                  <td>
-                    <StatusBadge status={issue.status} />
-                  </td>
-                  <td>{issue.occurrence_count || 1}</td>
-                  <td>{formatTimeAgo(issue.last_detected_at)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <s-card>
+            <s-data-table>
+              <s-data-table-header>
+                <s-data-table-row>
+                  <s-data-table-cell>Severity</s-data-table-cell>
+                  <s-data-table-cell>Issue</s-data-table-cell>
+                  <s-data-table-cell>Product</s-data-table-cell>
+                  <s-data-table-cell>Status</s-data-table-cell>
+                  <s-data-table-cell>Occurrences</s-data-table-cell>
+                  <s-data-table-cell>Last Detected</s-data-table-cell>
+                </s-data-table-row>
+              </s-data-table-header>
+              <s-data-table-body>
+                {issues.map((issue) => (
+                  <s-data-table-row
+                    key={issue.id}
+                    className="clickable-row"
+                    onClick={() => navigate(`/issues/${issue.id}`)}
+                  >
+                    <s-data-table-cell>
+                      <div className={`severity-dot severity-dot--${issue.severity === 'high' ? 'critical' : issue.severity === 'medium' ? 'warning' : 'info'}`} />
+                    </s-data-table-cell>
+                    <s-data-table-cell>
+                      <s-block-stack gap="100">
+                        <s-text variant="bodyMd" fontWeight="semibold">{issue.title}</s-text>
+                        <s-text variant="bodySm" tone="subdued">
+                          {issue.issue_type?.replace(/_/g, ' ')}
+                        </s-text>
+                      </s-block-stack>
+                    </s-data-table-cell>
+                    <s-data-table-cell>{issue.product_page?.title || 'Unknown'}</s-data-table-cell>
+                    <s-data-table-cell>
+                      <StatusBadge status={issue.status} />
+                    </s-data-table-cell>
+                    <s-data-table-cell>{issue.occurrence_count || 1}</s-data-table-cell>
+                    <s-data-table-cell>{formatTimeAgo(issue.last_detected_at)}</s-data-table-cell>
+                  </s-data-table-row>
+                ))}
+              </s-data-table-body>
+            </s-data-table>
+          </s-card>
         ) : (
           <EmptyState
-            icon={hasFilters ? '🔍' : '✅'}
             title={hasFilters ? 'No issues match your filters' : 'No issues found'}
             description={
               hasFilters
@@ -188,20 +176,22 @@ export default function IssuesList() {
         )}
 
         {(hasMore || page > 1) && (
-          <div className="flex justify-between mt-4">
-            <s-button
-              disabled={page === 1}
-              onClick={() => setPage(p => p - 1)}
-            >
-              Previous
-            </s-button>
-            <s-button
-              disabled={!hasMore}
-              onClick={() => setPage(p => p + 1)}
-            >
-              Next
-            </s-button>
-          </div>
+          <s-box padding-block-start="400">
+            <s-inline-stack align="space-between">
+              <s-button
+                disabled={page === 1}
+                onClick={() => setPage(p => p - 1)}
+              >
+                Previous
+              </s-button>
+              <s-button
+                disabled={!hasMore}
+                onClick={() => setPage(p => p + 1)}
+              >
+                Next
+              </s-button>
+            </s-inline-stack>
+          </s-box>
         )}
       </s-section>
     </>

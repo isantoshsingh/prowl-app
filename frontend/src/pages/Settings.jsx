@@ -4,7 +4,7 @@
 
 import { useState, useEffect } from 'react';
 import { TitleBar } from '@shopify/app-bridge-react';
-import { Loading, StatusBadge, BillingBanner } from '../components';
+import { Loading, StatusBadge, BillingBanner, StatCard } from '../components';
 import { useToast } from '../hooks';
 import api from '../services/api';
 
@@ -98,157 +98,129 @@ export default function Settings() {
       </s-section>
 
       <s-section>
-        <div className="detail-card">
-          <h3 className="detail-card__title">Subscription Status</h3>
-          <div className="card-grid" style={{ marginTop: '12px' }}>
-            <div>
-              <div style={{ fontSize: '13px', color: '#6d7175', marginBottom: '4px' }}>
-                Status
-              </div>
-              <StatusBadge status={billingStatus} />
-            </div>
-            {billingStatus === 'trial' && (
-              <div>
-                <div style={{ fontSize: '13px', color: '#6d7175', marginBottom: '4px' }}>
-                  Trial Days Remaining
+        <s-block-stack gap="300">
+          <s-text variant="headingMd">Subscription Status</s-text>
+          <s-card>
+            <s-box padding="400">
+              <s-block-stack gap="400">
+                <div className="card-grid">
+                  <s-block-stack gap="100">
+                    <s-text variant="bodySm" tone="subdued">Status</s-text>
+                    <StatusBadge status={billingStatus} />
+                  </s-block-stack>
+                  {billingStatus === 'trial' && (
+                    <s-block-stack gap="100">
+                      <s-text variant="bodySm" tone="subdued">Trial Days Remaining</s-text>
+                      <s-text variant="headingLg">{trialDaysRemaining}</s-text>
+                    </s-block-stack>
+                  )}
+                  {settings?.trial_ends_at && billingStatus === 'trial' && (
+                    <s-block-stack gap="100">
+                      <s-text variant="bodySm" tone="subdued">Trial Ends</s-text>
+                      <s-text variant="bodyMd">
+                        {new Date(settings.trial_ends_at).toLocaleDateString()}
+                      </s-text>
+                    </s-block-stack>
+                  )}
                 </div>
-                <div style={{ fontSize: '20px', fontWeight: 600 }}>
-                  {trialDaysRemaining}
-                </div>
-              </div>
-            )}
-            {settings?.trial_ends_at && billingStatus === 'trial' && (
-              <div>
-                <div style={{ fontSize: '13px', color: '#6d7175', marginBottom: '4px' }}>
-                  Trial Ends
-                </div>
-                <div>
-                  {new Date(settings.trial_ends_at).toLocaleDateString()}
-                </div>
-              </div>
-            )}
-          </div>
-          {billingStatus !== 'active' && (
-            <div style={{ marginTop: '16px' }}>
-              <s-button variant="primary" onClick={handleSubscribe}>
-                Subscribe Now - $10/month
-              </s-button>
-            </div>
-          )}
-        </div>
+                {billingStatus !== 'active' && (
+                  <s-button variant="primary" onClick={handleSubscribe}>
+                    Subscribe Now - $10/month
+                  </s-button>
+                )}
+              </s-block-stack>
+            </s-box>
+          </s-card>
+        </s-block-stack>
       </s-section>
 
       <s-section>
         <form onSubmit={handleSubmit}>
-          <div className="detail-card">
-            <h3 className="detail-card__title">Alert Preferences</h3>
+          <s-block-stack gap="400">
+            <s-block-stack gap="300">
+              <s-text variant="headingMd">Alert Preferences</s-text>
+              <s-card>
+                <s-box padding="400">
+                  <s-block-stack gap="400">
+                    <s-block-stack gap="100">
+                      <s-checkbox
+                        checked={formData.email_alerts_enabled}
+                        onChange={(e) => handleChange('email_alerts_enabled', e.target.checked)}
+                      >
+                        Email Alerts
+                      </s-checkbox>
+                      <s-text variant="bodySm" tone="subdued">
+                        Receive email notifications when high-severity issues are detected
+                      </s-text>
+                    </s-block-stack>
 
-            <div className="form-group" style={{ marginTop: '16px' }}>
-              <label className="flex items-center gap-2" style={{ cursor: 'pointer' }}>
-                <input
-                  type="checkbox"
-                  checked={formData.email_alerts_enabled}
-                  onChange={(e) => handleChange('email_alerts_enabled', e.target.checked)}
-                  style={{ width: '18px', height: '18px' }}
-                />
-                <span className="form-group__label" style={{ marginBottom: 0 }}>
-                  Email Alerts
-                </span>
-              </label>
-              <div className="form-group__help">
-                Receive email notifications when high-severity issues are detected
-              </div>
-            </div>
+                    {formData.email_alerts_enabled && (
+                      <s-text-field
+                        label="Alert Email Address"
+                        type="email"
+                        value={formData.alert_email}
+                        onChange={(e) => handleChange('alert_email', e.target.value)}
+                        placeholder="alerts@yourstore.com"
+                        help-text="Leave blank to use your store's default email"
+                      />
+                    )}
 
-            {formData.email_alerts_enabled && (
-              <div className="form-group">
-                <label className="form-group__label">Alert Email Address</label>
-                <input
-                  type="email"
-                  value={formData.alert_email}
-                  onChange={(e) => handleChange('alert_email', e.target.value)}
-                  placeholder="alerts@yourstore.com"
-                  style={{
-                    width: '100%',
-                    maxWidth: '400px',
-                    padding: '10px 12px',
-                    borderRadius: '4px',
-                    border: '1px solid #c4cdd5',
-                    fontSize: '14px'
-                  }}
-                />
-                <div className="form-group__help">
-                  Leave blank to use your store's default email
-                </div>
-              </div>
-            )}
+                    <s-block-stack gap="100">
+                      <s-checkbox
+                        checked={formData.admin_alerts_enabled}
+                        onChange={(e) => handleChange('admin_alerts_enabled', e.target.checked)}
+                      >
+                        Admin Notifications
+                      </s-checkbox>
+                      <s-text variant="bodySm" tone="subdued">
+                        Show notifications in the Shopify admin when issues are detected
+                      </s-text>
+                    </s-block-stack>
+                  </s-block-stack>
+                </s-box>
+              </s-card>
+            </s-block-stack>
 
-            <div className="form-group" style={{ marginTop: '16px' }}>
-              <label className="flex items-center gap-2" style={{ cursor: 'pointer' }}>
-                <input
-                  type="checkbox"
-                  checked={formData.admin_alerts_enabled}
-                  onChange={(e) => handleChange('admin_alerts_enabled', e.target.checked)}
-                  style={{ width: '18px', height: '18px' }}
-                />
-                <span className="form-group__label" style={{ marginBottom: 0 }}>
-                  Admin Notifications
-                </span>
-              </label>
-              <div className="form-group__help">
-                Show notifications in the Shopify admin when issues are detected
-              </div>
-            </div>
-          </div>
+            <s-block-stack gap="300">
+              <s-text variant="headingMd">Scan Frequency</s-text>
+              <s-card>
+                <s-box padding="400">
+                  <s-block-stack gap="200">
+                    <s-select
+                      label="How often should we scan your product pages?"
+                      value={formData.scan_frequency}
+                      onChange={(e) => handleChange('scan_frequency', e.target.value)}
+                      options={JSON.stringify(SCAN_FREQUENCIES)}
+                    />
+                    <s-text variant="bodySm" tone="subdued">
+                      Scans run automatically at the selected frequency. You can also trigger manual scans anytime.
+                    </s-text>
+                  </s-block-stack>
+                </s-box>
+              </s-card>
+            </s-block-stack>
 
-          <div className="detail-card" style={{ marginTop: '16px' }}>
-            <h3 className="detail-card__title">Scan Frequency</h3>
+            <s-block-stack gap="300">
+              <s-text variant="headingMd">Monitoring Limits</s-text>
+              <s-card>
+                <s-box padding="400">
+                  <s-block-stack gap="100">
+                    <s-text variant="bodySm" tone="subdued">Maximum Monitored Pages</s-text>
+                    <s-text variant="headingLg">{settings?.max_monitored_pages || 5}</s-text>
+                    <s-text variant="bodySm" tone="subdued">
+                      Contact support to increase your monitoring limit
+                    </s-text>
+                  </s-block-stack>
+                </s-box>
+              </s-card>
+            </s-block-stack>
 
-            <div className="form-group" style={{ marginTop: '16px' }}>
-              <label className="form-group__label">How often should we scan your product pages?</label>
-              <select
-                value={formData.scan_frequency}
-                onChange={(e) => handleChange('scan_frequency', e.target.value)}
-                style={{
-                  padding: '10px 12px',
-                  borderRadius: '4px',
-                  border: '1px solid #c4cdd5',
-                  fontSize: '14px',
-                  minWidth: '200px'
-                }}
-              >
-                {SCAN_FREQUENCIES.map(freq => (
-                  <option key={freq.value} value={freq.value}>{freq.label}</option>
-                ))}
-              </select>
-              <div className="form-group__help">
-                Scans run automatically at the selected frequency. You can also trigger manual scans anytime.
-              </div>
-            </div>
-          </div>
-
-          <div className="detail-card" style={{ marginTop: '16px' }}>
-            <h3 className="detail-card__title">Monitoring Limits</h3>
-            <div style={{ marginTop: '12px' }}>
-              <div style={{ fontSize: '13px', color: '#6d7175', marginBottom: '4px' }}>
-                Maximum Monitored Pages
-              </div>
-              <div style={{ fontSize: '20px', fontWeight: 600 }}>
-                {settings?.max_monitored_pages || 5}
-              </div>
-              <div className="form-group__help">
-                Contact support to increase your monitoring limit
-              </div>
-            </div>
-          </div>
-
-          <div style={{ marginTop: '24px' }}>
             <s-button-group>
               <s-button variant="primary" type="submit" disabled={saving}>
                 {saving ? 'Saving...' : 'Save Settings'}
               </s-button>
             </s-button-group>
-          </div>
+          </s-block-stack>
         </form>
       </s-section>
     </>

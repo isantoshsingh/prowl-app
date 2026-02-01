@@ -1,5 +1,5 @@
 /**
- * Add Products Page - Select products to monitor using Shopify Resource Picker
+ * Add Products Page - Select products using Shopify Resource Picker and Polaris Web Components
  */
 
 import { useState, useEffect } from 'react';
@@ -61,7 +61,6 @@ export default function ProductPagesNew() {
       });
 
       if (selected && selected.length > 0) {
-        // Filter out already monitored products
         const newProducts = selected.filter(
           product => !existingHandles.includes(product.handle)
         );
@@ -71,7 +70,6 @@ export default function ProductPagesNew() {
           return;
         }
 
-        // Limit to remaining slots
         const productsToAdd = newProducts.slice(0, remainingSlots);
         if (newProducts.length > remainingSlots) {
           showError(`Only ${remainingSlots} product slots available. Some products were not added.`);
@@ -96,7 +94,6 @@ export default function ProductPagesNew() {
     try {
       setLoading(true);
 
-      // Create product pages one by one
       const results = await Promise.allSettled(
         selectedProducts.map(product =>
           api.createProductPage({
@@ -147,87 +144,86 @@ export default function ProductPagesNew() {
       </TitleBar>
 
       <s-section>
-        <s-banner tone="info">
+        <s-banner tone="info" title={`${remainingSlots} slots remaining`}>
           <s-text>
-            You can monitor up to {maxPages} product pages. Currently using {currentCount} of {maxPages} slots
-            ({remainingSlots} remaining).
+            You can monitor up to {maxPages} product pages. Currently using {currentCount} of {maxPages} slots.
           </s-text>
         </s-banner>
       </s-section>
 
       <s-section>
-        <div className="section">
-          <div className="section__header">
-            <h2 className="section__title">Select Products</h2>
-          </div>
-          <div className="detail-card">
-            <p style={{ marginBottom: '16px', color: '#6d7175' }}>
-              Choose products from your store to monitor. We'll scan these product pages daily
-              and alert you if any issues are detected.
-            </p>
-            <s-button
-              variant="primary"
-              onClick={openResourcePicker}
-              disabled={remainingSlots <= 0}
-            >
-              Browse Products
-            </s-button>
-          </div>
-        </div>
+        <s-card>
+          <s-box padding="400">
+            <s-block-stack gap="400">
+              <s-text variant="headingMd">Select Products</s-text>
+              <s-text tone="subdued">
+                Choose products from your store to monitor. We'll scan these product pages daily
+                and alert you if any issues are detected.
+              </s-text>
+              <s-button
+                onClick={openResourcePicker}
+                disabled={remainingSlots <= 0}
+              >
+                Browse Products
+              </s-button>
+            </s-block-stack>
+          </s-box>
+        </s-card>
       </s-section>
 
       {selectedProducts.length > 0 && (
         <s-section>
-          <div className="section">
-            <div className="section__header">
-              <h2 className="section__title">Selected Products ({selectedProducts.length})</h2>
-            </div>
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Product</th>
-                  <th>Handle</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {selectedProducts.map((product) => (
-                  <tr key={product.id}>
-                    <td>
-                      <div className="flex items-center gap-2">
-                        {product.images?.[0]?.originalSrc && (
-                          <img
-                            src={product.images[0].originalSrc}
-                            alt={product.title}
-                            style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 4 }}
-                          />
-                        )}
-                        <span>{product.title}</span>
-                      </div>
-                    </td>
-                    <td>{product.handle}</td>
-                    <td>
-                      <s-button
-                        size="slim"
-                        tone="critical"
-                        variant="plain"
-                        onClick={() => removeProduct(product.handle)}
-                      >
-                        Remove
-                      </s-button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <s-text variant="headingMd">Selected Products ({selectedProducts.length})</s-text>
+          <s-box padding-block-start="400">
+            <s-card>
+              <s-data-table>
+                <s-data-table-header>
+                  <s-data-table-row>
+                    <s-data-table-cell>Product</s-data-table-cell>
+                    <s-data-table-cell>Handle</s-data-table-cell>
+                    <s-data-table-cell>Action</s-data-table-cell>
+                  </s-data-table-row>
+                </s-data-table-header>
+                <s-data-table-body>
+                  {selectedProducts.map((product) => (
+                    <s-data-table-row key={product.id}>
+                      <s-data-table-cell>
+                        <s-inline-stack gap="300" block-align="center">
+                          {product.images?.[0]?.originalSrc && (
+                            <s-thumbnail
+                              source={product.images[0].originalSrc}
+                              alt={product.title}
+                              size="small"
+                            />
+                          )}
+                          <s-text>{product.title}</s-text>
+                        </s-inline-stack>
+                      </s-data-table-cell>
+                      <s-data-table-cell>
+                        <s-text tone="subdued">{product.handle}</s-text>
+                      </s-data-table-cell>
+                      <s-data-table-cell>
+                        <s-button
+                          size="slim"
+                          tone="critical"
+                          variant="plain"
+                          onClick={() => removeProduct(product.handle)}
+                        >
+                          Remove
+                        </s-button>
+                      </s-data-table-cell>
+                    </s-data-table-row>
+                  ))}
+                </s-data-table-body>
+              </s-data-table>
+            </s-card>
+          </s-box>
         </s-section>
       )}
 
       {selectedProducts.length === 0 && (
         <s-section>
           <EmptyState
-            icon="📦"
             title="No products selected"
             description="Click 'Browse Products' to select products from your store."
           />

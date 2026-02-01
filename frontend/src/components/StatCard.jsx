@@ -1,14 +1,28 @@
 /**
- * StatCard component for displaying statistics
+ * StatCard component for displaying statistics using Polaris Web Components
  */
 
 export default function StatCard({ label, value, variant }) {
-  const valueClass = variant ? `stat-card__value--${variant}` : '';
+  // Map variant to Polaris tone
+  const getTone = () => {
+    switch (variant) {
+      case 'success': return 'success';
+      case 'warning': return 'warning';
+      case 'critical': return 'critical';
+      default: return undefined;
+    }
+  };
+
+  const tone = getTone();
 
   return (
-    <div className="stat-card">
-      <div className="stat-card__label">{label}</div>
-      <div className={`stat-card__value ${valueClass}`}>{value}</div>
-    </div>
+    <s-card>
+      <s-box padding="400">
+        <s-block-stack gap="200">
+          <s-text variant="bodySm" tone="subdued">{label}</s-text>
+          <s-text variant="headingLg" tone={tone}>{value}</s-text>
+        </s-block-stack>
+      </s-box>
+    </s-card>
   );
 }

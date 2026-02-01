@@ -1,5 +1,5 @@
 /**
- * Scans List Page - Shows scan history
+ * Scans List Page - Shows scan history using Polaris Web Components
  */
 
 import { useState, useEffect } from 'react';
@@ -46,75 +46,63 @@ export default function ScansList() {
 
       <s-section>
         {scans.length > 0 ? (
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Product</th>
-                <th>Status</th>
-                <th>Load Time</th>
-                <th>Issues</th>
-                <th>JS Errors</th>
-                <th>Date</th>
-              </tr>
-            </thead>
-            <tbody>
-              {scans.map((scan) => (
-                <tr
-                  key={scan.id}
-                  className="clickable-row"
-                  onClick={() => navigate(`/scans/${scan.id}`)}
-                >
-                  <td>
-                    <div>
-                      <strong>{scan.product_page?.title || 'Unknown'}</strong>
-                      {scan.product_page?.handle && (
-                        <div style={{ fontSize: '12px', color: '#6d7175' }}>
-                          {scan.product_page.handle}
-                        </div>
+          <s-card>
+            <s-data-table>
+              <s-data-table-header>
+                <s-data-table-row>
+                  <s-data-table-cell>Product</s-data-table-cell>
+                  <s-data-table-cell>Status</s-data-table-cell>
+                  <s-data-table-cell>Load Time</s-data-table-cell>
+                  <s-data-table-cell>Issues</s-data-table-cell>
+                  <s-data-table-cell>JS Errors</s-data-table-cell>
+                  <s-data-table-cell>Date</s-data-table-cell>
+                </s-data-table-row>
+              </s-data-table-header>
+              <s-data-table-body>
+                {scans.map((scan) => (
+                  <s-data-table-row
+                    key={scan.id}
+                    className="clickable-row"
+                    onClick={() => navigate(`/scans/${scan.id}`)}
+                  >
+                    <s-data-table-cell>
+                      <s-block-stack gap="100">
+                        <s-text variant="bodyMd" fontWeight="semibold">{scan.product_page?.title || 'Unknown'}</s-text>
+                        {scan.product_page?.handle && (
+                          <s-text variant="bodySm" tone="subdued">{scan.product_page.handle}</s-text>
+                        )}
+                      </s-block-stack>
+                    </s-data-table-cell>
+                    <s-data-table-cell>
+                      <StatusBadge status={scan.status} />
+                    </s-data-table-cell>
+                    <s-data-table-cell>
+                      {scan.page_load_time_ms ? (
+                        <s-text tone={scan.page_load_time_ms > 5000 ? 'critical' : scan.page_load_time_ms > 3000 ? 'warning' : 'success'}>
+                          {scan.page_load_time_ms}ms
+                        </s-text>
+                      ) : (
+                        'N/A'
                       )}
-                    </div>
-                  </td>
-                  <td>
-                    <StatusBadge status={scan.status} />
-                  </td>
-                  <td>
-                    {scan.page_load_time_ms ? (
-                      <span style={{
-                        color: scan.page_load_time_ms > 5000 ? '#d72c0d' :
-                               scan.page_load_time_ms > 3000 ? '#b98900' : '#008060'
-                      }}>
-                        {scan.page_load_time_ms}ms
-                      </span>
-                    ) : (
-                      'N/A'
-                    )}
-                  </td>
-                  <td>
-                    {scan.issues_count > 0 ? (
-                      <span style={{ color: '#d72c0d', fontWeight: 500 }}>
-                        {scan.issues_count}
-                      </span>
-                    ) : (
-                      <span style={{ color: '#008060' }}>0</span>
-                    )}
-                  </td>
-                  <td>
-                    {(scan.js_errors?.length || 0) > 0 ? (
-                      <span style={{ color: '#d72c0d' }}>
-                        {scan.js_errors.length}
-                      </span>
-                    ) : (
-                      <span style={{ color: '#008060' }}>0</span>
-                    )}
-                  </td>
-                  <td>{formatDate(scan.completed_at || scan.created_at)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                    </s-data-table-cell>
+                    <s-data-table-cell>
+                      <s-text tone={scan.issues_count > 0 ? 'critical' : 'success'} fontWeight={scan.issues_count > 0 ? 'semibold' : undefined}>
+                        {scan.issues_count || 0}
+                      </s-text>
+                    </s-data-table-cell>
+                    <s-data-table-cell>
+                      <s-text tone={(scan.js_errors?.length || 0) > 0 ? 'critical' : 'success'}>
+                        {scan.js_errors?.length || 0}
+                      </s-text>
+                    </s-data-table-cell>
+                    <s-data-table-cell>{formatDate(scan.completed_at || scan.created_at)}</s-data-table-cell>
+                  </s-data-table-row>
+                ))}
+              </s-data-table-body>
+            </s-data-table>
+          </s-card>
         ) : (
           <EmptyState
-            icon="🔍"
             title="No scans yet"
             description="Scans will appear here once you add product pages for monitoring."
             actionLabel="Add Products"
@@ -123,23 +111,23 @@ export default function ScansList() {
         )}
 
         {(hasMore || page > 1) && (
-          <div className="flex justify-between mt-4">
-            <s-button
-              disabled={page === 1}
-              onClick={() => setPage(p => p - 1)}
-            >
-              Previous
-            </s-button>
-            <span style={{ alignSelf: 'center', color: '#6d7175' }}>
-              Page {page}
-            </span>
-            <s-button
-              disabled={!hasMore}
-              onClick={() => setPage(p => p + 1)}
-            >
-              Next
-            </s-button>
-          </div>
+          <s-box padding-block-start="400">
+            <s-inline-stack align="space-between" block-align="center">
+              <s-button
+                disabled={page === 1}
+                onClick={() => setPage(p => p - 1)}
+              >
+                Previous
+              </s-button>
+              <s-text tone="subdued">Page {page}</s-text>
+              <s-button
+                disabled={!hasMore}
+                onClick={() => setPage(p => p + 1)}
+              >
+                Next
+              </s-button>
+            </s-inline-stack>
+          </s-box>
         )}
       </s-section>
     </>

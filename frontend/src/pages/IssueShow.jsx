@@ -1,11 +1,11 @@
 /**
- * Issue Detail Page - Shows full details of an issue with recommendations
+ * Issue Detail Page - Shows full details of an issue using Polaris Web Components
  */
 
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { TitleBar } from '@shopify/app-bridge-react';
-import { Loading, StatusBadge, EmptyState } from '../components';
+import { Loading, StatusBadge, EmptyState, StatCard } from '../components';
 import { useToast } from '../hooks';
 import api from '../services/api';
 
@@ -129,7 +129,6 @@ export default function IssueShow() {
   if (!issue) {
     return (
       <EmptyState
-        icon="❌"
         title="Issue not found"
         description="This issue may have been resolved or removed."
         actionLabel="Back to Issues"
@@ -154,114 +153,97 @@ export default function IssueShow() {
       </TitleBar>
 
       <s-section>
-        <div className="detail-header">
-          <div className="detail-header__info">
-            <h1 className="detail-header__title">{issue.title}</h1>
-            <div className="detail-header__meta">
-              <span style={{ marginRight: 8 }}>
-                <span
-                  className={`issue-item__severity issue-item__severity--${issue.severity}`}
-                  style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', marginRight: 4 }}
-                />
-                {issue.severity?.toUpperCase()} severity
-              </span>
+        <s-inline-stack align="space-between" block-align="start">
+          <s-block-stack gap="200">
+            <s-text variant="headingLg">{issue.title}</s-text>
+            <s-inline-stack gap="200" block-align="center">
+              <div className={`severity-dot severity-dot--${issue.severity === 'high' ? 'critical' : issue.severity === 'medium' ? 'warning' : 'info'}`} />
+              <s-text tone="subdued">{issue.severity?.toUpperCase()} severity</s-text>
               {issue.product_page && (
-                <span>
-                  • <a
-                    href="#"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      navigate(`/product_pages/${issue.product_page.id}`);
-                    }}
-                    style={{ color: '#2c6ecb' }}
-                  >
+                <>
+                  <s-text tone="subdued">•</s-text>
+                  <s-button variant="plain" onClick={() => navigate(`/product_pages/${issue.product_page.id}`)}>
                     {issue.product_page.title}
-                  </a>
-                </span>
+                  </s-button>
+                </>
               )}
-            </div>
-          </div>
+            </s-inline-stack>
+          </s-block-stack>
           <StatusBadge status={issue.status} />
-        </div>
+        </s-inline-stack>
       </s-section>
 
       <s-section>
         <div className="card-grid">
-          <div className="stat-card">
-            <div className="stat-card__label">Status</div>
-            <div className="stat-card__value">
-              <StatusBadge status={issue.status} />
-            </div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-card__label">Occurrences</div>
-            <div className="stat-card__value">{issue.occurrence_count || 1}</div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-card__label">First Detected</div>
-            <div className="stat-card__value" style={{ fontSize: '16px' }}>
-              {formatDate(issue.first_detected_at)}
-            </div>
-          </div>
-          <div className="stat-card">
-            <div className="stat-card__label">Last Detected</div>
-            <div className="stat-card__value" style={{ fontSize: '16px' }}>
-              {formatDate(issue.last_detected_at)}
-            </div>
-          </div>
+          <StatCard label="Status" value={<StatusBadge status={issue.status} />} />
+          <StatCard label="Occurrences" value={issue.occurrence_count || 1} />
+          <StatCard label="First Detected" value={formatDate(issue.first_detected_at)} />
+          <StatCard label="Last Detected" value={formatDate(issue.last_detected_at)} />
         </div>
       </s-section>
 
       <s-section>
-        <div className="detail-card">
-          <h3 className="detail-card__title">Description</h3>
-          <p style={{ margin: 0, lineHeight: 1.6 }}>
-            {issue.description || 'No description available.'}
-          </p>
-        </div>
+        <s-card>
+          <s-box padding="400">
+            <s-block-stack gap="300">
+              <s-text variant="headingMd">Description</s-text>
+              <s-text>{issue.description || 'No description available.'}</s-text>
+            </s-block-stack>
+          </s-box>
+        </s-card>
       </s-section>
 
       {recommendation && (
         <s-section>
-          <div className="detail-card">
-            <h3 className="detail-card__title">Recommended Actions</h3>
-            <p style={{ marginBottom: '12px', color: '#6d7175' }}>
-              {recommendation.title}
-            </p>
-            <ol style={{ margin: 0, paddingLeft: '20px', lineHeight: 1.8 }}>
-              {recommendation.steps.map((step, index) => (
-                <li key={index}>{step}</li>
-              ))}
-            </ol>
-          </div>
+          <s-card>
+            <s-box padding="400">
+              <s-block-stack gap="300">
+                <s-text variant="headingMd">Recommended Actions</s-text>
+                <s-text tone="subdued">{recommendation.title}</s-text>
+                <s-list>
+                  {recommendation.steps.map((step, index) => (
+                    <s-list-item key={index}>{step}</s-list-item>
+                  ))}
+                </s-list>
+              </s-block-stack>
+            </s-box>
+          </s-card>
         </s-section>
       )}
 
       {issue.evidence && Object.keys(issue.evidence).length > 0 && (
         <s-section>
-          <div className="detail-card">
-            <h3 className="detail-card__title">Technical Details</h3>
-            <div className="technical-details">
-              {JSON.stringify(issue.evidence, null, 2)}
-            </div>
-          </div>
+          <s-card>
+            <s-box padding="400">
+              <s-block-stack gap="300">
+                <s-text variant="headingMd">Technical Details</s-text>
+                <div className="technical-details">
+                  {JSON.stringify(issue.evidence, null, 2)}
+                </div>
+              </s-block-stack>
+            </s-box>
+          </s-card>
         </s-section>
       )}
 
       {issue.acknowledged_at && (
         <s-section>
-          <div className="detail-card">
-            <h3 className="detail-card__title">Acknowledgement</h3>
-            <p style={{ margin: 0 }}>
-              Acknowledged on {formatDate(issue.acknowledged_at)}
-              {issue.acknowledged_by && ` by ${issue.acknowledged_by}`}
-            </p>
-          </div>
+          <s-card>
+            <s-box padding="400">
+              <s-block-stack gap="200">
+                <s-text variant="headingMd">Acknowledgement</s-text>
+                <s-text>
+                  Acknowledged on {formatDate(issue.acknowledged_at)}
+                  {issue.acknowledged_by && ` by ${issue.acknowledged_by}`}
+                </s-text>
+              </s-block-stack>
+            </s-box>
+          </s-card>
         </s-section>
       )}
 
       <s-section>
-        <s-button-group>
+        <s-inline-stack gap="300">
           <s-button onClick={() => navigate('/issues')}>
             Back to Issues
           </s-button>
@@ -273,7 +255,7 @@ export default function IssueShow() {
               View Product Page
             </s-button>
           )}
-        </s-button-group>
+        </s-inline-stack>
       </s-section>
     </>
   );
