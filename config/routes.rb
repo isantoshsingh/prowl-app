@@ -13,14 +13,14 @@ Rails.application.routes.draw do
   # Product Pages (monitored PDPs)
   resources :product_pages, only: [:index, :show, :new, :create, :destroy] do
     member do
-      post :rescan
+      match :rescan, via: [:get, :post]
     end
   end
 
   # Issues
   resources :issues, only: [:index, :show] do
     member do
-      post :acknowledge
+      match :acknowledge, via: [:get, :post]
     end
   end
 

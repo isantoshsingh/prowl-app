@@ -94,7 +94,7 @@ class PdpScannerService
     # Capture console messages
     page.on("console") do |msg|
       @console_logs << {
-        type: msg.type,
+        type: msg.log_type,
         text: msg.text,
         timestamp: Time.current.iso8601
       }
@@ -151,8 +151,8 @@ class PdpScannerService
     checks = {}
 
     # Check for Add to Cart button
-    checks[:add_to_cart] = page.evaluate(<<~JS)
-      (() => {
+    checks[:add_to_cart] = page.evaluate(<<~JAVASCRIPT)
+      () => {
         const selectors = [
           '[name="add"]',
           'button[type="submit"][name="add"]',
@@ -170,12 +170,12 @@ class PdpScannerService
           visible: button ? button.offsetParent !== null : null,
           text: button ? button.textContent?.trim().substring(0, 100) : null
         };
-      })()
-    JS
+      }
+    JAVASCRIPT
 
     # Check for variant selectors
-    checks[:variant_selector] = page.evaluate(<<~JS)
-      (() => {
+    checks[:variant_selector] = page.evaluate(<<~JAVASCRIPT)
+      () => {
         const selectors = [
           '[name*="option"]',
           '.product-form__input',
@@ -189,12 +189,12 @@ class PdpScannerService
           found: elements.length > 0,
           count: elements.length
         };
-      })()
-    JS
+      }
+    JAVASCRIPT
 
     # Check for product images
-    checks[:images] = page.evaluate(<<~JS)
-      (() => {
+    checks[:images] = page.evaluate(<<~JAVASCRIPT)
+      () => {
         const images = document.querySelectorAll('.product__media img, .product-single__photo img, [data-product-media] img, .product-image img');
         const visibleImages = Array.from(images).filter(img => {
           return img.complete && img.naturalWidth > 0 && img.offsetParent !== null;
@@ -204,12 +204,12 @@ class PdpScannerService
           visible: visibleImages.length,
           all_loaded: images.length > 0 && visibleImages.length === images.length
         };
-      })()
-    JS
+      }
+    JAVASCRIPT
 
     # Check for price
-    checks[:price] = page.evaluate(<<~JS)
-      (() => {
+    checks[:price] = page.evaluate(<<~JAVASCRIPT)
+      () => {
         const selectors = [
           '.price',
           '.product__price',
@@ -224,12 +224,12 @@ class PdpScannerService
           visible: priceEl ? priceEl.offsetParent !== null : null,
           text: priceEl ? priceEl.textContent?.trim().substring(0, 50) : null
         };
-      })()
-    JS
+      }
+    JAVASCRIPT
 
     # Check for Liquid errors
-    checks[:liquid_errors] = page.evaluate(<<~JS)
-      (() => {
+    checks[:liquid_errors] = page.evaluate(<<~JAVASCRIPT)
+      () => {
         const body = document.body.innerHTML;
         const errors = [];
         if (body.includes('Liquid error')) errors.push('Liquid error detected');
@@ -239,8 +239,8 @@ class PdpScannerService
           found: errors.length > 0,
           errors: errors
         };
-      })()
-    JS
+      }
+    JAVASCRIPT
 
     checks
   end

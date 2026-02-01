@@ -48,10 +48,13 @@
 <!-- Product Info -->
 <div class="stat-card" style="margin-bottom: 24px;">
   <h3 style="font-size: 16px; margin: 0 0 16px 0;">Affected Product</h3>
-  <p style="margin: 0;">
+  <p style="margin: 0 0 12px 0;">
     <%= link_to @product_page.title, product_page_path(@product_page, host: @host), style: "color: #008060; text-decoration: none; font-weight: 500;" %>
     <span style="color: #6d7175;"> (<%= @product_page.handle %>)</span>
   </p>
+  <%= link_to @product_page.scannable_url, target: "_blank", rel: "noopener noreferrer", class: "button-primary", style: "display: inline-block; text-decoration: none;" do %>
+    View Product Page ↗
+  <% end %>
 </div>
 
 <!-- What to do -->
