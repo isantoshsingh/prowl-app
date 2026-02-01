@@ -64,12 +64,16 @@
         type="email"
         id="alert_email"
         name="shop_setting[alert_email]"
-        placeholder="<%= @shop.shopify_domain %>"
+        placeholder="<%= @shop.email || @shop.shopify_domain %>"
         value="<%= @settings.alert_email %>"
         style="width: 100%; max-width: 400px; padding: 10px 12px; border: 1px solid #c9cccf; border-radius: 8px; font-size: 14px;"
       />
       <p style="margin: 8px 0 0 0; font-size: 13px; color: #6d7175;">
-        Leave blank to use your store's default email
+        <% if @shop.email.present? %>
+          Leave blank to use your shop's email (<%= @shop.email %>)
+        <% else %>
+          Leave blank to use your store's default email
+        <% end %>
       </p>
     </div>
   </div>
