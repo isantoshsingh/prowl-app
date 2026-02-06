@@ -1,7 +1,13 @@
 # frozen_string_literal: true
 
-# ScanPdpJob performs a single PDP scan using the PdpScannerService.
+# ScanPdpJob performs a single PDP scan using the ProductPageScanner.
 # This job is queued by ScheduledScanJob for each product page that needs scanning.
+#
+# The scan flow:
+#   1. ProductPageScanner launches BrowserService and navigates to page
+#   2. All Tier 1 detectors run with confidence scoring
+#   3. DetectionService processes results and creates/updates Issue records
+#   4. AlertService sends notifications for alertable issues
 #
 # Usage:
 #   ScanPdpJob.perform_later(product_page_id)
@@ -31,14 +37,14 @@ class ScanPdpJob < ApplicationJob
 
     Rails.logger.info("[ScanPdpJob] Starting scan for product page #{product_page.id} (#{product_page.title})")
 
-    # Perform the scan
-    scanner = PdpScannerService.new(product_page)
+    # Perform the scan with detection engine
+    scanner = ProductPageScanner.new(product_page)
     result = scanner.perform
 
     if result[:success]
-      Rails.logger.info("[ScanPdpJob] Scan completed successfully for page #{product_page.id}")
+      Rails.logger.info("[ScanPdpJob] Scan completed for page #{product_page.id} with #{result[:detection_results].length} detection results")
 
-      # Run detection
+      # Run detection service to create/update Issue records from detection results
       detector = DetectionService.new(result[:scan])
       issues = detector.perform
 
