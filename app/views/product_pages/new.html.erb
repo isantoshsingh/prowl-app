@@ -18,9 +18,6 @@
     variant="primary"
     >Select Products</s-button>
 
-  <div id="loading-indicator" style="display: none; margin-top: 16px;">
-    <p style="color: #6d7175;">Adding products...</p>
-  </div>
 </div>
 
 <!-- Already monitored products info -->
@@ -46,7 +43,6 @@
 <script>
   document.addEventListener('DOMContentLoaded', function() {
     const openPickerBtn = document.getElementById('open-product-picker');
-    const loadingIndicator = document.getElementById('loading-indicator');
     const config = document.getElementById('picker-config');
     
     // Get configuration from data attributes
@@ -88,24 +84,23 @@
           // Show loading state
           openPickerBtn.disabled = true;
           openPickerBtn.textContent = 'Adding...';
-          loadingIndicator.style.display = 'block';
-          
+
           // Build URL-encoded form data (works better with Rails)
           const params = new URLSearchParams();
           params.append('authenticity_token', csrfToken);
-          
+
           newProducts.forEach((product, index) => {
             // Extract numeric ID from GID (gid://shopify/Product/12345 -> 12345)
             const numericId = product.id.split('/').pop();
-            
+
             params.append(`products[${index}][shopify_product_id]`, numericId);
             params.append(`products[${index}][handle]`, product.handle);
             params.append(`products[${index}][title]`, product.title);
           });
-          
+
           console.log('Submitting to:', createUrl);
           console.log('Products:', newProducts.map(p => ({ id: p.id, handle: p.handle, title: p.title })));
-          
+
           // Get session token for authenticated request
           let token;
           try {
@@ -114,18 +109,18 @@
           } catch (tokenError) {
             console.warn('Could not get session token:', tokenError);
           }
-          
+
           // Prepare headers
           const headers = {
             'Content-Type': 'application/x-www-form-urlencoded',
             'X-CSRF-Token': csrfToken,
             'Accept': 'application/json, text/html'
           };
-          
+
           if (token) {
             headers['Authorization'] = `Bearer ${token}`;
           }
-          
+
           // Submit via fetch
           const response = await fetch(createUrl, {
             method: 'POST',
@@ -133,9 +128,9 @@
             body: params.toString(),
             credentials: 'same-origin'
           });
-          
+
           console.log('Response status:', response.status);
-          
+
           if (response.ok) {
             let result;
             const contentType = response.headers.get('content-type');
@@ -143,11 +138,11 @@
               result = await response.json();
               console.log('JSON response:', result);
             }
-            
+
             shopify.toast.show(`Added ${newProducts.length} product(s) to monitoring!`, {
               duration: 3000
             });
-            
+
             // Redirect to product pages list
             setTimeout(() => {
               window.location.href = redirectUrl;
@@ -171,7 +166,6 @@
         // Reset button state
         openPickerBtn.disabled = false;
         openPickerBtn.textContent = 'Select Products';
-        loadingIndicator.style.display = 'none';
       }
     });
   });
