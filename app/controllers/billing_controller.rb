@@ -1,54 +1,17 @@
 # frozen_string_literal: true
 
-# BillingController handles the Shopify Billing API flow.
-# 
-# Flow:
-#   1. Merchant installs app
-#   2. App redirects to create subscription
-#   3. Shopify shows billing approval page
-#   4. Merchant approves/declines
-#   5. Shopify redirects back to callback
-#   6. App activates or handles decline
+# BillingController displays billing/pricing information for the shop.
+# Shows subscription status, trial information, or exemption status.
 #
 class BillingController < AuthenticatedController
   include ShopifyApp::EmbeddedApp
 
   before_action :set_shop
 
-  # Initiates the billing flow
-  def create
-    billing_service = BillingService.new(@shop)
-    
-    begin
-      confirmation_url = billing_service.create_subscription
-      redirect_to confirmation_url, allow_other_host: true
-    rescue BillingService::BillingError => e
-      flash[:error] = "Could not start subscription: #{e.message}"
-      redirect_to root_path(host: params[:host])
-    end
-  end
-
-  # Handles callback from Shopify after billing approval/decline
-  def callback
-    charge_id = params[:charge_id]
-
-    if charge_id.blank?
-      # Billing was declined or cancelled
-      @shop.shop_setting&.cancel_subscription!
-      flash[:notice] = "Subscription was not activated. You can try again anytime."
-      redirect_to root_path(host: params[:host])
-      return
-    end
-
-    billing_service = BillingService.new(@shop)
-    
-    if billing_service.handle_callback(charge_id)
-      flash[:success] = "Subscription activated! Silent Profit is now monitoring your store."
-    else
-      flash[:notice] = "Subscription could not be verified. Please contact support."
-    end
-
-    redirect_to root_path(host: params[:host])
+  def index
+    @shop = Shop.find_by(shopify_domain: current_shopify_domain)
+    @subscription = @shop.latest_subscription
+    @host = params[:host]
   end
 
   private

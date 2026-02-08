@@ -10,7 +10,7 @@
     
     <!-- Shopify Polaris Web Components -->
     <script src="https://cdn.shopify.com/shopifycloud/polaris.js"></script>
-    <link rel="stylesheet" href="https://cdn.shopify.com/shopifycloud/web/assets/polaris.css" />
+
 
     <!-- Shopify App Bridge -->
     <script src="https://cdn.shopify.com/shopifycloud/app-bridge.js"></script>
@@ -285,6 +285,7 @@
       <s-link href="<%= product_pages_path(host: @host) %>">Monitored Pages</s-link>
       <s-link href="<%= issues_path(host: @host) %>">Issues</s-link>
       <s-link href="<%= scans_path(host: @host) %>">Scan History</s-link>
+      <s-link href="<%= billing_path(host: @host) %>">Pricing</s-link>
       <s-link href="<%= settings_path(host: @host) %>">Settings</s-link>
     </s-app-nav>
 

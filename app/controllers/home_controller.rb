@@ -11,6 +11,7 @@
 #
 class HomeController < AuthenticatedController
   include ShopifyApp::EmbeddedApp
+  include ShopifyApp::EnsureBilling
 
   def index
     @shop = Shop.find_by(shopify_domain: current_shopify_domain)
@@ -19,12 +20,6 @@ class HomeController < AuthenticatedController
       Rails.logger.error("[HomeController] Shop not found for domain: #{current_shopify_domain}")
       redirect_to ShopifyApp.configuration.login_url
       return
-    end
-
-    # Check billing status
-    unless @shop.billing_active?
-      @billing_required = true
-      @trial_expired = @shop.shop_setting&.billing_status == "expired"
     end
 
     # Dashboard metrics
@@ -60,5 +55,36 @@ class HomeController < AuthenticatedController
                         .count
 
     @host = params[:host]
+  end
+
+  private
+
+  # Override has_active_payment? to implement cache-first logic + sync
+  def has_active_payment?(session)
+    # Ensure @shop is set (it's set in AuthenticatedController, but just in case)
+    @shop ||= Shop.find_by(shopify_domain: session.shop)
+    
+    # 1. Billing Exempt?
+    return true if billing_exempt?
+
+    # 2. Local Cache Active?
+    if @shop&.subscription_active?
+      Rails.logger.info("[HomeController] Cache hit: Active subscription for #{session.shop}")
+      return true
+    end
+
+    # 3. Fallback to Shopify API (gem implementation)
+    # This query runs against Shopify. If it finds an active subscription:
+    api_has_active = super(session)
+
+    if api_has_active
+      # 4. Sync local state if API confirms active
+      Rails.logger.info("[HomeController] API active, syncing local state for #{session.shop}")
+      SubscriptionSyncService.new(@shop).sync
+      return true
+    end
+
+    # 5. Not active on API -> Gem will redirect
+    false
   end
 end

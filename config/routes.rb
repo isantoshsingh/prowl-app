@@ -1,7 +1,12 @@
 # frozen_string_literal: true
 
 Rails.application.routes.draw do
-  # Shopify App Engine (OAuth, webhooks, etc.)
+  # Webhook handlers (must be before ShopifyApp::Engine)
+  post '/webhooks/app_uninstalled', to: 'webhooks/app_uninstalled#create'
+  post '/webhooks/app_subscription_update', to: 'webhooks/app_subscription_update#create'
+  post '/webhooks/shop_update', to: 'webhooks/shop_update#create'
+
+  # Shopify App Engine (OAuth, etc.)
   mount ShopifyApp::Engine, at: "/"
 
   # Root - Dashboard (App Home Page)
@@ -30,9 +35,10 @@ Rails.application.routes.draw do
   # Settings
   resource :settings, only: [:show, :update]
 
-  # Billing
-  get "/billing/create", to: "billing#create", as: :create_billing
-  get "/billing/callback", to: "billing#callback", as: :billing_callback
+  # Billing & Pricing
+  get "/billing", to: "billing#index", as: :billing
+
+
 
   # Health check
   get "up" => "rails/health#show", as: :rails_health_check

@@ -1,0 +1,151 @@
+<%# Billing/Pricing Page - Shows subscription status or exemption %>
+
+<s-page heading="Pricing">
+  <s-link slot="breadcrumb-actions" href="<%= root_path(host: @host) %>">Dashboard</s-link>
+</s-page>
+
+<% if @shop.billing_exempt? %>
+  <!-- Billing Exempt Status -->
+  <div class="stat-card" style="margin-bottom: 24px;">
+    <h3 style="font-size: 16px; margin: 0 0 16px 0;">Account Status</h3>
+    
+    <div style="background: linear-gradient(135deg, #008060 0%, #004d33 100%); padding: 24px; border-radius: 12px; color: white;">
+      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+          <polyline points="22 4 12 14.01 9 11.01"/>
+        </svg>
+        <h2 style="margin: 0; font-size: 20px;">Pricing Exempt</h2>
+      </div>
+      <p style="margin: 0; font-size: 14px; opacity: 0.9;">
+        Your account is exempt from billing charges. You have full access to all features.
+      </p>
+    </div>
+  </div>
+
+<% else %>
+  <!-- Subscription Information -->
+  <div class="stat-card" style="margin-bottom: 24px;">
+    <h3 style="font-size: 16px; margin: 0 0 24px 0;">Subscription</h3>
+    
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
+      <div>
+        <p class="stat-card-title">Status</p>
+        <p style="margin: 4px 0 0 0;">
+          <span class="badge badge-<%= @shop.subscription_status == 'active' ? 'healthy' : (@shop.subscription_status == 'trial' ? 'warning' : 'critical') %>">
+            <%= @shop.subscription_status.capitalize %>
+          </span>
+        </p>
+      </div>
+      
+      <% if @subscription&.in_trial? %>
+        <div>
+          <p class="stat-card-title">Trial Ends In</p>
+          <p style="margin: 4px 0 0 0; font-weight: 500;">
+            <%= @subscription.trial_days_remaining %> days
+          </p>
+        </div>
+        
+        <div>
+          <p class="stat-card-title">Trial Expiration</p>
+          <p style="margin: 4px 0 0 0; font-weight: 500;">
+            <%= @subscription.trial_ends_at.strftime("%b %d, %Y") %>
+          </p>
+        </div>
+      <% end %>
+      
+      <div>
+        <p class="stat-card-title">Price</p>
+        <p style="margin: 4px 0 0 0; font-weight: 500;">
+          <% if @subscription %>
+            $<%= @subscription.price.to_i %>/<%= @subscription.currency_code == 'USD' ? 'month' : @subscription.currency_code %>
+          <% else %>
+            $10/month
+          <% end %>
+        </p>
+      </div>
+    </div>
+    
+    <% if @subscription&.in_trial? %>
+      <div style="background: #F6F6F7; padding: 16px; border-radius: 8px; border-left: 3px solid #008060;">
+        <p style="margin: 0; font-size: 14px; color: #202223;">
+          <strong>Trial Period:</strong> You're currently in your <%= @subscription.trial_days %>-day free trial. 
+          You'll be charged $<%= @subscription.price.to_i %>/month after your trial ends. Cancel anytime through your Shopify admin.
+        </p>
+      </div>
+    <% elsif @shop.subscription_status == 'active' %>
+      <div style="background: #F6F6F7; padding: 16px; border-radius: 8px; border-left: 3px solid #008060;">
+        <p style="margin: 0; font-size: 14px; color: #202223;">
+          <strong>Active Subscription:</strong> Your subscription is active.
+          <% if @subscription %>
+            You're being charged $<%= @subscription.price.to_i %>/month.
+          <% end %>
+          Manage your subscription through your Shopify admin.
+        </p>
+      </div>
+    <% end %>
+  </div>
+
+  <!-- Pricing Details -->
+  <div class="stat-card">
+    <h3 style="font-size: 16px; margin: 0 0 16px 0;">What's Included</h3>
+    
+    <div style="display: grid; gap: 12px;">
+      <div style="display: flex; align-items: start; gap: 12px;">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="#008060" style="margin-top: 2px;">
+          <path d="M10 0C4.48 0 0 4.48 0 10s4.48 10 10 10 10-4.48 10-10S15.52 0 10 0zm-2 15l-5-5 1.41-1.41L8 12.17l7.59-7.59L17 6l-9 9z"/>
+        </svg>
+        <div>
+          <p style="margin: 0; font-weight: 500;">Monitor up to 5 product pages</p>
+          <p style="margin: 4px 0 0 0; font-size: 13px; color: #6d7175;">
+            Track critical product pages for silent failures
+          </p>
+        </div>
+      </div>
+      
+      <div style="display: flex; align-items: start; gap: 12px;">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="#008060" style="margin-top: 2px;">
+          <path d="M10 0C4.48 0 0 4.48 0 10s4.48 10 10 10 10-4.48 10-10S15.52 0 10 0zm-2 15l-5-5 1.41-1.41L8 12.17l7.59-7.59L17 6l-9 9z"/>
+        </svg>
+        <div>
+          <p style="margin: 0; font-weight: 500;">Automated daily scans</p>
+          <p style="margin: 4px 0 0 0; font-size: 13px; color: #6d7175;">
+            Automatic health checks for your monitored pages
+          </p>
+        </div>
+      </div>
+      
+      <div style="display: flex; align-items: start; gap: 12px;">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="#008060" style="margin-top: 2px;">
+          <path d="M10 0C4.48 0 0 4.48 0 10s4.48 10 10 10 10-4.48 10-10S15.52 0 10 0zm-2 15l-5-5 1.41-1.41L8 12.17l7.59-7.59L17 6l-9 9z"/>
+        </svg>
+        <div>
+          <p style="margin: 0; font-weight: 500;">Instant alerts</p>
+          <p style="margin: 4px 0 0 0; font-size: 13px; color: #6d7175;">
+            Email and Shopify admin notifications for critical issues
+          </p>
+        </div>
+      </div>
+      
+      <div style="display: flex; align-items: start; gap: 12px;">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="#008060" style="margin-top: 2px;">
+          <path d="M10 0C4.48 0 0 4.48 0 10s4.48 10 10 10 10-4.48 10-10S15.52 0 10 0zm-2 15l-5-5 1.41-1.41L8 12.17l7.59-7.59L17 6l-9 9z"/>
+        </svg>
+        <div>
+          <p style="margin: 0; font-weight: 500;">Detailed diagnostics</p>
+          <p style="margin: 4px 0 0 0; font-size: 13px; color: #6d7175;">
+            Screenshots, console logs, and error tracking
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+<% end %>
+
+<!-- Billing Management Note -->
+<div style="margin-top: 24px; padding: 16px; background: #F6F6F7; border-radius: 8px;">
+  <p style="margin: 0; font-size: 13px; color: #6d7175;">
+    <strong>Note:</strong> Billing is managed through your Shopify admin. 
+    To cancel or modify your subscription, visit your Shopify admin dashboard → Apps section.
+  </p>
+</div>

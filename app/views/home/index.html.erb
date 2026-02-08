@@ -6,21 +6,7 @@
   <s-link slot="secondary-actions" href="<%= settings_path(host: @host) %>">Settings</s-link>
 </s-page>
 
-<% if @billing_required %>
-  <% if @trial_expired %>
-    <div class="billing-banner">
-      <h2>Your trial has ended</h2>
-      <p>Subscribe to continue monitoring your product pages and receive alerts.</p>
-      <%= link_to "Subscribe for $10/month", create_billing_path(host: @host), class: "button-primary" %>
-    </div>
-  <% else %>
-    <div class="billing-banner" style="background: linear-gradient(135deg, #008060 0%, #004d33 100%);">
-      <h2>You're in your 14-day free trial</h2>
-      <p><%= @shop.shop_setting&.trial_days_remaining || 14 %> days remaining. Subscribe anytime to continue after the trial.</p>
-      <%= link_to "Subscribe for $10/month", create_billing_path(host: @host), class: "button-primary" %>
-    </div>
-  <% end %>
-<% end %>
+
 
 <!-- Health Overview Cards -->
 <div class="card-grid">

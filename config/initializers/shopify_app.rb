@@ -10,18 +10,18 @@ ShopifyApp.configure do |config|
   config.embedded_app = true
   config.new_embedded_auth_strategy = true
 
-  config.after_authenticate_job = false
+  config.after_authenticate_job = { job: "AfterAuthenticateJob", inline: true }
   config.api_version = "2025-10"
   config.shop_session_repository = "Shop"
   config.log_level = :info
   config.reauth_on_access_scope_changes = true
   
+  # Webhooks are configured in shopify.app.toml and handled by controllers
   # config.webhooks = [
-  #   { topic: "app/uninstalled", address: "webhooks/app_uninstalled" },
-  #   { topic: "customers/data_request", address: "webhooks/customers_data_request" },
-  #   { topic: "customers/redact", address: "webhooks/customers_redact" },
-  #   { topic: "shop/redact", address: "webhooks/shop_redact" }
+  #   { topic: "app/uninstalled", path: "webhooks/app_uninstalled" },
+  #   { topic: "app_subscriptions/update", path: "webhooks/app_subscription_update" }
   # ]
+
 
   config.api_key = ENV.fetch("SHOPIFY_API_KEY", "").presence
   config.secret = ENV.fetch("SHOPIFY_API_SECRET", "").presence

@@ -5,5 +5,3 @@ test_shop_settings:
   admin_alerts_enabled: true
   scan_frequency: "daily"
   max_monitored_pages: 5
-  billing_status: "trial"
-  trial_ends_at: <%= 14.days.from_now %>
