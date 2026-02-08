@@ -13,10 +13,6 @@ api_version = "2026-01"
   uri = "/webhooks/app_uninstalled"
 
   [[webhooks.subscriptions]]
-  topics = [ "app_subscriptions/update" ]
-  uri = "/webhooks/app_subscription_update"
-
-  [[webhooks.subscriptions]]
   topics = [ "shop/update" ]
   uri = "/webhooks/shop_update"
 

@@ -39,25 +39,18 @@ class Shop < ActiveRecord::Base
 
   # Checks if the shop has active billing (subscription or exemption)
   def billing_active?
-    return true if billing_exempt?
-    return true if active_subscription&.active?
-    return true if latest_subscription&.in_trial?
-    false
+    billing_exempt? || subscription_active?
   end
 
-  # Checks if shop is exempt from billing
-  def billing_exempt?
-    billing_exempt == true
+  # Helper to check if subscription is valid/active based on local cache
+  def subscription_active?
+    subscription_status == 'active'
   end
 
   # Returns current subscription status for display
+  # Now uses the cached column on the Shop model
   def subscription_status
-    return 'exempt' if billing_exempt?
-    return 'active' if active_subscription&.active?
-    return 'trial' if latest_subscription&.in_trial?
-    return 'expired' if latest_subscription&.status == 'expired'
-    return 'cancelled' if latest_subscription&.status == 'cancelled'
-    'none'
+    self[:subscription_status] || 'none'
   end
 
   # Returns the number of product pages currently being monitored

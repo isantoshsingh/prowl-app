@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_01_210631) do
+ActiveRecord::Schema[8.1].define(version: 2026_02_04_072531) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -128,6 +128,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_01_210631) do
     t.string "shopify_domain", null: false
     t.bigint "shopify_shop_id"
     t.string "shopify_token", null: false
+    t.string "subscription_plan"
+    t.string "subscription_status"
     t.string "timezone"
     t.datetime "uninstalled_at"
     t.datetime "updated_at", null: false

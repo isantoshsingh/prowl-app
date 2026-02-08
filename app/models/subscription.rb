@@ -62,12 +62,19 @@ class Subscription < ApplicationRecord
 
   # Checks if in trial period
   def in_trial?
-    trial_ends_at.present? && trial_ends_at > Time.current
+    return false unless activated_at && trial_days.to_i > 0
+    Time.current < (activated_at + trial_days.days)
   end
 
   # Returns days remaining in trial
   def trial_days_remaining
     return 0 unless in_trial?
     ((trial_ends_at - Time.current) / 1.day).ceil
+  end
+
+  # Calculates trial end date from activated_at + trial_days
+  def trial_ends_at
+    return nil unless activated_at && trial_days.to_i > 0
+    activated_at + trial_days.days
   end
 end

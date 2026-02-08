@@ -13,14 +13,23 @@ class ShopTest < ActiveSupport::TestCase
 
     assert shop.persisted?
     assert shop.shop_setting.present?
-    assert_equal "trial", shop.shop_setting.billing_status
-    assert shop.shop_setting.trial_ends_at > Time.current
   end
 
-  test "should check billing active during trial" do
+  test "should check billing active for exempt shops" do
     shop = Shop.create!(
       shopify_domain: "shop-test-#{SecureRandom.hex(4)}.myshopify.com",
-      shopify_token: "test_token"
+      shopify_token: "test_token",
+      billing_exempt: true
+    )
+
+    assert shop.billing_active?
+  end
+
+  test "should check billing active for shops with active subscription" do
+    shop = Shop.create!(
+      shopify_domain: "shop-test-#{SecureRandom.hex(4)}.myshopify.com",
+      shopify_token: "test_token",
+      subscription_status: 'active'
     )
 
     assert shop.billing_active?

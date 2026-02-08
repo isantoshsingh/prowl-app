@@ -2,11 +2,6 @@
 
 class AuthenticatedController < ApplicationController
   include ShopifyApp::EnsureHasSession
-  include ShopifyApp::EnsureBilling
-
-  # Skip billing check for exempt shops BEFORE charge is created
-  skip_before_action :check_billing, if: :billing_exempt?
-
   before_action :set_shop
   before_action :set_host
 
