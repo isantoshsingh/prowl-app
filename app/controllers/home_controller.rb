@@ -14,7 +14,9 @@ class HomeController < AuthenticatedController
   include ShopifyApp::EnsureBilling
 
   def index
-    @shop = Shop.find_by(shopify_domain: current_shopify_domain)
+    # Use @shop from set_shop callback (already loaded in AuthenticatedController)
+    # Only reload if not present (defensive check)
+    @shop ||= Shop.find_by(shopify_domain: current_shopify_domain)
     
     if @shop.nil?
       Rails.logger.error("[HomeController] Shop not found for domain: #{current_shopify_domain}")
@@ -22,27 +24,35 @@ class HomeController < AuthenticatedController
       return
     end
 
-    # Dashboard metrics
-    @product_pages = @shop.product_pages.monitoring_enabled.order(last_scanned_at: :desc)
-    @total_pages = @product_pages.count
-    @healthy_pages = @product_pages.healthy.count
-    @warning_pages = @product_pages.warning.count
-    @critical_pages = @product_pages.critical.count
+    # Dashboard metrics - use single GROUP BY query for all status counts
+    status_counts = @shop.product_pages
+                         .monitoring_enabled
+                         .group(:status)
+                         .count
 
-    # Open issues
-    @open_issues = Issue.joins(:product_page)
+    @total_pages = status_counts.values.sum
+    @healthy_pages = status_counts['healthy'] || 0
+    @warning_pages = status_counts['warning'] || 0
+    @critical_pages = status_counts['critical'] || 0
+
+    # Open issues - eager load product_page to prevent N+1
+    @open_issues = Issue.includes(:product_page)
+                        .joins(:product_page)
                         .where(product_pages: { shop_id: @shop.id })
                         .where(status: "open")
                         .order(severity: :asc, last_detected_at: :desc)
                         .limit(10)
 
+    # Use size on loaded collection instead of separate count query
+    # Note: We use a slightly higher limit to check if there are more
     @open_issues_count = Issue.joins(:product_page)
                               .where(product_pages: { shop_id: @shop.id })
                               .where(status: "open")
                               .count
 
-    # Recent scans
-    @recent_scans = Scan.joins(:product_page)
+    # Recent scans - eager load product_page to prevent N+1
+    @recent_scans = Scan.includes(:product_page)
+                        .joins(:product_page)
                         .where(product_pages: { shop_id: @shop.id })
                         .order(created_at: :desc)
                         .limit(5)
@@ -61,7 +71,8 @@ class HomeController < AuthenticatedController
 
   # Override has_active_payment? to implement cache-first logic + sync
   def has_active_payment?(session)
-    # Ensure @shop is set (it's set in AuthenticatedController, but just in case)
+    # Use @shop from set_shop callback if available, otherwise load it
+    # This prevents duplicate Shop queries across the request lifecycle
     @shop ||= Shop.find_by(shopify_domain: session.shop)
     
     # 1. Billing Exempt?

@@ -65,7 +65,7 @@
     <% end %>
   </div>
   
-  <% if @open_issues.any? %>
+  <% if @open_issues_count > 0 %>
     <% @open_issues.each do |issue| %>
       <%= link_to issue_path(issue, host: @host), class: "issue-item" do %>
         <div class="issue-severity <%= issue.severity %>"></div>
@@ -94,7 +94,7 @@
 </div>
 
 <!-- Recent Scans -->
-<% if @recent_scans.any? %>
+<% if @recent_scans.present? %>
   <div class="issues-list issues-list--spaced">
     <div class="issues-list-header">
       <h2 class="issues-list-title">Recent Scans</h2>

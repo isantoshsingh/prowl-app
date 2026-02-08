@@ -5,11 +5,11 @@
     <s-link slot="primary-action" href="<%= new_product_page_path(host: @host) %>">Add Product</s-link>
   <% end %>
   <s-link slot="breadcrumb-actions" href="<%= root_path(host: @host) %>">Dashboard</s-link>
-  <s-badge slot="accessory" tone="info"><%= @product_pages.count %>/<%= @shop.shop_setting&.max_monitored_pages || 5 %></s-badge>
+  <s-badge slot="accessory" tone="info"><%= @product_pages_count %>/<%= @shop_setting&.max_monitored_pages || 5 %></s-badge>
 </s-page>
 
 <div class="issues-list">
-  <% if @product_pages.any? %>
+  <% if @product_pages_count > 0 %>
     <% @product_pages.each do |page| %>
       <div class="issue-item" style="cursor: default;">
         <div class="issue-severity <%= page.status %>"></div>
@@ -23,8 +23,9 @@
               <% else %>
                 Never scanned
               <% end %>
-              <% if page.high_severity_issues_count > 0 %>
-                • <%= page.high_severity_issues_count %> critical issue<%= page.high_severity_issues_count > 1 ? 's' : '' %>
+              <% high_severity_count = @high_severity_counts[page.id] || 0 %>
+              <% if high_severity_count > 0 %>
+                • <%= high_severity_count %> critical issue<%= high_severity_count > 1 ? 's' : '' %>
               <% end %>
             </p>
           <% end %>

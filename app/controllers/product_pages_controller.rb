@@ -10,15 +10,29 @@
 class ProductPagesController < AuthenticatedController
   include ShopifyApp::EmbeddedApp
 
-  before_action :set_shop
+  # Note: set_shop is inherited from AuthenticatedController
   before_action :set_product_page, only: [:show, :destroy, :rescan]
   
   # For embedded apps using token auth, CSRF is handled differently
   protect_from_forgery with: :null_session, only: [:create]
 
   def index
-    @product_pages = @shop.product_pages.order(created_at: :desc)
-    @can_add_more = @shop.can_add_monitored_page?
+    # Eager load shop_setting to avoid N+1
+    @shop_setting = @shop.shop_setting
+    max_pages = @shop_setting&.max_monitored_pages || 5
+
+    # Load product pages once
+    @product_pages = @shop.product_pages.order(created_at: :desc).to_a
+    @product_pages_count = @product_pages.size
+
+    @can_add_more = @shop.monitored_pages_count < max_pages
+
+    # Preload high severity issue counts in a single query to avoid N+1
+    product_page_ids = @product_pages.map(&:id)
+    @high_severity_counts = Issue.where(product_page_id: product_page_ids, status: 'open', severity: 'high')
+                                  .group(:product_page_id)
+                                  .count
+
     @host = params[:host]
   end
 
@@ -174,12 +188,7 @@ class ProductPagesController < AuthenticatedController
 
   private
 
-  def set_shop
-    @shop = Shop.find_by(shopify_domain: current_shopify_domain)
-    unless @shop
-      redirect_to ShopifyApp.configuration.login_url
-    end
-  end
+  # set_shop is inherited from AuthenticatedController
 
   def set_product_page
     @product_page = @shop.product_pages.find(params[:id])
