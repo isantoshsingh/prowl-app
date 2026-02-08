@@ -53,7 +53,11 @@ class ScanPdpJob < ApplicationJob
       # Send alerts for any alertable issues
       issues.each do |issue|
         if issue.should_alert?
-          AlertService.new(issue).perform
+          begin
+            AlertService.new(issue).perform
+          rescue StandardError => e
+            Rails.logger.error("[ScanPdpJob] AlertService failed for issue #{issue.id}: #{e.message}")
+          end
         end
       end
     else

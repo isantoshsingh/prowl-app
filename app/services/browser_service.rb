@@ -116,18 +116,38 @@ class BrowserService
 
         status_code = response&.status || 0
 
+        # Detect password-protected stores
+        if password_protected_page?
+          return {
+            success: false,
+            status_code: status_code,
+            error: "Store is password-protected",
+            password_protected: true
+          }
+        end
+
         return {
           success: status_code < 400,
           status_code: status_code,
           error: status_code >= 400 ? "HTTP #{status_code}" : nil
         }
-      rescue Puppeteer::TimeoutError => e
+      rescue Puppeteer::TimeoutError
         end_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
         @page_load_time_ms = ((end_time - start_time) * 1000).to_i
 
-        # Page didn't fully settle but may still be usable
-        Rails.logger.warn("[BrowserService] Navigation timeout for #{url} (attempt #{retries + 1}), continuing with partial load")
-        return { success: true, status_code: 0, error: nil, partial_load: true }
+        # Page didn't fully settle but may still be usable - check if content loaded
+        if page_has_content?
+          Rails.logger.warn("[BrowserService] Navigation timeout for #{url} (attempt #{retries + 1}), continuing with partial load")
+          return { success: true, status_code: 0, error: nil, partial_load: true }
+        else
+          retries += 1
+          if retries <= MAX_NAVIGATION_RETRIES
+            Rails.logger.warn("[BrowserService] Navigation timeout with no content for #{url} (attempt #{retries}), retrying...")
+            sleep(1)
+          else
+            return { success: false, status_code: 0, error: "Navigation timed out with no content loaded" }
+          end
+        end
       rescue StandardError => e
         last_error = e
         retries += 1
@@ -378,5 +398,17 @@ class BrowserService
   def ensure_page_loaded!
     ensure_browser_started!
     raise PageLoadError, "No page loaded. Call #navigate_to first." unless @page
+  end
+
+  # Detects Shopify password-protected storefront pages
+  def password_protected_page?
+    return false unless @page
+    @page.evaluate("() => { return !!document.querySelector('form[action*=\"password\"]') || document.title.toLowerCase().includes('password'); }") rescue false
+  end
+
+  # Checks if the page has meaningful content loaded despite timeout
+  def page_has_content?
+    return false unless @page
+    @page.evaluate("() => { return document.body && document.body.innerHTML.length > 500; }") rescue false
   end
 end

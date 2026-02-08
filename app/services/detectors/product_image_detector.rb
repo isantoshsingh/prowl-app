@@ -59,10 +59,19 @@ module Detectors
     private
 
     def run_detection
+      # First attempt: evaluate immediately
       result = evaluate(image_detection_script)
 
       if result.nil?
         return inconclusive_result("Could not evaluate product image detection script")
+      end
+
+      # If image found but not loaded, wait for lazy loading and re-check
+      if result["image_found"] && !result["image_loaded"] && !result["is_broken"]
+        browser_service.evaluate_script(lazy_load_wait_script)
+        sleep(2)
+        recheck = evaluate(image_detection_script)
+        result = recheck if recheck && recheck["image_loaded"]
       end
 
       image_found = record_validation(result["image_found"])
@@ -199,6 +208,25 @@ module Detectors
     def placeholder_image?(src)
       return true if src.blank?
       PLACEHOLDER_PATTERNS.any? { |pattern| src.match?(pattern) }
+    end
+
+    def lazy_load_wait_script
+      <<~JAVASCRIPT
+        () => {
+          // Scroll the main image into view to trigger lazy loading
+          const imgs = document.querySelectorAll('img[loading="lazy"], img[data-src]');
+          for (const img of imgs) {
+            img.scrollIntoView({ behavior: 'instant' });
+            // Swap data-src to src if present (common lazy load pattern)
+            if (img.dataset.src && !img.src) {
+              img.src = img.dataset.src;
+            }
+          }
+          // Scroll back to top
+          window.scrollTo(0, 0);
+          return true;
+        }
+      JAVASCRIPT
     end
 
     def image_detection_script

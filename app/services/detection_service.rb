@@ -347,7 +347,8 @@ class DetectionService
   end
 
   def resolve_existing_issue(issue_type)
-    existing = product_page.issues.where(issue_type: issue_type, status: "open").first
-    existing&.resolve!
+    product_page.issues.where(issue_type: issue_type, status: ["open", "acknowledged"]).find_each do |issue|
+      issue.resolve!
+    end
   end
 end

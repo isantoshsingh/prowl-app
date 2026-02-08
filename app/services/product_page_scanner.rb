@@ -70,8 +70,13 @@ class ProductPageScanner
     nav_result = navigate_to_page
 
     unless nav_result[:success]
-      @scan.fail!("Navigation failed: #{nav_result[:error]}")
-      return { success: false, scan: @scan, error: nav_result[:error], detection_results: [] }
+      error_msg = if nav_result[:password_protected]
+        "Store is password-protected. Disable password protection or add Silent Profit to the allowlist."
+      else
+        "Navigation failed: #{nav_result[:error]}"
+      end
+      @scan.fail!(error_msg)
+      return { success: false, scan: @scan, error: error_msg, detection_results: [] }
     end
 
     # Capture page data
