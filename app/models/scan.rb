@@ -31,6 +31,7 @@ class Scan < ApplicationRecord
   serialize :js_errors, coder: JSON
   serialize :network_errors, coder: JSON
   serialize :console_logs, coder: JSON
+  serialize :dom_checks_data, coder: JSON
 
   # Marks the scan as started
   def start!
@@ -83,5 +84,11 @@ class Scan < ApplicationRecord
   def parsed_network_errors
     return [] if network_errors.blank?
     network_errors.is_a?(Array) ? network_errors : []
+  end
+
+  # Returns parsed detection results from the detection engine
+  def parsed_dom_checks_data
+    return [] if dom_checks_data.blank?
+    dom_checks_data.is_a?(Array) ? dom_checks_data : []
   end
 end
