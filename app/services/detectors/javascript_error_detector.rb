@@ -10,7 +10,7 @@ module Detectors
   #   3. Assigns severity based on error type and context
   #   4. Higher confidence when errors relate to cart/product/checkout
   #
-  class JavaScriptErrorDetector < BaseDetector
+  class JavascriptErrorDetector < BaseDetector
     # Patterns to ignore (third-party noise)
     IGNORE_PATTERNS = [
       /google[-_]?analytics/i,

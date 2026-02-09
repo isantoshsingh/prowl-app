@@ -30,20 +30,23 @@
             </p>
           <% end %>
         </div>
-        <div style="display: flex; gap: 8px; align-items: center;">
           <span class="badge badge-<%= page.status == 'healthy' ? 'healthy' : (page.status == 'critical' ? 'critical' : (page.status == 'warning' ? 'warning' : 'pending')) %>">
             <%= page.status.capitalize %>
           </span>
-          <%= link_to product_page_path(page, host: @host), class: "button-secondary" do %>
-            View
-          <% end %>
-          <%= button_to rescan_product_page_path(page, host: @host), method: :post, class: "button-secondary", form: { style: "display: inline;" } do %>
-            Rescan
-          <% end %>
-          <%= button_to product_page_path(page, host: @host), method: :delete, class: "button-secondary", form: { style: "display: inline;" }, data: { confirm: "Remove #{page.title} from monitoring?" } do %>
-            Remove
-          <% end %>
-        </div>
+        <s-stack direction="inline" gap="small-300">
+          <s-button href="<%= product_page_path(page, host: @host) %>">View</s-button>
+          <s-button onclick="document.getElementById('rescan-form-<%= page.id %>').submit()">Rescan</s-button>
+          <s-button tone="critical" variant="primary" onclick="if(confirm('Remove <%= page.title %> from monitoring?')) document.getElementById('delete-form-<%= page.id %>').submit()">Remove</s-button>
+
+          <form id="rescan-form-<%= page.id %>" action="<%= rescan_product_page_path(page, host: @host) %>" method="post" style="display: none;">
+            <input type="hidden" name="authenticity_token" value="<%= form_authenticity_token %>">
+          </form>
+
+          <form id="delete-form-<%= page.id %>" action="<%= product_page_path(page, host: @host) %>" method="post" style="display: none;">
+            <input type="hidden" name="_method" value="delete">
+            <input type="hidden" name="authenticity_token" value="<%= form_authenticity_token %>">
+          </form>
+        </s-stack>
       </div>
     <% end %>
   <% else %>
@@ -51,7 +54,7 @@
       <div class="empty-state-icon">📦</div>
       <h3 class="empty-state-title">No product pages monitored yet</h3>
       <p class="empty-state-description">Add up to 5 product pages to start monitoring their health.</p>
-      <%= link_to "Add Product Page", new_product_page_path(host: @host), class: "button-primary" %>
+      <s-button variant="primary" href="<%= new_product_page_path(host: @host) %>">Add Product Page</s-button>
     </div>
   <% end %>
 </div>

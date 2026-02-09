@@ -14,7 +14,7 @@
 #   # result => { success: bool, scan: Scan, data: Hash, detection_results: Array }
 #
 class ProductPageScanner
-  SCAN_TIMEOUT_SECONDS = 45
+  SCAN_TIMEOUT_SECONDS = 45 unless const_defined?(:SCAN_TIMEOUT_SECONDS)
 
   class ScanError < StandardError; end
   class TimeoutError < ScanError; end
@@ -22,7 +22,7 @@ class ProductPageScanner
   # Tier 1 detectors - run on every scan
   TIER1_DETECTORS = [
     Detectors::AddToCartDetector,
-    Detectors::JavaScriptErrorDetector,
+    Detectors::JavascriptErrorDetector,
     Detectors::LiquidErrorDetector,
     Detectors::PriceVisibilityDetector,
     Detectors::ProductImageDetector

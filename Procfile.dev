@@ -1,0 +1,6 @@
+# Procfile for local development with foreman/overmind
+# Install: gem install foreman
+# Run: foreman start
+
+web: shopify app dev
+worker: bin/jobs start
