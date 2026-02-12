@@ -4,7 +4,7 @@
 <% if @total_pages == 0 %>
   <%# Empty State - Clear onboarding for new users %>
   <s-page heading="Welcome to PDP Diagnostics">
-    <s-button slot="primary-action" variant="primary" href="<%= new_product_page_path(host: @host) %>">
+    <s-button slot="primary-action" variant="primary" href="<%= product_pages_path(host: @host) %>">
       Add Your First Product
     </s-button>
   </s-page>
@@ -42,7 +42,7 @@
         </s-stack>
       </s-stack>
 
-      <s-button variant="primary" href="<%= new_product_page_path(host: @host) %>">
+      <s-button variant="primary" href="<%= product_pages_path(host: @host) %>">
         Add Product Pages
       </s-button>
     </s-stack>
@@ -87,7 +87,7 @@
 <% else %>
   <%# Active Dashboard %>
   <s-page heading="PDP Diagnostics" inlineSize="base">
-    <s-button slot="primary-action" variant="primary" href="<%= new_product_page_path(host: @host) %>">
+    <s-button slot="primary-action" variant="primary" href="<%= product_pages_path(host: @host) %>">
       Add Products
     </s-button>
 
@@ -95,7 +95,7 @@
     <div slot="aside">
       <s-section heading="Quick Actions">
         <s-stack direction="block" gap="small-300">
-          <s-button href="<%= new_product_page_path(host: @host) %>" fullWidth>
+          <s-button href="<%= product_pages_path(host: @host) %>" fullWidth>
             Add Products
           </s-button>
           <s-button href="<%= product_pages_path(host: @host) %>" fullWidth>

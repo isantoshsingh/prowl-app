@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_06_000001) do
+ActiveRecord::Schema[8.1].define(version: 2026_02_12_030607) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -56,6 +56,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_06_000001) do
   create_table "product_pages", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "handle", null: false
+    t.string "image_url"
     t.datetime "last_scanned_at"
     t.boolean "monitoring_enabled", default: true, null: false
     t.bigint "shop_id", null: false

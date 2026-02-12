@@ -16,7 +16,7 @@ Rails.application.routes.draw do
   get "/dashboard/stats", to: "dashboard#stats"
 
   # Product Pages (monitored PDPs)
-  resources :product_pages, only: [:index, :show, :new, :create, :destroy] do
+  resources :product_pages, only: [:index, :show, :create, :destroy] do
     member do
       match :rescan, via: [:get, :post]
     end

@@ -5,139 +5,123 @@
 </s-page>
 
 <% if @shop.billing_exempt? %>
-  <!-- Billing Exempt Status -->
-  <div class="stat-card mb-lg">
-    <h3 class="stat-card-section-title">Account Status</h3>
-    
-    <div class="billing-exempt-banner">
-      <div class="billing-exempt-header">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-          <polyline points="22 4 12 14.01 9 11.01"/>
-        </svg>
-        <h2 class="billing-exempt-title">Pricing Exempt</h2>
-      </div>
-      <p class="billing-exempt-description">
-        Your account is exempt from billing charges. You have full access to all features.
-      </p>
-    </div>
-  </div>
+  <%# Billing Exempt Status %>
+  <s-section heading="Account Status">
+    <s-banner tone="success">
+      <s-stack direction="block" gap="tight">
+        <s-paragraph>
+          <strong>Pricing Exempt</strong>
+        </s-paragraph>
+        <s-paragraph>
+          Your account is exempt from billing charges. You have full access to all features.
+        </s-paragraph>
+      </s-stack>
+    </s-banner>
+  </s-section>
 
 <% else %>
-  <!-- Subscription Information -->
-  <div class="stat-card mb-lg">
-    <h3 class="stat-card-section-title stat-card-section-title--lg">Subscription</h3>
-    
-    <div class="subscription-grid">
-      <div>
-        <p class="stat-card-title">Status</p>
-        <p class="subscription-field-value">
-          <span class="badge badge-<%= @shop.subscription_status == 'active' ? 'healthy' : (@shop.subscription_status == 'trial' ? 'warning' : 'critical') %>">
+  <%# Subscription Information %>
+  <s-section heading="Subscription">
+    <s-stack direction="block" gap="base">
+      <s-grid gridTemplateColumns="repeat(4, 1fr)" gap="base">
+        <s-stack direction="block" gap="extra-tight">
+          <s-paragraph>Status</s-paragraph>
+          <s-badge tone="<%= @shop.subscription_status == 'active' ? 'success' : (@shop.subscription_status == 'trial' ? 'attention' : 'critical') %>">
             <%= @shop.subscription_status.capitalize %>
-          </span>
-        </p>
-      </div>
-      
-      <% if @subscription&.in_trial? %>
-        <div>
-          <p class="stat-card-title">Trial Ends In</p>
-          <p class="subscription-field-value">
-            <%= @subscription.trial_days_remaining %> days
-          </p>
-        </div>
-        
-        <div>
-          <p class="stat-card-title">Trial Expiration</p>
-          <p class="subscription-field-value">
-            <%= @subscription.trial_ends_at.strftime("%b %d, %Y") %>
-          </p>
-        </div>
-      <% end %>
-      
-      <div>
-        <p class="stat-card-title">Price</p>
-        <p class="subscription-field-value">
-          <% if @subscription %>
-            $<%= @subscription.price.to_i %>/<%= @subscription.currency_code == 'USD' ? 'month' : @subscription.currency_code %>
-          <% else %>
-            $10/month
-          <% end %>
-        </p>
-      </div>
-    </div>
-    
-    <% if @subscription&.in_trial? %>
-      <div class="info-box">
-        <p>
-          <strong>Trial Period:</strong> You're currently in your <%= @subscription.trial_days %>-day free trial. 
-          You'll be charged $<%= @subscription.price.to_i %>/month after your trial ends. Cancel anytime through your Shopify admin.
-        </p>
-      </div>
-    <% elsif @shop.subscription_status == 'active' %>
-      <div class="info-box">
-        <p>
-          <strong>Active Subscription:</strong> Your subscription is active.
-          <% if @subscription %>
-            You're being charged $<%= @subscription.price.to_i %>/month.
-          <% end %>
-          Manage your subscription through your Shopify admin.
-        </p>
-      </div>
-    <% end %>
-  </div>
+          </s-badge>
+        </s-stack>
 
-  <!-- Pricing Details -->
-  <div class="stat-card">
-    <h3 class="stat-card-section-title">What's Included</h3>
-    
-    <div class="feature-list">
-      <div class="feature-item">
-        <s-icon type="check-circle-filled" class="feature-icon"></s-icon>
-        <div>
-          <p class="feature-title">Monitor up to 5 product pages</p>
-          <p class="feature-description">
-            Track critical product pages for silent failures
-          </p>
-        </div>
-      </div>
-      
-      <div class="feature-item">
-        <s-icon type="check-circle-filled" class="feature-icon"></s-icon>
-        <div>
-          <p class="feature-title">Automated daily scans</p>
-          <p class="feature-description">
-            Automatic health checks for your monitored pages
-          </p>
-        </div>
-      </div>
-      
-      <div class="feature-item">
-        <s-icon type="check-circle-filled" class="feature-icon"></s-icon>
-        <div>
-          <p class="feature-title">Instant alerts</p>
-          <p class="feature-description">
-            Email and Shopify admin notifications for critical issues
-          </p>
-        </div>
-      </div>
-      
-      <div class="feature-item">
-        <s-icon type="check-circle-filled" class="feature-icon"></s-icon>
-        <div>
-          <p class="feature-title">Detailed diagnostics</p>
-          <p class="feature-description">
-            Screenshots, console logs, and error tracking
-          </p>
-        </div>
-      </div>
-    </div>
-  </div>
+        <% if @subscription&.in_trial? %>
+          <s-stack direction="block" gap="extra-tight">
+            <s-paragraph>Trial Ends In</s-paragraph>
+            <strong><%= @subscription.trial_days_remaining %> days</strong>
+          </s-stack>
+
+          <s-stack direction="block" gap="extra-tight">
+            <s-paragraph>Trial Expiration</s-paragraph>
+            <strong><%= @subscription.trial_ends_at.strftime("%b %d, %Y") %></strong>
+          </s-stack>
+        <% end %>
+
+        <s-stack direction="block" gap="extra-tight">
+          <s-paragraph>Price</s-paragraph>
+          <strong>
+            <% if @subscription %>
+              $<%= @subscription.price.to_i %>/<%= @subscription.currency_code == 'USD' ? 'month' : @subscription.currency_code %>
+            <% else %>
+              $10/month
+            <% end %>
+          </strong>
+        </s-stack>
+      </s-grid>
+
+      <% if @subscription&.in_trial? %>
+        <s-banner tone="info">
+          <s-paragraph>
+            <strong>Trial Period:</strong> You're currently in your <%= @subscription.trial_days %>-day free trial.
+            You'll be charged $<%= @subscription.price.to_i %>/month after your trial ends. Cancel anytime through your Shopify admin.
+          </s-paragraph>
+        </s-banner>
+      <% elsif @shop.subscription_status == 'active' %>
+        <s-banner tone="success">
+          <s-paragraph>
+            <strong>Active Subscription:</strong> Your subscription is active.
+            <% if @subscription %>
+              You're being charged $<%= @subscription.price.to_i %>/month.
+            <% end %>
+            Manage your subscription through your Shopify admin.
+          </s-paragraph>
+        </s-banner>
+      <% end %>
+    </s-stack>
+  </s-section>
+
+  <%# What's Included %>
+  <s-box paddingBlockStart="small">
+  <s-section heading="What's Included">
+    <s-stack direction="block" gap="base">
+      <s-stack direction="inline" gap="tight" align="start">
+        <s-icon type="check-circle-filled" tone="success"></s-icon>
+        <s-stack direction="block" gap="extra-tight">
+          <s-paragraph><strong>Monitor up to 5 product pages</strong></s-paragraph>
+          <s-paragraph>Track critical product pages for silent failures</s-paragraph>
+        </s-stack>
+      </s-stack>
+
+      <s-stack direction="inline" gap="tight" align="start">
+        <s-icon type="check-circle-filled" tone="success"></s-icon>
+        <s-stack direction="block" gap="extra-tight">
+          <s-paragraph><strong>Automated daily scans</strong></s-paragraph>
+          <s-paragraph>Automatic health checks for your monitored pages</s-paragraph>
+        </s-stack>
+      </s-stack>
+
+      <s-stack direction="inline" gap="tight" align="start">
+        <s-icon type="check-circle-filled" tone="success"></s-icon>
+        <s-stack direction="block" gap="extra-tight">
+          <s-paragraph><strong>Instant alerts</strong></s-paragraph>
+          <s-paragraph>Email and Shopify admin notifications for critical issues</s-paragraph>
+        </s-stack>
+      </s-stack>
+
+      <s-stack direction="inline" gap="tight" align="start">
+        <s-icon type="check-circle-filled" tone="success"></s-icon>
+        <s-stack direction="block" gap="extra-tight">
+          <s-paragraph><strong>Detailed diagnostics</strong></s-paragraph>
+          <s-paragraph>Screenshots, console logs, and error tracking</s-paragraph>
+        </s-stack>
+      </s-stack>
+    </s-stack>
+  </s-section>
+  </s-box>
 <% end %>
 
-<!-- Billing Management Note -->
-<div class="billing-note">
-  <p>
-    <strong>Note:</strong> Billing is managed through your Shopify admin. 
+<%# Billing Management Note %>
+<s-box paddingBlockStart="small">
+<s-section>
+  <s-paragraph>
+    <strong>Note:</strong> Billing is managed through your Shopify admin.
     To cancel or modify your subscription, visit your Shopify admin dashboard → Apps section.
-  </p>
-</div>
+  </s-paragraph>
+</s-section>
+</s-box>

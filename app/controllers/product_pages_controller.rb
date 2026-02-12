@@ -3,7 +3,7 @@
 # ProductPagesController manages the product pages being monitored.
 # Merchants can:
 #   - View monitored pages
-#   - Add new pages (up to 5) using Shopify Resource Picker
+#   - Add new pages (up to 5) via the inline Shopify Resource Picker on the index page
 #   - Remove pages from monitoring
 #   - Trigger manual rescans
 #
@@ -27,6 +27,12 @@ class ProductPagesController < AuthenticatedController
 
     @can_add_more = @shop.monitored_pages_count < max_pages
 
+    # Data for the Resource Picker (used directly on index page)
+    current_count = @shop.monitored_pages_count
+    @remaining_slots = max_pages - current_count
+    @monitored_product_ids = @product_pages.map(&:shopify_product_id)
+    @monitored_product_gids = @monitored_product_ids.map { |id| "gid://shopify/Product/#{id}" }
+
     # Preload high severity issue counts in a single query to avoid N+1
     product_page_ids = @product_pages.map(&:id)
     @high_severity_counts = Issue.where(product_page_id: product_page_ids, status: 'open', severity: 'high')
@@ -42,35 +48,15 @@ class ProductPagesController < AuthenticatedController
     @host = params[:host]
   end
 
-  def new
-    unless @shop.can_add_monitored_page?
-      flash[:error] = "You've reached the maximum of #{@shop.shop_setting.max_monitored_pages} monitored pages."
-      redirect_to product_pages_path(host: params[:host])
-      return
-    end
-
-    # Data for the Resource Picker
-    max_pages = @shop.shop_setting&.max_monitored_pages || 5
-    current_count = @shop.monitored_pages_count
-    @remaining_slots = max_pages - current_count
-
-    # Already monitored product IDs (numeric and GID format for filtering)
-    @monitored_product_ids = @shop.product_pages.pluck(:shopify_product_id)
-    @monitored_product_gids = @monitored_product_ids.map { |id| "gid://shopify/Product/#{id}" }
-
-    @host = params[:host]
-  end
 
   def create
     Rails.logger.info("[ProductPagesController#create] Received params: #{params.to_unsafe_h.except(:authenticity_token)}")
     
-    # Handle multiple products from Resource Picker
     products_params = params[:products]
 
     if products_params.blank?
-      Rails.logger.info("[ProductPagesController#create] No products param, checking for single product")
-      # Fallback: single product (legacy support)
-      create_single_product
+      flash[:error] = "No products selected."
+      redirect_to product_pages_path(host: params[:host])
       return
     end
 
@@ -93,6 +79,7 @@ class ProductPagesController < AuthenticatedController
       product_id = product_data[:shopify_product_id].to_i
       handle = product_data[:handle]
       title = product_data[:title]
+      image_url = product_data[:image_url]
 
       # Skip if already monitored
       if @shop.product_pages.exists?(shopify_product_id: product_id)
@@ -105,6 +92,7 @@ class ProductPagesController < AuthenticatedController
         shopify_product_id: product_id,
         handle: handle,
         title: title,
+        image_url: image_url,
         url: "/products/#{handle}",
         monitoring_enabled: true,
         status: "pending"
@@ -197,38 +185,4 @@ class ProductPagesController < AuthenticatedController
     redirect_to product_pages_path(host: params[:host])
   end
 
-  # Legacy support for single product creation
-  def create_single_product
-    unless @shop.can_add_monitored_page?
-      flash[:error] = "Maximum monitored pages reached"
-      redirect_to product_pages_path(host: params[:host])
-      return
-    end
-
-    product_id = params[:shopify_product_id].to_i
-    handle = params[:handle]
-    title = params[:title]
-
-    Rails.logger.info("[ProductPagesController#create_single_product] Creating single product: #{title} (#{product_id})")
-
-    product_page = @shop.product_pages.build(
-      shopify_product_id: product_id,
-      handle: handle,
-      title: title,
-      url: "/products/#{handle}",
-      monitoring_enabled: true,
-      status: "pending"
-    )
-
-    if product_page.save
-      Rails.logger.info("[ProductPagesController#create_single_product] Created product page #{product_page.id}")
-      ScanPdpJob.perform_later(product_page.id)
-      flash[:success] = "#{title} added to monitoring. First scan starting now."
-      redirect_to product_pages_path(host: params[:host])
-    else
-      Rails.logger.error("[ProductPagesController#create_single_product] Failed: #{product_page.errors.full_messages}")
-      flash[:error] = product_page.errors.full_messages.join(", ")
-      redirect_to new_product_page_path(host: params[:host])
-    end
-  end
 end

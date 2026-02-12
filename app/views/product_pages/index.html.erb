@@ -1,60 +1,216 @@
-<%# Product Pages Index - List of monitored PDPs %>
+<%# Product Pages Index - List of monitored PDPs with inline product picker %>
 
 <s-page heading="Monitored Pages">
   <% if @can_add_more %>
-    <s-link slot="primary-action" href="<%= new_product_page_path(host: @host) %>">Add Product</s-link>
+    <s-button slot="primary-action" variant="primary" id="open-product-picker">Add Product</s-button>
   <% end %>
   <s-link slot="breadcrumb-actions" href="<%= root_path(host: @host) %>">Dashboard</s-link>
   <s-badge slot="accessory" tone="info"><%= @product_pages_count %>/<%= @shop_setting&.max_monitored_pages || 5 %></s-badge>
 </s-page>
 
-<div class="issues-list">
-  <% if @product_pages_count > 0 %>
-    <% @product_pages.each do |page| %>
-      <div class="issue-item" style="cursor: default;">
-        <div class="issue-severity <%= page.status %>"></div>
-        <div class="issue-content">
-          <%= link_to product_page_path(page, host: @host), style: "text-decoration: none; color: inherit;" do %>
-            <p class="issue-title"><%= page.title %></p>
-            <p class="issue-meta">
-              <%= page.handle %> • 
-              <% if page.last_scanned_at %>
-                Last scanned <%= time_ago_in_words(page.last_scanned_at) %> ago
-              <% else %>
-                Never scanned
-              <% end %>
-              <% high_severity_count = @high_severity_counts[page.id] || 0 %>
-              <% if high_severity_count > 0 %>
-                • <%= high_severity_count %> critical issue<%= high_severity_count > 1 ? 's' : '' %>
-              <% end %>
-            </p>
-          <% end %>
-        </div>
-          <span class="badge badge-<%= page.status == 'healthy' ? 'healthy' : (page.status == 'critical' ? 'critical' : (page.status == 'warning' ? 'warning' : 'pending')) %>">
-            <%= page.status.capitalize %>
-          </span>
-        <s-stack direction="inline" gap="small-300">
-          <s-button href="<%= product_page_path(page, host: @host) %>">View</s-button>
-          <s-button onclick="document.getElementById('rescan-form-<%= page.id %>').submit()">Rescan</s-button>
-          <s-button tone="critical" variant="primary" onclick="if(confirm('Remove <%= page.title %> from monitoring?')) document.getElementById('delete-form-<%= page.id %>').submit()">Remove</s-button>
+<% if @product_pages_count > 0 %>
+  <%# Product list - Thumbnail | Title | Status | Actions %>
+  <s-section padding="none">
+    <s-stack gap="none">
+      <% @product_pages.each do |page| %>
+        <s-box border="base" padding="base">
+          <s-grid gridTemplateColumns="auto 1fr auto auto" gap="base" alignItems="center">
+            <%# Thumbnail + Title (clickable) %>
+            <s-link href="<%= product_page_path(page, host: @host) %>" removeUnderline>
+              <s-thumbnail
+                src="<%= page.image_url.presence || 'https://cdn.shopify.com/s/files/1/0533/2089/files/placeholder-images-image_large.png' %>"
+                alt="<%= page.title %>"
+                size="small"
+              ></s-thumbnail>
+            </s-link>
+
+            <s-link href="<%= product_page_path(page, host: @host) %>" tone="neutral">
+              <%= page.title %>
+            </s-link>
+
+            <%# Status badge %>
+            <s-badge tone="<%= page.status == 'healthy' ? 'success' : (page.status == 'critical' ? 'critical' : (page.status == 'warning' ? 'attention' : 'info')) %>">
+              <%= page.status.capitalize %>
+            </s-badge>
+
+            <%# Action buttons %>
+            <s-stack direction="inline" gap="tight">
+              <s-button href="<%= product_page_path(page, host: @host) %>">View</s-button>
+              <s-button onclick="document.getElementById('rescan-form-<%= page.id %>').submit()">Rescan</s-button>
+              <s-button tone="critical" onclick="if(confirm('Remove <%= page.title %> from monitoring?')) document.getElementById('delete-form-<%= page.id %>').submit()">Remove</s-button>
+            </s-stack>
+          </s-grid>
 
           <form id="rescan-form-<%= page.id %>" action="<%= rescan_product_page_path(page, host: @host) %>" method="post" style="display: none;">
             <input type="hidden" name="authenticity_token" value="<%= form_authenticity_token %>">
           </form>
-
           <form id="delete-form-<%= page.id %>" action="<%= product_page_path(page, host: @host) %>" method="post" style="display: none;">
             <input type="hidden" name="_method" value="delete">
             <input type="hidden" name="authenticity_token" value="<%= form_authenticity_token %>">
           </form>
-        </s-stack>
-      </div>
-    <% end %>
-  <% else %>
-    <div class="empty-state">
-      <div class="empty-state-icon">📦</div>
-      <h3 class="empty-state-title">No product pages monitored yet</h3>
-      <p class="empty-state-description">Add up to 5 product pages to start monitoring their health.</p>
-      <s-button variant="primary" href="<%= new_product_page_path(host: @host) %>">Add Product Page</s-button>
-    </div>
+        </s-box>
+      <% end %>
+    </s-stack>
+  </s-section>
+
+  <%# Remaining slots info %>
+  <s-box paddingBlockStart="small">
+  <% if @can_add_more %>
+    <s-section padding="base">
+      <s-stack direction="inline" gap="base" align="center">
+        <s-icon type="info" tone="info"></s-icon>
+        <s-paragraph>
+          <%= @remaining_slots %> slot<%= @remaining_slots > 1 ? 's' : '' %> remaining ·
+          <a href="#" id="add-more-link" style="color: inherit;">Add more products</a>
+        </s-paragraph>
+      </s-stack>
+    </s-section>
   <% end %>
+<% else %>
+  <%# Empty state - Shopify pattern %>
+  <s-section accessibilityLabel="No monitored products">
+    <s-grid gap="base" justifyItems="center" paddingBlock="large-400">
+      <s-box maxInlineSize="200px" maxBlockSize="200px">
+        <s-image
+          aspectRatio="1/0.5"
+          src="https://cdn.shopify.com/static/images/polaris/patterns/callout.png"
+          alt="Add products to monitor"
+        />
+      </s-box>
+      <s-grid justifyItems="center" maxInlineSize="450px" gap="base">
+        <s-stack align="center">
+          <s-heading>No product pages monitored yet</s-heading>
+          <s-paragraph>
+            Add up to <%= @shop_setting&.max_monitored_pages || 5 %> product pages to start monitoring for JavaScript errors, broken UI elements, and performance issues.
+          </s-paragraph>
+        </s-stack>
+        <s-button id="open-product-picker-empty" variant="primary">
+          Add Product Pages
+        </s-button>
+      </s-grid>
+    </s-grid>
+  </s-section>
+<% end %>
+</s-box>
+
+<!-- Store data for JavaScript (Resource Picker) -->
+<div id="picker-config"
+     data-create-url="<%= product_pages_path %>"
+     data-redirect-url="<%= product_pages_path(host: @host) %>"
+     data-monitored-gids="<%= @monitored_product_gids.to_json %>"
+     data-max-selections="<%= @remaining_slots %>"
+     data-csrf-token="<%= form_authenticity_token %>"
+     style="display: none;">
 </div>
+
+<% content_for :javascript do %>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const config = document.getElementById('picker-config');
+    const createUrl = config.dataset.createUrl;
+    const redirectUrl = config.dataset.redirectUrl;
+    const monitoredProductIds = JSON.parse(config.dataset.monitoredGids || '[]');
+    const maxSelections = parseInt(config.dataset.maxSelections, 10);
+    const csrfToken = config.dataset.csrfToken;
+
+    // Attach picker to all Add Product buttons
+    const pickerButtons = [
+      document.getElementById('open-product-picker'),
+      document.getElementById('open-product-picker-empty'),
+      document.getElementById('add-more-link')
+    ].filter(Boolean);
+
+    pickerButtons.forEach(function(btn) {
+      btn.addEventListener('click', async function(e) {
+        e.preventDefault();
+
+        if (maxSelections <= 0) {
+          shopify.toast.show('You have reached the maximum number of monitored pages.', { duration: 3000 });
+          return;
+        }
+
+        try {
+          const selected = await shopify.resourcePicker({
+            type: 'product',
+            action: 'select',
+            multiple: maxSelections > 1 ? maxSelections : false,
+            filter: {
+              draft: false,
+              archived: false,
+              variants: false
+            }
+          });
+
+          console.log('Resource Picker returned:', selected);
+
+          if (selected && selected.length > 0) {
+            const newProducts = selected.filter(product =>
+              !monitoredProductIds.includes(product.id)
+            );
+
+            if (newProducts.length === 0) {
+              shopify.toast.show('All selected products are already being monitored', { duration: 3000 });
+              return;
+            }
+
+            // Show loading
+            btn.disabled = true;
+            if (btn.tagName === 'S-BUTTON') btn.textContent = 'Adding...';
+
+            const params = new URLSearchParams();
+            params.append('authenticity_token', csrfToken);
+
+            newProducts.forEach((product, index) => {
+              const numericId = product.id.split('/').pop();
+              params.append(`products[${index}][shopify_product_id]`, numericId);
+              params.append(`products[${index}][handle]`, product.handle);
+              params.append(`products[${index}][title]`, product.title);
+
+              // Extract image URL from the Resource Picker response
+              const imageUrl = product.images && product.images.length > 0
+                ? product.images[0].originalSrc
+                : '';
+              params.append(`products[${index}][image_url]`, imageUrl);
+            });
+
+            let token;
+            try {
+              token = await shopify.idToken();
+            } catch (tokenError) {
+              console.warn('Could not get session token:', tokenError);
+            }
+
+            const headers = {
+              'Content-Type': 'application/x-www-form-urlencoded',
+              'X-CSRF-Token': csrfToken,
+              'Accept': 'application/json, text/html'
+            };
+            if (token) headers['Authorization'] = `Bearer ${token}`;
+
+            const response = await fetch(createUrl, {
+              method: 'POST',
+              headers: headers,
+              body: params.toString(),
+              credentials: 'same-origin'
+            });
+
+            if (response.ok) {
+              shopify.toast.show(`Added ${newProducts.length} product(s) to monitoring!`, { duration: 3000 });
+              setTimeout(() => { window.location.href = redirectUrl; }, 500);
+            } else {
+              const errorText = await response.text();
+              console.error('Failed to add products:', response.status, errorText);
+              throw new Error(`Server returned ${response.status}`);
+            }
+          }
+        } catch (error) {
+          console.error('Error:', error);
+          shopify.toast.show('Failed to add products. Please try again.', { duration: 3000, isError: true });
+          btn.disabled = false;
+          if (btn.tagName === 'S-BUTTON') btn.textContent = 'Add Product';
+        }
+      });
+    });
+  });
+</script>
+<% end %>
