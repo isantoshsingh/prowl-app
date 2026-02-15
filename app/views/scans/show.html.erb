@@ -2,7 +2,7 @@
 
 <s-page heading="Scan #<%= @scan.id %>">
   <s-link slot="primary-action" href="<%= product_page_path(@product_page, host: @host) %>">View Product Page</s-link>
-  <s-link slot="breadcrumb-actions" href="<%= scans_path(host: @host) %>">Scan History</s-link>
+  <s-link slot="breadcrumb-actions" href="<%= scans_path(host: @host) %>">Scan history</s-link>
   <s-badge slot="accessory" tone="<%= @scan.status == 'completed' ? 'success' : (@scan.status == 'failed' ? 'critical' : 'info') %>"><%= @scan.status.capitalize %></s-badge>
 </s-page>
 
@@ -14,7 +14,7 @@
       <s-badge tone="<%= @scan.status == 'completed' ? 'success' : (@scan.status == 'failed' ? 'critical' : 'info') %>"><%= @scan.status.capitalize %></s-badge>
     </s-stack>
     <s-stack direction="block" gap="extra-tight">
-      <s-paragraph>Page Load Time</s-paragraph>
+      <s-paragraph>Page load time</s-paragraph>
       <strong>
         <% if @scan.page_load_time_ms %>
         <%= (@scan.page_load_time_ms / 1000.0).round(2) %>s
@@ -24,7 +24,7 @@
       </strong>
     </s-stack>
     <s-stack direction="block" gap="extra-tight">
-      <s-paragraph>Issues Found</s-paragraph>
+      <s-paragraph>Issues found</s-paragraph>
       <s-stack direction="inline" gap="tight" align="center">
         <strong><%= @issues.count %></strong>
         <% if @issues.any? %>
@@ -53,7 +53,7 @@
         <s-link href="<%= product_page_path(@product_page, host: @host) %>"><%= @product_page.title %></s-link>
       </s-stack>
       <s-stack direction="block" gap="extra-tight">
-        <s-paragraph>Scanned At</s-paragraph>
+        <s-paragraph>Scanned at</s-paragraph>
         <strong><%= @scan.created_at.strftime("%B %d, %Y at %H:%M") %></strong>
       </s-stack>
     </s-grid>
@@ -64,7 +64,7 @@
 <s-box paddingBlockStart="base">
   <s-banner tone="critical" accessibilityLabel="Scan failed">
     <s-stack direction="block" gap="tight">
-      <strong>Scan Failed</strong>
+      <strong>Scan failed</strong>
       <s-paragraph><%= @scan.error_message %></s-paragraph>
     </s-stack>
   </s-banner>

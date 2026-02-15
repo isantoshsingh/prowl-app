@@ -1,8 +1,8 @@
 <%# Product Pages Index - List of monitored PDPs with inline product picker %>
 
-<s-page heading="Monitored Pages">
+<s-page heading="Monitored pages">
   <% if @can_add_more %>
-  <s-button slot="primary-action" variant="primary" id="open-product-picker">Add Product</s-button>
+  <s-button slot="primary-action" variant="primary" id="open-product-picker">Add product</s-button>
   <% end %>
   <s-link slot="breadcrumb-actions" href="<%= root_path(host: @host) %>">Dashboard</s-link>
   <s-badge slot="accessory" tone="info"><%= @product_pages_count %>/<%= @shop_setting&.max_monitored_pages || 5 %></s-badge>
@@ -77,7 +77,7 @@
           </s-paragraph>
         </s-stack>
         <s-button id="open-product-picker-empty" variant="primary">
-          Add Product Pages
+          Add product pages
         </s-button>
       </s-grid>
     </s-grid>
@@ -135,12 +135,19 @@
             const newProducts = selected.filter(product =>
               !monitoredProductIds.includes(product.id)
             );
+            const skippedCount = selected.length - newProducts.length;
 
             if (newProducts.length === 0) {
-              shopify.toast.show('All selected products are already being monitored', {
+              shopify.toast.show('All selected products are already being monitored.', {
                 duration: 3000
               });
               return;
+            }
+
+            if (skippedCount > 0) {
+              shopify.toast.show(`${skippedCount} product(s) already monitored and skipped.`, {
+                duration: 3000
+              });
             }
 
             // Show loading
