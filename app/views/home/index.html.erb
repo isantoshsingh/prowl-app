@@ -2,53 +2,54 @@
 <%# Using correct Polaris Web Component APIs for App Home %>
 
 <% if @total_pages == 0 %>
-  <%# Empty State - Clear onboarding for new users %>
-  <s-page heading="Welcome to PDP Diagnostics">
-    <s-button slot="primary-action" variant="primary" href="<%= product_pages_path(host: @host) %>">
-      Add Your First Product
-    </s-button>
-  </s-page>
+<%# Empty State - Clear onboarding for new users %>
+<s-page heading="Welcome to PDP Diagnostics">
+  <s-button slot="primary-action" variant="primary" href="<%= product_pages_path(host: @host) %>">
+    Add Your First Product
+  </s-button>
+</s-page>
 
-  <%# Setup Guide %>
-  <s-section heading="Get Started">
-    <s-stack direction="block" gap="base">
-      <s-paragraph>
-        Protect your sales from silent failures. PDP Diagnostics monitors your product pages for JavaScript errors, broken UI elements, and performance issues.
-      </s-paragraph>
+<%# Setup Guide %>
+<s-section heading="Get started">
+  <s-stack direction="block" gap="base">
+    <s-paragraph>
+      Protect your sales from silent failures. PDP Diagnostics monitors your product pages for JavaScript errors, broken UI elements, and performance issues.
+    </s-paragraph>
 
-      <s-stack direction="block" gap="base-tight">
-        <s-stack direction="inline" gap="base-tight" align="start">
-          <s-badge tone="info">1</s-badge>
-          <s-stack direction="block" gap="extra-tight">
-            <s-paragraph><strong>Add products to monitor</strong></s-paragraph>
-            <s-paragraph>Select up to <%= @shop.shop_setting&.max_monitored_pages || 5 %> critical product pages</s-paragraph>
-          </s-stack>
-        </s-stack>
-
-        <s-stack direction="inline" gap="base-tight" align="start">
-          <s-badge tone="info">2</s-badge>
-          <s-stack direction="block" gap="extra-tight">
-            <s-paragraph><strong>Automatic daily scans</strong></s-paragraph>
-            <s-paragraph>We'll check your pages every day for issues</s-paragraph>
-          </s-stack>
-        </s-stack>
-
-        <s-stack direction="inline" gap="base-tight" align="start">
-          <s-badge tone="info">3</s-badge>
-          <s-stack direction="block" gap="extra-tight">
-            <s-paragraph><strong>Get instant alerts</strong></s-paragraph>
-            <s-paragraph>Receive notifications when critical issues are detected</s-paragraph>
-          </s-stack>
+    <s-stack direction="block" gap="base-tight">
+      <s-stack direction="inline" gap="base-tight" align="start">
+        <s-badge tone="info">1</s-badge>
+        <s-stack direction="block" gap="extra-tight">
+          <s-paragraph><strong>Add products to monitor</strong></s-paragraph>
+          <s-paragraph>Select up to <%= @shop.shop_setting&.max_monitored_pages || 5 %> critical product pages</s-paragraph>
         </s-stack>
       </s-stack>
 
-      <s-button variant="primary" href="<%= product_pages_path(host: @host) %>">
-        Add Product Pages
-      </s-button>
-    </s-stack>
-  </s-section>
+      <s-stack direction="inline" gap="base-tight" align="start">
+        <s-badge tone="info">2</s-badge>
+        <s-stack direction="block" gap="extra-tight">
+          <s-paragraph><strong>Automatic daily scans</strong></s-paragraph>
+          <s-paragraph>We'll check your pages every day for issues</s-paragraph>
+        </s-stack>
+      </s-stack>
 
-  <s-section heading="What We Monitor">
+      <s-stack direction="inline" gap="base-tight" align="start">
+        <s-badge tone="info">3</s-badge>
+        <s-stack direction="block" gap="extra-tight">
+          <s-paragraph><strong>Get instant alerts</strong></s-paragraph>
+          <s-paragraph>Receive notifications when critical issues are detected</s-paragraph>
+        </s-stack>
+      </s-stack>
+    </s-stack>
+
+    <s-button variant="primary" href="<%= product_pages_path(host: @host) %>">
+      Add Product Pages
+    </s-button>
+  </s-stack>
+</s-section>
+
+<s-box paddingBlockStart="small">
+  <s-section heading="What we monitor">
     <s-grid gridTemplateColumns="repeat(2, 1fr)" gap="base">
       <s-stack direction="inline" gap="base-tight" align="start">
         <s-icon type="check-circle" tone="success"></s-icon>
@@ -83,184 +84,179 @@
       </s-stack>
     </s-grid>
   </s-section>
+</s-box>
 
 <% else %>
-  <%# Active Dashboard %>
-  <s-page heading="PDP Diagnostics" inlineSize="base">
-    <s-button slot="primary-action" variant="primary" href="<%= product_pages_path(host: @host) %>">
-      Add Products
-    </s-button>
+<%# Active Dashboard %>
+<s-page heading="PDP Diagnostics" inlineSize="base">
+  <s-button slot="primary-action" variant="primary" href="<%= product_pages_path(host: @host) %>">
+    Add Products
+  </s-button>
 
-    <%# Sidebar %>
-    <div slot="aside">
-      <s-section heading="Quick Actions">
-        <s-stack direction="block" gap="small-300">
-          <s-button href="<%= product_pages_path(host: @host) %>" fullWidth>
-            Add Products
-          </s-button>
-          <s-button href="<%= product_pages_path(host: @host) %>" fullWidth>
-            View All Pages
-          </s-button>
-          <s-button href="<%= scans_path(host: @host) %>" fullWidth>
-            Scan History
-          </s-button>
-        </s-stack>
-      </s-section>
-
-      <s-section heading="Need Help?">
-        <s-stack direction="block" gap="tight">
-          <s-paragraph>
-            Configure alerts, scan frequency, and notification settings.
-          </s-paragraph>
-          <s-button href="<%= settings_path(host: @host) %>" fullWidth>
-            Settings
-          </s-button>
-        </s-stack>
-      </s-section>
-    </div>
-
-    <%# Critical Alert Banner %>
-    <% if @critical_pages > 0 %>
-      <s-banner tone="critical">
-        <s-stack direction="block" gap="tight">
-          <s-paragraph>
-            <strong><%= @critical_pages %> product <%= @critical_pages == 1 ? 'page has' : 'pages have' %> critical issues</strong>
-          </s-paragraph>
-          <s-paragraph>
-            These issues may be preventing customers from completing purchases. Review them immediately.
-          </s-paragraph>
-          <s-button href="<%= issues_path(host: @host) %>">View Critical Issues</s-button>
-        </s-stack>
-      </s-banner>
-    <% elsif @warning_pages > 0 %>
-      <s-banner tone="warning">
-        <s-paragraph>
-          <strong><%= @warning_pages %></strong> product <%= @warning_pages == 1 ? 'page needs' : 'pages need' %> attention
-        </s-paragraph>
-      </s-banner>
-    <% end %>
-
-    <%# Status Indicator %>
-    <s-section>
-      <s-stack direction="inline" gap="base" align="center">
-        <% if @open_issues_count == 0 %>
-          <s-icon type="check-circle-filled" tone="success"></s-icon>
-          <s-stack direction="block" gap="extra-tight">
-            <s-heading>All Systems Operational</s-heading>
-            <s-paragraph>
-              <%= @total_pages %> product <%= @total_pages == 1 ? 'page is' : 'pages are' %> being monitored with no issues detected
-            </s-paragraph>
-          </s-stack>
-        <% else %>
-          <s-icon type="alert-circle" tone="<%= @critical_pages > 0 ? 'critical' : 'caution' %>"></s-icon>
-          <s-stack direction="block" gap="extra-tight">
-            <s-heading><%= @open_issues_count %> <%= @open_issues_count == 1 ? 'Issue' : 'Issues' %> Detected</s-heading>
-            <s-paragraph>
-              Monitoring <%= @total_pages %> product <%= @total_pages == 1 ? 'page' : 'pages' %>
-            </s-paragraph>
-          </s-stack>
-        <% end %>
+  <%# Sidebar %>
+  <div slot="aside">
+    <s-section heading="Quick actions">
+      <s-stack direction="block" gap="small-300">
+        <s-button href="<%= product_pages_path(host: @host) %>" fullWidth>
+          Add Products
+        </s-button>
+        <s-button href="<%= product_pages_path(host: @host) %>" fullWidth>
+          View All Pages
+        </s-button>
+        <s-button href="<%= scans_path(host: @host) %>" fullWidth>
+          Scan History
+        </s-button>
       </s-stack>
     </s-section>
 
-    <%# Health Overview Grid %>
-    <s-section heading="Health Overview">
-      <s-grid gridTemplateColumns="repeat(3, 1fr)" gap="base">
-        <s-box padding="base" background="subdued" borderRadius="base">
-          <s-stack direction="block" gap="tight" align="center">
-            <s-icon type="check-circle" tone="success"></s-icon>
-            <s-heading><%= @healthy_pages %></s-heading>
-            <s-paragraph>Healthy</s-paragraph>
-          </s-stack>
-        </s-box>
-
-        <s-box padding="base" background="subdued" borderRadius="base">
-          <s-stack direction="block" gap="tight" align="center">
-            <s-icon type="alert-triangle" tone="caution"></s-icon>
-            <s-heading><%= @warning_pages %></s-heading>
-            <s-paragraph>Warnings</s-paragraph>
-          </s-stack>
-        </s-box>
-
-        <s-box padding="base" background="subdued" borderRadius="base">
-          <s-stack direction="block" gap="tight" align="center">
-            <s-icon type="alert-circle" tone="critical"></s-icon>
-            <s-heading><%= @critical_pages %></s-heading>
-            <s-paragraph>Critical</s-paragraph>
-          </s-stack>
-        </s-box>
-      </s-grid>
+    <s-section heading="Need help?">
+      <s-stack direction="block" gap="tight">
+        <s-paragraph>
+          Configure alerts, scan frequency, and notification settings.
+        </s-paragraph>
+        <s-button href="<%= settings_path(host: @host) %>" fullWidth>
+          Settings
+        </s-button>
+      </s-stack>
     </s-section>
+  </div>
 
-    <%# Open Issues %>
-    <% if @open_issues_count > 0 %>
-      <s-section heading="Issues Requiring Attention">
-        <s-stack direction="block" gap="none">
-          <% @open_issues.first(5).each do |issue| %>
-            <s-box border="base" padding="base">
-              <s-link href="<%= issue_path(issue, host: @host) %>" removeUnderline>
-                <s-stack direction="inline" gap="base" justify="space-between" align="center">
-                  <s-stack direction="block" gap="extra-tight">
-                    <s-stack direction="inline" gap="tight" align="center">
-                      <s-icon
-                        type="<%= issue.severity == 'high' ? 'alert-circle' : 'alert-triangle' %>"
-                        tone="<%= issue.severity == 'high' ? 'critical' : 'caution' %>">
-                      </s-icon>
-                      <strong><%= issue.title %></strong>
-                    </s-stack>
-                    <s-paragraph>
-                      <%= issue.product_page.title %> •
-                      Detected <%= time_ago_in_words(issue.first_detected_at) %> ago
-                      <% if issue.occurrence_count > 1 %>
-                        • Seen <%= issue.occurrence_count %> times
-                      <% end %>
-                    </s-paragraph>
-                  </s-stack>
-                  <s-badge tone="<%= issue.severity == 'high' ? 'critical' : 'attention' %>">
-                    <%= issue.severity_label %>
-                  </s-badge>
-                </s-stack>
-              </s-link>
-            </s-box>
-          <% end %>
+  <%# Critical Alert Banner %>
+  <% if @critical_pages > 0 %>
+  <s-banner tone="critical">
+    <s-stack direction="block" gap="tight">
+      <s-paragraph>
+        <strong><%= @critical_pages %> product <%= @critical_pages == 1 ? 'page has' : 'pages have' %> critical issues</strong>
+      </s-paragraph>
+      <s-paragraph>
+        These issues may be preventing customers from completing purchases. Review them immediately.
+      </s-paragraph>
+      <s-button href="<%= issues_path(host: @host) %>">View critical issues</s-button>
+    </s-stack>
+  </s-banner>
+  <% elsif @warning_pages > 0 %>
+  <s-banner tone="warning">
+    <s-paragraph>
+      <strong><%= @warning_pages %></strong> product <%= @warning_pages == 1 ? 'page needs' : 'pages need' %> attention
+    </s-paragraph>
+  </s-banner>
+  <% end %>
+
+  <%# Status Indicator %>
+  <s-section>
+    <s-stack direction="inline" gap="base" align="center">
+      <% if @open_issues_count == 0 %>
+      <s-icon type="check-circle-filled" tone="success"></s-icon>
+      <s-stack direction="block" gap="extra-tight">
+        <s-heading>All systems operational</s-heading>
+        <s-paragraph>
+          <%= @total_pages %> product <%= @total_pages == 1 ? 'page is' : 'pages are' %> being monitored with no issues detected
+        </s-paragraph>
+      </s-stack>
+      <% else %>
+      <s-icon type="alert-circle" tone="<%= @critical_pages > 0 ? 'critical' : 'caution' %>"></s-icon>
+      <s-stack direction="block" gap="extra-tight">
+        <s-heading><%= @open_issues_count %> <%= @open_issues_count == 1 ? 'Issue' : 'Issues' %> Detected</s-heading>
+        <s-paragraph>
+          Monitoring <%= @total_pages %> product <%= @total_pages == 1 ? 'page' : 'pages' %>
+        </s-paragraph>
+      </s-stack>
+      <% end %>
+    </s-stack>
+  </s-section>
+
+  <%# Health Overview Grid %>
+  <s-section heading="Health overview">
+    <s-grid gridTemplateColumns="repeat(3, 1fr)" gap="base">
+      <s-box padding="base" background="subdued" borderRadius="base">
+        <s-stack direction="block" gap="tight" align="center">
+          <s-icon type="check-circle" tone="success"></s-icon>
+          <s-heading><%= @healthy_pages %></s-heading>
+          <s-paragraph>Healthy</s-paragraph>
         </s-stack>
+      </s-box>
 
-        <% if @open_issues_count > 5 %>
-          <s-box padding="base">
-            <s-button href="<%= issues_path(host: @host) %>" fullWidth>
-              View All <%= @open_issues_count %> Issues
-            </s-button>
-          </s-box>
-        <% end %>
-      </s-section>
-    <% end %>
-
-    <%# Recent Scan Activity %>
-    <% if @recent_scans.present? %>
-      <s-section heading="Recent Scan Activity">
-        <s-stack direction="block" gap="none">
-          <% @recent_scans.each do |scan| %>
-            <s-box border="base" padding="base">
-              <s-link href="<%= scan_path(scan, host: @host) %>" removeUnderline>
-                <s-stack direction="inline" gap="base-tight" justify="space-between" align="center">
-                  <s-stack direction="block" gap="extra-tight">
-                    <strong><%= scan.product_page.title %></strong>
-                    <s-paragraph>
-                      <%= time_ago_in_words(scan.created_at) %> ago
-                      <% if scan.page_load_time_ms %>
-                        • <%= (scan.page_load_time_ms / 1000.0).round(1) %>s load time
-                      <% end %>
-                    </s-paragraph>
-                  </s-stack>
-                  <s-badge tone="<%= scan.status == 'completed' ? 'success' : (scan.status == 'failed' ? 'critical' : 'info') %>">
-                    <%= scan.status.capitalize %>
-                  </s-badge>
-                </s-stack>
-              </s-link>
-            </s-box>
-          <% end %>
+      <s-box padding="base" background="subdued" borderRadius="base">
+        <s-stack direction="block" gap="tight" align="center">
+          <s-icon type="alert-triangle" tone="caution"></s-icon>
+          <s-heading><%= @warning_pages %></s-heading>
+          <s-paragraph>Warnings</s-paragraph>
         </s-stack>
-      </s-section>
+      </s-box>
+
+      <s-box padding="base" background="subdued" borderRadius="base">
+        <s-stack direction="block" gap="tight" align="center">
+          <s-icon type="alert-circle" tone="critical"></s-icon>
+          <s-heading><%= @critical_pages %></s-heading>
+          <s-paragraph>Critical</s-paragraph>
+        </s-stack>
+      </s-box>
+    </s-grid>
+  </s-section>
+
+  <%# Open Issues %>
+  <% if @open_issues_count > 0 %>
+  <s-section heading="Issues requiring attention">
+    <s-stack direction="block" gap="none">
+      <% @open_issues.first(5).each do |issue| %>
+      <s-box border="base" padding="base">
+        <s-grid gridTemplateColumns="1fr auto" gap="base" alignItems="center">
+          <s-stack direction="block" gap="extra-tight">
+            <s-stack direction="inline" gap="tight" align="center">
+              <s-icon type="<%= issue.severity == 'high' ? 'alert-circle' : 'alert-triangle' %>" tone="<%= issue.severity == 'high' ? 'critical' : 'caution' %>">
+              </s-icon>
+              <s-link href="<%= issue_path(issue, host: @host) %>" tone="neutral"><strong><%= issue.title %></strong></s-link>
+            </s-stack>
+            <s-paragraph>
+              <%= issue.product_page.title %> •
+              Detected <%= time_ago_in_words(issue.first_detected_at) %> ago
+              <% if issue.occurrence_count > 1 %>
+              • Seen <%= issue.occurrence_count %> times
+              <% end %>
+            </s-paragraph>
+          </s-stack>
+          <s-badge tone="<%= issue.severity == 'high' ? 'critical' : 'attention' %>">
+            <%= issue.severity_label %>
+          </s-badge>
+        </s-grid>
+      </s-box>
+      <% end %>
+    </s-stack>
+
+    <% if @open_issues_count > 5 %>
+    <s-box padding="base">
+      <s-button href="<%= issues_path(host: @host) %>" fullWidth>
+        View All <%= @open_issues_count %> Issues
+      </s-button>
+    </s-box>
     <% end %>
-  </s-page>
+  </s-section>
+  <% end %>
+
+  <%# Recent Scan Activity %>
+  <% if @recent_scans.present? %>
+  <s-section heading="Recent scan activity">
+    <s-stack direction="block" gap="none">
+      <% @recent_scans.each do |scan| %>
+      <s-box border="base" padding="base">
+        <s-grid gridTemplateColumns="1fr auto" gap="base" alignItems="center">
+          <s-stack direction="block" gap="extra-tight">
+            <s-link href="<%= scan_path(scan, host: @host) %>"><strong><%= scan.product_page.title %></strong></s-link>
+            <s-paragraph>
+              <%= time_ago_in_words(scan.created_at) %> ago
+              <% if scan.page_load_time_ms %>
+              • <%= (scan.page_load_time_ms / 1000.0).round(1) %>s load time
+              <% end %>
+            </s-paragraph>
+          </s-stack>
+          <s-badge tone="<%= scan.status == 'completed' ? 'success' : (scan.status == 'failed' ? 'critical' : 'info') %>">
+            <%= scan.status.capitalize %>
+          </s-badge>
+        </s-grid>
+      </s-box>
+      <% end %>
+    </s-stack>
+  </s-section>
+  <% end %>
+</s-page>
 <% end %>

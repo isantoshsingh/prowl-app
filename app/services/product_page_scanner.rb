@@ -131,7 +131,7 @@ class ProductPageScanner
 
     # Captured errors and logs from browser events
     data[:js_errors] = @browser_service.js_errors.map { |e| e.transform_keys(&:to_s) }
-    data[:network_errors] = @browser_service.network_errors.map { |e| e.transform_keys(&:to_s) }
+    data[:network_errors] = @browser_service.critical_network_errors.map { |e| e.transform_keys(&:to_s) }
     data[:console_logs] = @browser_service.console_logs.first(100).map { |e| e.transform_keys(&:to_s) }
     data[:page_load_time_ms] = @browser_service.page_load_time_ms
 

@@ -42,6 +42,10 @@ class BrowserService
     doubleclick.net
     connect.facebook.net
     analytics
+    monorail-edge.shopifysvc.com
+    shopifysvc.com
+    /api/collect
+    favicon.ico
   ].freeze
 
   attr_reader :browser, :page, :js_errors, :console_logs, :network_errors,
@@ -59,20 +63,29 @@ class BrowserService
     @started = false
   end
 
-  # Launches the browser instance
+  # Launches the browser instance with one retry for transient failures
   def start
     return if @started
 
-    @browser = Puppeteer.launch(
-      headless: @options[:headless],
-      args: browser_launch_args
-    )
-    @started = true
-    Rails.logger.info("[BrowserService] Browser launched")
-    self
-  rescue StandardError => e
-    Rails.logger.error("[BrowserService] Failed to launch browser: #{e.message}")
-    raise BrowserError, "Failed to launch browser: #{e.message}"
+    retries = 0
+    begin
+      @browser = Puppeteer.launch(
+        headless: @options[:headless],
+        args: browser_launch_args
+      )
+      @started = true
+      Rails.logger.info("[BrowserService] Browser launched")
+      self
+    rescue StandardError => e
+      if retries < 1
+        retries += 1
+        Rails.logger.warn("[BrowserService] Browser launch failed (attempt #{retries}): #{e.message}, retrying...")
+        sleep(1)
+        retry
+      end
+      Rails.logger.error("[BrowserService] Failed to launch browser after #{retries + 1} attempts: #{e.message}")
+      raise BrowserError, "Failed to launch browser: #{e.message}"
+    end
   end
 
   # Closes the browser and cleans up resources
@@ -291,8 +304,7 @@ class BrowserService
       "--disable-setuid-sandbox",
       "--disable-dev-shm-usage",
       "--disable-gpu",
-      "--disable-software-rasterizer",
-      "--single-process"
+      "--disable-software-rasterizer"
     ]
 
     args << "--window-size=#{@options[:viewport_width]},#{@options[:viewport_height]}"
@@ -301,6 +313,15 @@ class BrowserService
 
   def setup_new_page
     @page&.close rescue nil
+    @page = @browser.new_page
+    configure_page
+    setup_event_listeners
+    setup_request_interception if @options[:block_unnecessary_resources]
+  rescue Puppeteer::Connection::ProtocolError => e
+    Rails.logger.warn("[BrowserService] Target closed during page setup: #{e.message}, restarting browser...")
+    close
+    @started = false
+    start
     @page = @browser.new_page
     configure_page
     setup_event_listeners

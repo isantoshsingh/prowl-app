@@ -1,60 +1,65 @@
-<%# Issues Index - All issues across monitored pages %>
+<%# Issues Index — Polaris Web Components (Built for Shopify) %>
 
 <s-page heading="Issues">
   <s-link slot="breadcrumb-actions" href="<%= root_path(host: @host) %>">Dashboard</s-link>
   <% if @issues.count > 0 %>
-    <s-badge slot="accessory" tone="<%= @issues.any? { |i| i.status == 'open' } ? 'warning' : 'success' %>"><%= @issues.count %> total</s-badge>
+  <s-badge slot="accessory" tone="<%= @issues.any? { |i| i.status == 'open' } ? 'warning' : 'success' %>"><%= @issues.count %> total</s-badge>
   <% end %>
 </s-page>
 
-<!-- Filters -->
-<div style="display: flex; gap: 12px; margin-bottom: 16px;">
-  <%= link_to issues_path(host: @host), class: "badge #{params[:status].blank? ? 'badge-healthy' : 'badge-pending'}" do %>
-    All
-  <% end %>
-  <%= link_to issues_path(status: "open", host: @host), class: "badge #{params[:status] == 'open' ? 'badge-critical' : 'badge-pending'}" do %>
-    Open
-  <% end %>
-  <%= link_to issues_path(status: "acknowledged", host: @host), class: "badge #{params[:status] == 'acknowledged' ? 'badge-warning' : 'badge-pending'}" do %>
-    Acknowledged
-  <% end %>
-  <%= link_to issues_path(status: "resolved", host: @host), class: "badge #{params[:status] == 'resolved' ? 'badge-healthy' : 'badge-pending'}" do %>
-    Resolved
-  <% end %>
-</div>
+<!-- Filters: s-clickable-chip with gap="base" for spacing (https://shopify.dev/docs/api/app-home/polaris-web-components/actions/clickablechip) -->
+<s-section heading="Filter issues by status">
+  <s-stack direction="inline" gap="base">
+    <s-clickable-chip color="<%= params[:status].blank? ? 'base' : 'subdued' %>" href="<%= issues_path(host: @host) %>" accessibilityLabel="Filter by all issues">All</s-clickable-chip>
+    <s-clickable-chip color="<%= params[:status] == 'open' ? 'base' : 'subdued' %>" href="<%= issues_path(status: 'open', host: @host) %>" accessibilityLabel="Filter by open issues">Open</s-clickable-chip>
+    <s-clickable-chip color="<%= params[:status] == 'acknowledged' ? 'base' : 'subdued' %>" href="<%= issues_path(status: 'acknowledged', host: @host) %>" accessibilityLabel="Filter by acknowledged issues">Acknowledged</s-clickable-chip>
+    <s-clickable-chip color="<%= params[:status] == 'resolved' ? 'base' : 'subdued' %>" href="<%= issues_path(status: 'resolved', host: @host) %>" accessibilityLabel="Filter by resolved issues">Resolved</s-clickable-chip>
+  </s-stack>
+</s-section>
 
-<div class="issues-list">
-  <% if @issues.any? %>
-    <% @issues.each do |issue| %>
-      <%= link_to issue_path(issue, host: @host), class: "issue-item" do %>
-        <div class="issue-severity <%= issue.severity %>"></div>
-        <div class="issue-content">
-          <p class="issue-title"><%= issue.title %></p>
-          <p class="issue-meta">
-            <%= issue.product_page.title %> • 
-            <%= issue.severity_label %> • 
-            <%= issue.status.capitalize %>
-            <% if issue.occurrence_count > 1 %>
-              • Seen <%= issue.occurrence_count %> times
-            <% end %>
-          </p>
-        </div>
-        <span class="badge badge-<%= issue.status == 'resolved' ? 'healthy' : (issue.status == 'acknowledged' ? 'warning' : 'critical') %>">
-          <%= issue.status.capitalize %>
-        </span>
+<s-box paddingBlockStart="base">
+  <s-section heading="<%= params[:status].present? ? params[:status].capitalize : 'All' %> issues">
+    <% if @issues.any? %>
+    <s-stack gap="none">
+      <% @issues.each do |issue| %>
+      <%= link_to issue_path(issue, host: @host), style: "display: block; text-decoration: none; color: inherit;" do %>
+      <s-box border="base" padding="base">
+        <s-grid gridTemplateColumns="1fr auto" gap="base" alignItems="center">
+          <s-stack direction="block" gap="extra-tight">
+            <strong><%= issue.title %></strong>
+            <s-stack direction="inline" gap="tight" align="center">
+              <s-paragraph><%= issue.product_page.title %></s-paragraph>
+              <s-badge tone="<%= issue.severity == 'high' ? 'critical' : (issue.severity == 'medium' ? 'warning' : 'attention') %>"><%= issue.severity_label %></s-badge>
+              <s-paragraph><%= issue.status.capitalize %></s-paragraph>
+              <% if issue.occurrence_count > 1 %>
+              <s-paragraph>Seen <%= issue.occurrence_count %> times</s-paragraph>
+              <% end %>
+            </s-stack>
+          </s-stack>
+          <s-badge tone="<%= issue.status == 'resolved' ? 'success' : (issue.status == 'acknowledged' ? 'warning' : 'critical') %>"><%= issue.status.capitalize %></s-badge>
+        </s-grid>
+      </s-box>
       <% end %>
+      <% end %>
+    </s-stack>
+    <% else %>
+    <s-grid gap="base" justifyItems="center" paddingBlock="large-400">
+      <s-box maxInlineSize="120px" maxBlockSize="120px">
+        <s-icon type="check-circle-filled" tone="success"></s-icon>
+      </s-box>
+      <s-grid justifyItems="center" maxInlineSize="450px" gap="base">
+        <s-stack align="center" gap="tight">
+          <s-heading>No issues found</s-heading>
+          <s-paragraph>
+            <% if params[:status].present? %>
+            No <%= params[:status] %> issues at this time.
+            <% else %>
+            All your product pages are healthy.
+            <% end %>
+          </s-paragraph>
+        </s-stack>
+      </s-grid>
+    </s-grid>
     <% end %>
-  <% else %>
-    <div class="empty-state">
-      <div class="empty-state-icon">✓</div>
-      <h3 class="empty-state-title">No issues found</h3>
-      <p class="empty-state-description">
-        <% if params[:status].present? %>
-          No <%= params[:status] %> issues at this time.
-        <% else %>
-          All your product pages are healthy.
-        <% end %>
-      </p>
-    </div>
-  <% end %>
-</div>
+  </s-section>
+</s-box>

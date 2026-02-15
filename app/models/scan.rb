@@ -80,10 +80,24 @@ class Scan < ApplicationRecord
     js_errors.is_a?(Array) ? js_errors : []
   end
 
-  # Returns parsed network errors
+  IRRELEVANT_NETWORK_PATTERNS = %w[
+    google-analytics.com googletagmanager.com facebook.net hotjar.com
+    doubleclick.net connect.facebook.net analytics monorail-edge.shopifysvc.com
+    shopifysvc.com /api/collect favicon.ico
+  ].freeze
+
+  RELEVANT_RESOURCE_TYPES = %w[document stylesheet script xhr fetch image].freeze
+
+  # Returns parsed network errors, filtered to exclude irrelevant noise
   def parsed_network_errors
     return [] if network_errors.blank?
-    network_errors.is_a?(Array) ? network_errors : []
+    errors = network_errors.is_a?(Array) ? network_errors : []
+    errors.select do |error|
+      url = error["url"].to_s.downcase
+      resource_type = error["resource_type"].to_s.downcase
+      RELEVANT_RESOURCE_TYPES.include?(resource_type) &&
+        IRRELEVANT_NETWORK_PATTERNS.none? { |pattern| url.include?(pattern) }
+    end
   end
 
   # Returns parsed detection results from the detection engine

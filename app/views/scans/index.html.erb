@@ -1,40 +1,45 @@
-<%# Scans Index - Scan history %>
+<%# Scans Index — Polaris Web Components (Built for Shopify) %>
 
 <s-page heading="Scan History">
   <s-link slot="breadcrumb-actions" href="<%= root_path(host: @host) %>">Dashboard</s-link>
   <% if @scans.count > 0 %>
-    <s-badge slot="accessory" tone="info"><%= @scans.count %> scans</s-badge>
+  <s-badge slot="accessory" tone="info"><%= @scans.count %> scans</s-badge>
   <% end %>
 </s-page>
 
-<div class="issues-list">
+<s-section heading="Scan history">
   <% if @scans.any? %>
+  <s-stack gap="none">
     <% @scans.each do |scan| %>
-      <%= link_to scan_path(scan, host: @host), class: "issue-item" do %>
-        <div class="issue-severity <%= scan.status == 'completed' ? 'medium' : (scan.status == 'failed' ? 'high' : 'low') %>"></div>
-        <div class="issue-content">
-          <p class="issue-title"><%= scan.product_page.title %></p>
-          <p class="issue-meta">
-            Scan #<%= scan.id %> • 
-            <%= scan.created_at.strftime("%B %d, %Y at %H:%M") %>
-            <% if scan.page_load_time_ms %>
-              • <%= (scan.page_load_time_ms / 1000.0).round(1) %>s load time
-            <% end %>
-            <% if scan.issues.any? %>
-              • <%= scan.issues.count %> issue<%= scan.issues.count > 1 ? 's' : '' %> detected
-            <% end %>
-          </p>
-        </div>
-        <span class="badge badge-<%= scan.status == 'completed' ? 'healthy' : (scan.status == 'failed' ? 'critical' : 'pending') %>">
-          <%= scan.status.capitalize %>
-        </span>
-      <% end %>
+    <%= link_to scan_path(scan, host: @host), style: "display: block; text-decoration: none; color: inherit;" do %>
+    <s-box border="base" padding="base">
+      <s-grid gridTemplateColumns="1fr auto" gap="base" alignItems="center">
+        <s-stack direction="block" gap="extra-tight">
+          <strong><%= scan.product_page.title %></strong>
+          <s-paragraph>
+            <% parts = ["Scan \##{scan.id}", scan.created_at.strftime("%B %d, %Y at %H:%M")] %>
+            <% parts << "#{(scan.page_load_time_ms / 1000.0).round(1)}s load time" if scan.page_load_time_ms %>
+            <% parts << "#{scan.issues.count} issue#{scan.issues.count == 1 ? '' : 's'} detected" if scan.issues.any? %>
+            <%= parts.join(' · ') %>
+          </s-paragraph>
+        </s-stack>
+        <s-badge tone="<%= scan.status == 'completed' ? 'success' : (scan.status == 'failed' ? 'critical' : 'info') %>"><%= scan.status.capitalize %></s-badge>
+      </s-grid>
+    </s-box>
     <% end %>
+    <% end %>
+  </s-stack>
   <% else %>
-    <div class="empty-state">
-      <div class="empty-state-icon">🔍</div>
-      <h3 class="empty-state-title">No scans yet</h3>
-      <p class="empty-state-description">Scans will appear here once your monitored pages are scanned.</p>
-    </div>
+  <s-grid gap="base" justifyItems="center" paddingBlock="large-400">
+    <s-box maxInlineSize="120px" maxBlockSize="120px">
+      <s-icon type="clock" tone="subdued"></s-icon>
+    </s-box>
+    <s-grid justifyItems="center" maxInlineSize="450px" gap="base">
+      <s-stack align="center" gap="tight">
+        <s-heading>No scans yet</s-heading>
+        <s-paragraph>Scans will appear here once your monitored pages are scanned.</s-paragraph>
+      </s-stack>
+    </s-grid>
+  </s-grid>
   <% end %>
-</div>
+</s-section>

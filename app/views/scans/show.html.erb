@@ -1,128 +1,142 @@
-<%# Scan Detail %>
+<%# Scan Detail — Polaris Web Components (Built for Shopify) %>
 
 <s-page heading="Scan #<%= @scan.id %>">
-  <s-link slot="secondary-actions" href="<%= product_page_path(@product_page, host: @host) %>">View Product Page</s-link>
+  <s-link slot="primary-action" href="<%= product_page_path(@product_page, host: @host) %>">View Product Page</s-link>
   <s-link slot="breadcrumb-actions" href="<%= scans_path(host: @host) %>">Scan History</s-link>
   <s-badge slot="accessory" tone="<%= @scan.status == 'completed' ? 'success' : (@scan.status == 'failed' ? 'critical' : 'info') %>"><%= @scan.status.capitalize %></s-badge>
 </s-page>
 
 <!-- Scan Summary -->
-<div class="card-grid" style="margin-bottom: 24px;">
-  <div class="stat-card">
-    <h3 class="stat-card-title">Status</h3>
-    <p style="margin: 8px 0 0 0;">
-      <span class="badge badge-<%= @scan.status == 'completed' ? 'healthy' : (@scan.status == 'failed' ? 'critical' : 'pending') %>" style="font-size: 14px; padding: 4px 12px;">
-        <%= @scan.status.capitalize %>
-      </span>
-    </p>
-  </div>
-  
-  <div class="stat-card">
-    <h3 class="stat-card-title">Page Load Time</h3>
-    <p class="stat-card-value" style="font-size: 24px;">
-      <% if @scan.page_load_time_ms %>
+<s-section heading="Scan summary">
+  <s-grid gridTemplateColumns="repeat(4, 1fr)" gap="base">
+    <s-stack direction="block" gap="extra-tight">
+      <s-paragraph>Status</s-paragraph>
+      <s-badge tone="<%= @scan.status == 'completed' ? 'success' : (@scan.status == 'failed' ? 'critical' : 'info') %>"><%= @scan.status.capitalize %></s-badge>
+    </s-stack>
+    <s-stack direction="block" gap="extra-tight">
+      <s-paragraph>Page Load Time</s-paragraph>
+      <strong>
+        <% if @scan.page_load_time_ms %>
         <%= (@scan.page_load_time_ms / 1000.0).round(2) %>s
-      <% else %>
+        <% else %>
         —
-      <% end %>
-    </p>
-  </div>
-  
-  <div class="stat-card">
-    <h3 class="stat-card-title">Issues Found</h3>
-    <p class="stat-card-value <%= @issues.any? ? 'critical' : 'healthy' %>" style="font-size: 24px;">
-      <%= @issues.count %>
-    </p>
-  </div>
-  
-  <div class="stat-card">
-    <h3 class="stat-card-title">Duration</h3>
-    <p class="stat-card-value" style="font-size: 24px;">
-      <% if @scan.duration_seconds %>
+        <% end %>
+      </strong>
+    </s-stack>
+    <s-stack direction="block" gap="extra-tight">
+      <s-paragraph>Issues Found</s-paragraph>
+      <s-stack direction="inline" gap="tight" align="center">
+        <strong><%= @issues.count %></strong>
+        <% if @issues.any? %>
+        <s-icon type="alert-circle" tone="critical"></s-icon>
+        <% end %>
+      </s-stack>
+    </s-stack>
+    <s-stack direction="block" gap="extra-tight">
+      <s-paragraph>Duration</s-paragraph>
+      <strong>
+        <% if @scan.duration_seconds %>
         <%= @scan.duration_seconds %>s
-      <% else %>
+        <% else %>
         —
-      <% end %>
-    </p>
-  </div>
-</div>
+        <% end %>
+      </strong>
+    </s-stack>
+  </s-grid>
+</s-section>
 
-<!-- Scan Info -->
-<div class="stat-card" style="margin-bottom: 24px;">
-  <h3 style="font-size: 16px; margin: 0 0 16px 0;">Scan Details</h3>
-  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
-    <div>
-      <p class="stat-card-title">Product</p>
-      <p style="margin: 4px 0 0 0; font-weight: 500;">
-        <%= link_to @product_page.title, product_page_path(@product_page, host: @host), style: "color: #008060; text-decoration: none;" %>
-      </p>
-    </div>
-    <div>
-      <p class="stat-card-title">Scanned At</p>
-      <p style="margin: 4px 0 0 0; font-weight: 500;">
-        <%= @scan.created_at.strftime("%B %d, %Y at %H:%M") %>
-      </p>
-    </div>
-  </div>
-</div>
+<s-box paddingBlockStart="base">
+  <s-section heading="Scan details">
+    <s-grid gridTemplateColumns="repeat(2, 1fr)" gap="base">
+      <s-stack direction="block" gap="extra-tight">
+        <s-paragraph>Product</s-paragraph>
+        <s-link href="<%= product_page_path(@product_page, host: @host) %>"><%= @product_page.title %></s-link>
+      </s-stack>
+      <s-stack direction="block" gap="extra-tight">
+        <s-paragraph>Scanned At</s-paragraph>
+        <strong><%= @scan.created_at.strftime("%B %d, %Y at %H:%M") %></strong>
+      </s-stack>
+    </s-grid>
+  </s-section>
+</s-box>
 
-<!-- Error Message (if failed) -->
 <% if @scan.status == 'failed' && @scan.error_message.present? %>
-  <div class="stat-card" style="margin-bottom: 24px; border-left: 4px solid #d72c0d;">
-    <h3 style="font-size: 16px; margin: 0 0 8px 0; color: #d72c0d;">Scan Failed</h3>
-    <p style="margin: 0;"><%= @scan.error_message %></p>
-  </div>
+<s-box paddingBlockStart="base">
+  <s-banner tone="critical" accessibilityLabel="Scan failed">
+    <s-stack direction="block" gap="tight">
+      <strong>Scan Failed</strong>
+      <s-paragraph><%= @scan.error_message %></s-paragraph>
+    </s-stack>
+  </s-banner>
+</s-box>
 <% end %>
 
 <!-- Issues from this scan -->
-<div class="issues-list" style="margin-bottom: 24px;">
-  <div class="issues-list-header">
-    <h2 class="issues-list-title">Issues Detected</h2>
-  </div>
-  
-  <% if @issues.any? %>
-    <% @issues.each do |issue| %>
-      <%= link_to issue_path(issue, host: @host), class: "issue-item" do %>
-        <div class="issue-severity <%= issue.severity %>"></div>
-        <div class="issue-content">
-          <p class="issue-title"><%= issue.title %></p>
-          <p class="issue-meta"><%= issue.severity_label %> • <%= issue.status.capitalize %></p>
-        </div>
-        <span class="badge badge-<%= issue.severity == 'high' ? 'critical' : issue.severity %>">
-          View →
-        </span>
+<s-box paddingBlockStart="base">
+  <s-section heading="Issues detected">
+    <% if @issues.any? %>
+    <s-stack gap="none">
+      <% @issues.each do |issue| %>
+      <%= link_to issue_path(issue, host: @host), style: "display: block; text-decoration: none; color: inherit;" do %>
+      <s-box border="base" padding="base">
+        <s-grid gridTemplateColumns="1fr auto" gap="base" alignItems="center">
+          <s-stack direction="block" gap="extra-tight">
+            <strong><%= issue.title %></strong>
+            <s-stack direction="inline" gap="tight" align="center">
+              <s-badge tone="<%= issue.severity == 'high' ? 'critical' : (issue.severity == 'medium' ? 'warning' : 'attention') %>"><%= issue.severity_label %></s-badge>
+              <s-paragraph><%= issue.status.capitalize %></s-paragraph>
+            </s-stack>
+          </s-stack>
+          <s-paragraph>View →</s-paragraph>
+        </s-grid>
+      </s-box>
       <% end %>
+      <% end %>
+    </s-stack>
+    <% else %>
+    <s-grid gap="base" justifyItems="center" paddingBlock="large-400">
+      <s-box maxInlineSize="120px" maxBlockSize="120px">
+        <s-icon type="check-circle-filled" tone="success"></s-icon>
+      </s-box>
+      <s-grid justifyItems="center" maxInlineSize="450px" gap="base">
+        <s-stack align="center" gap="tight">
+          <s-heading>No issues detected</s-heading>
+          <s-paragraph>This scan completed without finding any problems.</s-paragraph>
+        </s-stack>
+      </s-grid>
+    </s-grid>
     <% end %>
-  <% else %>
-    <div class="empty-state">
-      <div class="empty-state-icon">✓</div>
-      <h3 class="empty-state-title">No issues detected</h3>
-      <p class="empty-state-description">This scan completed without finding any problems.</p>
-    </div>
-  <% end %>
-</div>
+  </s-section>
+</s-box>
 
-<!-- Technical Details -->
 <% if @scan.status == 'completed' %>
-  <div class="stat-card">
-    <h3 style="font-size: 16px; margin: 0 0 16px 0;">Technical Details</h3>
-    
+<s-box paddingBlockStart="base">
+  <s-section heading="Technical details">
     <% if @scan.has_js_errors? %>
-      <div style="margin-bottom: 16px;">
-        <h4 style="font-size: 14px; margin: 0 0 8px 0;">JavaScript Errors (<%= @scan.parsed_js_errors.count %>)</h4>
-        <pre style="background: #f6f6f7; padding: 12px; border-radius: 4px; overflow-x: auto; font-size: 12px; margin: 0;"><%= @scan.parsed_js_errors.map { |e| e["message"] }.join("\n") %></pre>
-      </div>
+    <s-box paddingBlockStart="base">
+      <s-stack direction="block" gap="tight">
+        <s-paragraph><strong>JavaScript Errors (<%= @scan.parsed_js_errors.count %>)</strong></s-paragraph>
+        <s-box background="subdued" padding="base" borderRadius="base">
+          <pre style="margin: 0; overflow-x: auto; font-size: 12px; white-space: pre-wrap; word-break: break-all;"><%= @scan.parsed_js_errors.map { |e| e["message"] }.join("\n") %></pre>
+        </s-box>
+      </s-stack>
+    </s-box>
     <% end %>
-    
+
     <% if @scan.has_network_errors? %>
-      <div style="margin-bottom: 16px;">
-        <h4 style="font-size: 14px; margin: 0 0 8px 0;">Network Errors (<%= @scan.parsed_network_errors.count %>)</h4>
-        <pre style="background: #f6f6f7; padding: 12px; border-radius: 4px; overflow-x: auto; font-size: 12px; margin: 0;"><%= @scan.parsed_network_errors.map { |e| "#{e['url']}: #{e['failure']}" }.join("\n") %></pre>
-      </div>
+    <s-box paddingBlockStart="base">
+      <s-stack direction="block" gap="tight">
+        <s-paragraph><strong>Network Errors (<%= @scan.parsed_network_errors.count %>)</strong></s-paragraph>
+        <s-box background="subdued" padding="base" borderRadius="base">
+          <pre style="margin: 0; overflow-x: auto; font-size: 12px; white-space: pre-wrap; word-break: break-all;"><%= @scan.parsed_network_errors.map { |e| "#{e['url']}: #{e['failure']}" }.join("\n") %></pre>
+        </s-box>
+      </s-stack>
+    </s-box>
     <% end %>
-    
+
     <% unless @scan.has_js_errors? || @scan.has_network_errors? %>
-      <p style="color: #6d7175;">No JavaScript or network errors captured during this scan.</p>
+    <s-paragraph>No JavaScript or network errors captured during this scan.</s-paragraph>
     <% end %>
-  </div>
+  </s-section>
+</s-box>
 <% end %>

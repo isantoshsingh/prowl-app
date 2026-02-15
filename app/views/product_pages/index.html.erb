@@ -2,80 +2,72 @@
 
 <s-page heading="Monitored Pages">
   <% if @can_add_more %>
-    <s-button slot="primary-action" variant="primary" id="open-product-picker">Add Product</s-button>
+  <s-button slot="primary-action" variant="primary" id="open-product-picker">Add Product</s-button>
   <% end %>
   <s-link slot="breadcrumb-actions" href="<%= root_path(host: @host) %>">Dashboard</s-link>
   <s-badge slot="accessory" tone="info"><%= @product_pages_count %>/<%= @shop_setting&.max_monitored_pages || 5 %></s-badge>
 </s-page>
 
 <% if @product_pages_count > 0 %>
-  <%# Product list - Thumbnail | Title | Status | Actions %>
-  <s-section padding="none">
-    <s-stack gap="none">
-      <% @product_pages.each do |page| %>
-        <s-box border="base" padding="base">
-          <s-grid gridTemplateColumns="auto 1fr auto auto" gap="base" alignItems="center">
-            <%# Thumbnail + Title (clickable) %>
-            <s-link href="<%= product_page_path(page, host: @host) %>" removeUnderline>
-              <s-thumbnail
-                src="<%= page.image_url.presence || 'https://cdn.shopify.com/s/files/1/0533/2089/files/placeholder-images-image_large.png' %>"
-                alt="<%= page.title %>"
-                size="small"
-              ></s-thumbnail>
-            </s-link>
+<%# Product list - Thumbnail | Title | Status | Actions %>
+<s-section padding="none">
+  <s-stack gap="none">
+    <% @product_pages.each do |page| %>
+    <s-box border="base" padding="base">
+      <s-grid gridTemplateColumns="auto 1fr auto auto" gap="base" alignItems="center">
+        <%# Thumbnail + Title (clickable) %>
+        <s-link href="<%= product_page_path(page, host: @host) %>">
+          <s-thumbnail src="<%= page.image_url.presence || 'https://cdn.shopify.com/s/files/1/0533/2089/files/placeholder-images-image_large.png' %>" alt="<%= page.title %>" size="small"></s-thumbnail>
+        </s-link>
 
-            <s-link href="<%= product_page_path(page, host: @host) %>" tone="neutral">
-              <%= page.title %>
-            </s-link>
+        <s-link href="<%= product_page_path(page, host: @host) %>" tone="neutral">
+          <%= page.title %>
+        </s-link>
 
-            <%# Status badge %>
-            <s-badge tone="<%= page.status == 'healthy' ? 'success' : (page.status == 'critical' ? 'critical' : (page.status == 'warning' ? 'attention' : 'info')) %>">
-              <%= page.status.capitalize %>
-            </s-badge>
+        <%# Status badge %>
+        <s-badge tone="<%= page.status == 'healthy' ? 'success' : (page.status == 'critical' ? 'critical' : (page.status == 'warning' ? 'attention' : 'info')) %>">
+          <%= page.status.capitalize %>
+        </s-badge>
 
-            <%# Action buttons %>
-            <s-stack direction="inline" gap="tight">
-              <s-button href="<%= product_page_path(page, host: @host) %>">View</s-button>
-              <s-button onclick="document.getElementById('rescan-form-<%= page.id %>').submit()">Rescan</s-button>
-              <s-button tone="critical" onclick="if(confirm('Remove <%= page.title %> from monitoring?')) document.getElementById('delete-form-<%= page.id %>').submit()">Remove</s-button>
-            </s-stack>
-          </s-grid>
+        <%# Action buttons %>
+        <s-stack direction="inline" gap="tight">
+          <s-button href="<%= product_page_path(page, host: @host) %>">View</s-button>
+          <s-button onclick="document.getElementById('rescan-form-<%= page.id %>').submit()">Rescan</s-button>
+          <s-button tone="critical" onclick="if(confirm('Remove <%= page.title %> from monitoring?')) document.getElementById('delete-form-<%= page.id %>').submit()">Remove</s-button>
+        </s-stack>
+      </s-grid>
 
-          <form id="rescan-form-<%= page.id %>" action="<%= rescan_product_page_path(page, host: @host) %>" method="post" style="display: none;">
-            <input type="hidden" name="authenticity_token" value="<%= form_authenticity_token %>">
-          </form>
-          <form id="delete-form-<%= page.id %>" action="<%= product_page_path(page, host: @host) %>" method="post" style="display: none;">
-            <input type="hidden" name="_method" value="delete">
-            <input type="hidden" name="authenticity_token" value="<%= form_authenticity_token %>">
-          </form>
-        </s-box>
-      <% end %>
+      <form id="rescan-form-<%= page.id %>" action="<%= rescan_product_page_path(page, host: @host) %>" method="post" style="display: none;">
+        <input type="hidden" name="authenticity_token" value="<%= form_authenticity_token %>">
+      </form>
+      <form id="delete-form-<%= page.id %>" action="<%= product_page_path(page, host: @host) %>" method="post" style="display: none;">
+        <input type="hidden" name="_method" value="delete">
+        <input type="hidden" name="authenticity_token" value="<%= form_authenticity_token %>">
+      </form>
+    </s-box>
+    <% end %>
+  </s-stack>
+</s-section>
+
+<%# Remaining slots info %>
+<s-box paddingBlockStart="small">
+  <% if @can_add_more %>
+  <s-section padding="base">
+    <s-stack direction="inline" gap="base" align="center">
+      <s-icon type="info" tone="info"></s-icon>
+      <s-paragraph>
+        <%= @remaining_slots %> slot<%= @remaining_slots > 1 ? 's' : '' %> remaining ·
+        <a href="#" id="add-more-link" style="color: inherit;">Add more products</a>
+      </s-paragraph>
     </s-stack>
   </s-section>
-
-  <%# Remaining slots info %>
-  <s-box paddingBlockStart="small">
-  <% if @can_add_more %>
-    <s-section padding="base">
-      <s-stack direction="inline" gap="base" align="center">
-        <s-icon type="info" tone="info"></s-icon>
-        <s-paragraph>
-          <%= @remaining_slots %> slot<%= @remaining_slots > 1 ? 's' : '' %> remaining ·
-          <a href="#" id="add-more-link" style="color: inherit;">Add more products</a>
-        </s-paragraph>
-      </s-stack>
-    </s-section>
   <% end %>
-<% else %>
+  <% else %>
   <%# Empty state - Shopify pattern %>
   <s-section accessibilityLabel="No monitored products">
     <s-grid gap="base" justifyItems="center" paddingBlock="large-400">
       <s-box maxInlineSize="200px" maxBlockSize="200px">
-        <s-image
-          aspectRatio="1/0.5"
-          src="https://cdn.shopify.com/static/images/polaris/patterns/callout.png"
-          alt="Add products to monitor"
-        />
+        <s-image aspectRatio="1/0.5" src="https://cdn.shopify.com/static/images/polaris/patterns/callout.png" alt="Add products to monitor" />
       </s-box>
       <s-grid justifyItems="center" maxInlineSize="450px" gap="base">
         <s-stack align="center">
@@ -90,17 +82,11 @@
       </s-grid>
     </s-grid>
   </s-section>
-<% end %>
+  <% end %>
 </s-box>
 
 <!-- Store data for JavaScript (Resource Picker) -->
-<div id="picker-config"
-     data-create-url="<%= product_pages_path %>"
-     data-redirect-url="<%= product_pages_path(host: @host) %>"
-     data-monitored-gids="<%= @monitored_product_gids.to_json %>"
-     data-max-selections="<%= @remaining_slots %>"
-     data-csrf-token="<%= form_authenticity_token %>"
-     style="display: none;">
+<div id="picker-config" data-create-url="<%= product_pages_path %>" data-redirect-url="<%= product_pages_path(host: @host) %>" data-monitored-gids="<%= @monitored_product_gids.to_json %>" data-max-selections="<%= @remaining_slots %>" data-csrf-token="<%= form_authenticity_token %>" style="display: none;">
 </div>
 
 <% content_for :javascript do %>
@@ -125,7 +111,9 @@
         e.preventDefault();
 
         if (maxSelections <= 0) {
-          shopify.toast.show('You have reached the maximum number of monitored pages.', { duration: 3000 });
+          shopify.toast.show('You have reached the maximum number of monitored pages.', {
+            duration: 3000
+          });
           return;
         }
 
@@ -149,7 +137,9 @@
             );
 
             if (newProducts.length === 0) {
-              shopify.toast.show('All selected products are already being monitored', { duration: 3000 });
+              shopify.toast.show('All selected products are already being monitored', {
+                duration: 3000
+              });
               return;
             }
 
@@ -167,9 +157,9 @@
               params.append(`products[${index}][title]`, product.title);
 
               // Extract image URL from the Resource Picker response
-              const imageUrl = product.images && product.images.length > 0
-                ? product.images[0].originalSrc
-                : '';
+              const imageUrl = product.images && product.images.length > 0 ?
+                product.images[0].originalSrc :
+                '';
               params.append(`products[${index}][image_url]`, imageUrl);
             });
 
@@ -195,8 +185,12 @@
             });
 
             if (response.ok) {
-              shopify.toast.show(`Added ${newProducts.length} product(s) to monitoring!`, { duration: 3000 });
-              setTimeout(() => { window.location.href = redirectUrl; }, 500);
+              shopify.toast.show(`Added ${newProducts.length} product(s) to monitoring!`, {
+                duration: 3000
+              });
+              setTimeout(() => {
+                window.location.href = redirectUrl;
+              }, 500);
             } else {
               const errorText = await response.text();
               console.error('Failed to add products:', response.status, errorText);
@@ -205,7 +199,10 @@
           }
         } catch (error) {
           console.error('Error:', error);
-          shopify.toast.show('Failed to add products. Please try again.', { duration: 3000, isError: true });
+          shopify.toast.show('Failed to add products. Please try again.', {
+            duration: 3000,
+            isError: true
+          });
           btn.disabled = false;
           if (btn.tagName === 'S-BUTTON') btn.textContent = 'Add Product';
         }

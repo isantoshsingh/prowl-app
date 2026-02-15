@@ -1,73 +1,31 @@
-<%# Settings Page - Using Shopify App Bridge Forms with Save Bar %>
+<%# Settings — Polaris Web Components (Built for Shopify) %>
 
 <s-page heading="Settings">
   <s-link slot="breadcrumb-actions" href="<%= root_path(host: @host) %>">Dashboard</s-link>
 </s-page>
 
-<form 
-  action="<%= settings_path(host: @host) %>" 
-  method="post" 
-  data-save-bar
-  data-discard-confirmation
-  id="settings-form"
->
+<form action="<%= settings_path(host: @host) %>" method="post" data-save-bar data-discard-confirmation id="settings-form">
   <input type="hidden" name="_method" value="patch" />
   <input type="hidden" name="authenticity_token" value="<%= form_authenticity_token %>" />
-  
-  <!-- Alert Settings -->
-  <div class="stat-card mb-lg">
-    <h3 class="stat-card-section-title stat-card-section-title--lg">Alert Preferences</h3>
-    
-    <div class="settings-section">
+
+  <s-section heading="Alert preferences">
+    <s-stack direction="block" gap="base">
       <input type="hidden" name="shop_setting[email_alerts_enabled]" value="0" />
-      <s-checkbox
-        label="Email alerts"
-        name="shop_setting[email_alerts_enabled]"
-        value="1"
-        checked="<%= @settings.email_alerts_enabled %>"
-        details="Receive email notifications when high-severity issues are detected"
-      ></s-checkbox>
-    </div>
-    
-    <div class="settings-section">
+      <s-checkbox label="Email alerts" name="shop_setting[email_alerts_enabled]" value="1" checked="<%= @settings.email_alerts_enabled %>" details="Receive email notifications when high-severity issues are detected"></s-checkbox>
+
       <input type="hidden" name="shop_setting[admin_alerts_enabled]" value="0" />
-      <s-checkbox
-        label="Shopify admin notifications"
-        name="shop_setting[admin_alerts_enabled]"
-        value="1"
-        checked="<%= @settings.admin_alerts_enabled %>"
-        details="Receive notifications in your Shopify admin dashboard"
-      ></s-checkbox>
-    </div>
-    
-    <div>
-      <s-email-field
-        label="Alert email address"
-        id="alert_email"
-        name="shop_setting[alert_email]"
-        value="<%= @settings.alert_email %>"
-        placeholder="<%= @shop.email || @shop.shopify_domain %>"
-        details="<%= @shop.email.present? ? "Leave blank to use your shop's email (#{@shop.email})" : "Leave blank to use your store's default email" %>"
-      ></s-email-field>
-    </div>
-  </div>
-  
-  <!-- Scan Settings -->
-  <div class="stat-card mb-lg">
-    <h3 class="stat-card-section-title stat-card-section-title--lg">Scan Settings</h3>
-    
-    <div>
-      <s-select
-        label="Scan frequency"
-        id="scan_frequency"
-        name="shop_setting[scan_frequency]"
-        details="How often to automatically scan your monitored pages"
-        value="<%= @settings.scan_frequency %>"
-      >
+      <s-checkbox label="Shopify admin notifications" name="shop_setting[admin_alerts_enabled]" value="1" checked="<%= @settings.admin_alerts_enabled %>" details="Receive notifications in your Shopify admin dashboard"></s-checkbox>
+
+      <s-email-field label="Alert email address" id="alert_email" name="shop_setting[alert_email]" value="<%= @settings.alert_email %>" placeholder="<%= @shop.email || @shop.shopify_domain %>" details="<%= @shop.email.present? ? "Leave blank to use your shop's email (#{@shop.email})" : "Leave blank to use your store's default email" %>"></s-email-field>
+    </s-stack>
+  </s-section>
+
+  <s-box paddingBlockStart="base">
+    <s-section heading="Scan settings">
+      <s-select label="Scan frequency" id="scan_frequency" name="shop_setting[scan_frequency]" details="How often to automatically scan your monitored pages" value="<%= @settings.scan_frequency %>">
         <s-option value="daily">Daily (recommended)</s-option>
         <s-option value="weekly">Weekly</s-option>
       </s-select>
-    </div>
-  </div>
-  
+    </s-section>
+  </s-box>
 </form>

@@ -13,6 +13,7 @@ This skill documents the **correct** usage of Polaris Web Components for Shopify
 - Polaris Web Components: https://shopify.dev/docs/api/app-home/polaris-web-components
 - Patterns & Compositions: https://shopify.dev/docs/api/app-home/patterns
 - Using Components: https://shopify.dev/docs/api/app-home/using-polaris-components
+- ClickableChip: https://shopify.dev/docs/api/app-home/polaris-web-components/actions/clickablechip
 
 ---
 
@@ -25,6 +26,7 @@ This skill documents the **correct** usage of Polaris Web Components for Shopify
 - **Homepage** must clearly indicate setup status, show performance metrics, and provide daily value
 - **No custom CSS for layout** — use Polaris components for spacing and structure
 - **No external UI frameworks** (no Tailwind, Bootstrap, etc.)
+- **Headings in sentence case** — use sentence case for all headings (e.g. `s-page` heading, `s-section` heading, `s-heading`). Only the first word and proper nouns are capitalized (e.g. "Scan history", "Alert preferences", not "Scan History", "Alert Preferences").
 
 ---
 
@@ -34,7 +36,7 @@ This skill documents the **correct** usage of Polaris Web Components for Shopify
 | Component | Purpose | Key Properties |
 |---|---|---|
 | `s-page` | Page wrapper with heading, breadcrumbs, actions | `heading`, `inlineSize="base"` (enables sidebar), slots: `primary-action`, `breadcrumb-actions`, `accessory`, `aside` |
-| `s-section` | Card-like container | `heading`, `padding` ("base" or "none"), `accessibilityLabel` |
+| `s-section` | Card-like container | `heading`, `accessibilityLabel`. **Do not set `padding="none"`** — use default padding. |
 | `s-box` | Generic container for spacing & sizing | `padding`, `paddingBlock`, `paddingBlockStart`, `paddingInline`, `border`, `borderRadius`, `background`, `maxInlineSize`, `maxBlockSize` |
 | `s-stack` | Flexbox layout | `direction` ("inline" or "block"), `gap`, `align`, `justify` |
 | `s-grid` | CSS Grid layout | `gridTemplateColumns`, `gap`, `justifyItems`, `alignItems`, `paddingBlock`, `maxInlineSize` |
@@ -45,7 +47,8 @@ This skill documents the **correct** usage of Polaris Web Components for Shopify
 |---|---|---|
 | `s-button` | Primary action element | `variant` ("primary", "secondary", "tertiary"), `tone` ("critical"), `href`, `fullWidth`, `disabled`, `icon` |
 | `s-button-group` | Groups buttons together | Expects direct `s-button` children. **Do NOT nest `<form>` inside it** — use hidden forms + `onclick` instead |
-| `s-link` | Navigation link | `href`, `removeUnderline`, slots in `s-page` |
+| `s-link` | Navigation link | `href`, slots in `s-page` |
+| `s-clickable-chip` | Filter/tag chip (clickable or link) | `color` ("subdued", "base", "strong"), `href`, `accessibilityLabel`, `removable`, slot `graphic` for icon. **Use inside `s-stack direction="inline" gap="base"`** so chips have visible spacing (see Filter chips pattern). |
 
 ### Feedback & Status
 | Component | Purpose | Key Properties |
@@ -57,7 +60,7 @@ This skill documents the **correct** usage of Polaris Web Components for Shopify
 ### Typography & Content
 | Component | Purpose | Key Properties |
 |---|---|---|
-| `s-heading` | Section headings | Direct text content |
+| `s-heading` | Section headings | Direct text content. **Use sentence case** for all heading text. |
 | `s-paragraph` | Body text | Direct text content |
 | `<strong>` | Bold text within paragraphs | Standard HTML |
 
@@ -113,7 +116,22 @@ Additional gap tokens available: `"small-300"`, `"large-400"` (sizing tokens)
 **Correct:** `border="base"`, `borderRadius="base"`
 
 ### s-section padding
-Only accepts: `"base"` (default) or `"none"`
+**Do not use `padding="none"`** on `s-section`. Use the default padding (omit the attribute) so sections keep consistent card-like spacing.
+
+### s-clickable-chip spacing
+**Wrong:** Wrapping multiple `s-clickable-chip` in `s-stack direction="inline" gap="tight"` — chips render with no visible gap and text runs together (e.g. "OpenAcknowledgedResolved").
+**Correct:** Use `s-stack direction="inline" gap="base"` when laying out filter chips. See [ClickableChip](https://shopify.dev/docs/api/app-home/polaris-web-components/actions/clickablechip) "Multiple Chips with Proper Spacing" example.
+
+### List rows: badge/action on the right
+**Wrong:** Using `s-stack direction="inline" justify="space-between"` to put a badge or action on the right — alignment can be inconsistent across browsers or when content wraps.
+**Correct:** Use `s-grid gridTemplateColumns="1fr auto" gap="base" alignItems="center"` so the first column takes remaining space and the second column (badge or link) stays right-aligned. Same pattern as the Resource List example below.
+
+### Meta lines (multiple facts in one line)
+**Wrong:** Building a line from several adjacent `s-paragraph` or inline-stack children (e.g. "Scan #18" + "February 15..." + "8.4s load time"). They often render with no space and concatenate (e.g. "Scan #18February 15...").
+**Correct:** Use a **single** `s-paragraph` and build the line in Ruby with explicit separators, e.g. `parts = ["Scan \##{id}", date_str]; parts << "#{load_s}s load time" if load_s; parts.join(' · ')`. Output that string once so spacing is guaranteed.
+
+### Highlighting one value in a paragraph
+To emphasize a key metric (e.g. load time) inside body text: wrap only that value in `<strong>`. Build the segment as HTML (e.g. `"#{value}s load time".sub(/\d+\.?\d*s/) { |m| "<strong>#{m}</strong>" }.html_safe`) and use `safe_join(parts, ' · '.html_safe)` for the full line so the rest stays escaped.
 
 ---
 
@@ -159,8 +177,9 @@ Only accepts: `"base"` (default) or `"none"`
 ```
 
 ### Resource List with Thumbnails
+Use `s-grid gridTemplateColumns="1fr auto"` for each row so the **badge or actions stay right-aligned**; avoid `s-stack justify="space-between"` for that.
 ```html
-<s-section padding="none">
+<s-section heading="List title">
   <s-stack gap="none">
     <!-- Repeatable row -->
     <s-box border="base" padding="base">
@@ -214,6 +233,18 @@ Only accepts: `"base"` (default) or `"none"`
       </s-stack>
     </s-stack>
     <!-- repeat for each feature -->
+  </s-stack>
+</s-section>
+```
+
+### Filter Chips (ClickableChip)
+Use `s-clickable-chip` for status/category filters (e.g. All, Open, Resolved). **Must use `gap="base"`** on the wrapping stack so chips do not run together. Use `color="base"` for the active filter, `color="subdued"` for inactive. Reference: [ClickableChip](https://shopify.dev/docs/api/app-home/polaris-web-components/actions/clickablechip).
+```html
+<s-section heading="Filter by status">
+  <s-stack direction="inline" gap="base">
+    <s-clickable-chip color="base" href="/issues" accessibilityLabel="Filter by all">All</s-clickable-chip>
+    <s-clickable-chip color="subdued" href="/issues?status=open" accessibilityLabel="Filter by open">Open</s-clickable-chip>
+    <s-clickable-chip color="subdued" href="/issues?status=resolved" accessibilityLabel="Filter by resolved">Resolved</s-clickable-chip>
   </s-stack>
 </s-section>
 ```

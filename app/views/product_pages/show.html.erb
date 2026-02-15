@@ -1,4 +1,4 @@
-<%# Product Page Detail %>
+<%# Product Page Detail — Polaris Web Components (Built for Shopify) %>
 
 <s-page heading="<%= @product_page.title %>">
   <s-button slot="primary-action" onclick="document.getElementById('rescan-form').submit()">Rescan Now</s-button>
@@ -6,112 +6,125 @@
   <s-badge slot="accessory" tone="<%= @product_page.status == 'healthy' ? 'success' : (@product_page.status == 'critical' ? 'critical' : 'warning') %>"><%= @product_page.status.capitalize %></s-badge>
 </s-page>
 
-<!-- Hidden rescan form for the button -->
 <%= form_with url: rescan_product_page_path(@product_page, host: @host), method: :post, id: "rescan-form", style: "display: none;" do %>
 <% end %>
 
-<!-- Stats Cards -->
-<div class="card-grid" style="margin-bottom: 24px;">
-  <div class="stat-card">
-    <h3 class="stat-card-title">Status</h3>
-    <p class="stat-card-value" style="font-size: 24px;">
-      <span class="badge badge-<%= @product_page.status == 'healthy' ? 'healthy' : (@product_page.status == 'critical' ? 'critical' : 'warning') %>" style="font-size: 16px; padding: 4px 12px;">
-        <%= @product_page.status.capitalize %>
-      </span>
-    </p>
-  </div>
-  
-  <div class="stat-card">
-    <h3 class="stat-card-title">Last Scanned</h3>
-    <p class="stat-card-value" style="font-size: 24px;">
-      <% if @product_page.last_scanned_at %>
+<!-- Stats -->
+<s-section heading="Overview">
+  <s-grid gridTemplateColumns="repeat(4, 1fr)" gap="base">
+    <s-stack direction="block" gap="extra-tight">
+      <s-paragraph>Status</s-paragraph>
+      <s-badge tone="<%= @product_page.status == 'healthy' ? 'success' : (@product_page.status == 'critical' ? 'critical' : 'warning') %>"><%= @product_page.status.capitalize %></s-badge>
+    </s-stack>
+    <s-stack direction="block" gap="extra-tight">
+      <s-paragraph>Last Scanned</s-paragraph>
+      <strong>
+        <% if @product_page.last_scanned_at %>
         <%= time_ago_in_words(@product_page.last_scanned_at) %> ago
-      <% else %>
+        <% else %>
         Never
-      <% end %>
-    </p>
-  </div>
-  
-  <div class="stat-card">
-    <h3 class="stat-card-title">Open Issues</h3>
-    <p class="stat-card-value <%= @open_issues.count > 0 ? 'critical' : 'healthy' %>">
-      <%= @open_issues.count %>
-    </p>
-  </div>
-  
-  <div class="stat-card">
-    <h3 class="stat-card-title">Total Scans</h3>
-    <p class="stat-card-value"><%= @product_page.scans.count %></p>
-  </div>
-</div>
+        <% end %>
+      </strong>
+    </s-stack>
+
+    <s-stack direction="block" gap="extra-tight">
+      <s-paragraph>Open Issues</s-paragraph>
+      <s-stack direction="inline" gap="tight" align="center">
+        <strong><%= @open_issues.count %></strong>
+        <% if @open_issues.count > 0 %>
+        <s-icon type="alert-circle" tone="critical"></s-icon>
+        <% end %>
+      </s-stack>
+    </s-stack>
+
+    <s-stack direction="block" gap="extra-tight">
+      <s-paragraph>Total Scans</s-paragraph>
+      <strong><%= @product_page.scans.count %></strong>
+    </s-stack>
+  </s-grid>
+</s-section>
 
 <!-- Open Issues -->
-<div class="issues-list" style="margin-bottom: 24px;">
-  <div class="issues-list-header">
-    <h2 class="issues-list-title">Open Issues (<%= @open_issues.count %>)</h2>
-  </div>
-  
-  <% if @open_issues.any? %>
-    <% @open_issues.each do |issue| %>
-      <%= link_to issue_path(issue, host: @host), class: "issue-item" do %>
-        <div class="issue-severity <%= issue.severity %>"></div>
-        <div class="issue-content">
-          <p class="issue-title"><%= issue.title %></p>
-          <p class="issue-meta">
-            <%= issue.severity_label %> • 
-            First detected <%= time_ago_in_words(issue.first_detected_at) %> ago
-            <% if issue.occurrence_count > 1 %>
-              • Seen <%= issue.occurrence_count %> times
-            <% end %>
-          </p>
-        </div>
-        <span class="badge badge-<%= issue.severity == 'high' ? 'critical' : issue.severity %>">
-          View Details →
-        </span>
+<s-box paddingBlockStart="base">
+  <s-section heading="Open issues (<%= @open_issues.count %>)">
+    <% if @open_issues.any? %>
+    <s-stack gap="none">
+      <% @open_issues.each do |issue| %>
+      <%= link_to issue_path(issue, host: @host), style: "display: block; text-decoration: none; color: inherit;" do %>
+      <s-box border="base" padding="base">
+        <s-grid gridTemplateColumns="1fr auto" gap="base" alignItems="center">
+          <s-stack direction="block" gap="extra-tight">
+            <strong><%= issue.title %></strong>
+            <s-stack direction="inline" gap="tight" align="center">
+              <s-badge tone="<%= issue.severity == 'high' ? 'critical' : (issue.severity == 'medium' ? 'warning' : 'attention') %>"><%= issue.severity_label %></s-badge>
+              <s-paragraph>First detected <%= time_ago_in_words(issue.first_detected_at) %> ago</s-paragraph>
+              <% if issue.occurrence_count > 1 %>
+              <s-paragraph>• Seen <%= issue.occurrence_count %> times</s-paragraph>
+              <% end %>
+            </s-stack>
+          </s-stack>
+          <s-paragraph>View Details →</s-paragraph>
+        </s-grid>
+      </s-box>
       <% end %>
+      <% end %>
+    </s-stack>
+    <% else %>
+    <s-grid gap="base" justifyItems="center" paddingBlock="large-400">
+      <s-box maxInlineSize="120px" maxBlockSize="120px">
+        <s-icon type="check-circle-filled" tone="success"></s-icon>
+      </s-box>
+      <s-grid justifyItems="center" maxInlineSize="450px" gap="base">
+        <s-stack align="center" gap="tight">
+          <s-heading>No open issues</s-heading>
+          <s-paragraph>This product page is healthy.</s-paragraph>
+        </s-stack>
+      </s-grid>
+    </s-grid>
     <% end %>
-  <% else %>
-    <div class="empty-state">
-      <div class="empty-state-icon">✓</div>
-      <h3 class="empty-state-title">No open issues</h3>
-      <p class="empty-state-description">This product page is healthy.</p>
-    </div>
-  <% end %>
-</div>
+  </s-section>
+</s-box>
 
 <!-- Recent Scans -->
-<div class="issues-list">
-  <div class="issues-list-header">
-    <h2 class="issues-list-title">Recent Scans</h2>
-  </div>
-  
-  <% if @recent_scans.any? %>
-    <% @recent_scans.each do |scan| %>
-      <%= link_to scan_path(scan, host: @host), class: "issue-item" do %>
-        <div class="issue-severity <%= scan.status == 'completed' ? 'medium' : (scan.status == 'failed' ? 'high' : 'low') %>"></div>
-        <div class="issue-content">
-          <p class="issue-title">Scan #<%= scan.id %></p>
-          <p class="issue-meta">
-            <%= scan.status.capitalize %> • 
-            <%= time_ago_in_words(scan.created_at) %> ago
-            <% if scan.page_load_time_ms %>
-              • <%= (scan.page_load_time_ms / 1000.0).round(1) %>s load time
-            <% end %>
-            <% if scan.issues.any? %>
-              • <%= scan.issues.count %> issue<%= scan.issues.count > 1 ? 's' : '' %> detected
-            <% end %>
-          </p>
-        </div>
-        <span class="badge badge-<%= scan.status == 'completed' ? 'healthy' : (scan.status == 'failed' ? 'critical' : 'pending') %>">
-          <%= scan.status.capitalize %>
-        </span>
+<s-box paddingBlockStart="base">
+  <s-section heading="Recent scans">
+    <% if @recent_scans.any? %>
+    <s-stack gap="none">
+      <% @recent_scans.each do |scan| %>
+      <%= link_to scan_path(scan, host: @host), style: "display: block; text-decoration: none; color: inherit;" do %>
+      <s-box border="base" padding="base">
+        <s-grid gridTemplateColumns="1fr auto" gap="base" alignItems="center">
+          <s-stack direction="block" gap="extra-tight">
+            <strong>Scan #<%= scan.id %></strong>
+            <s-stack direction="inline" gap="tight" align="center">
+              <s-badge tone="<%= scan.status == 'completed' ? 'success' : (scan.status == 'failed' ? 'critical' : 'info') %>"><%= scan.status.capitalize %></s-badge>
+              <s-paragraph><%= time_ago_in_words(scan.created_at) %> ago</s-paragraph>
+              <% if scan.page_load_time_ms %>
+              <s-paragraph>• <%= (scan.page_load_time_ms / 1000.0).round(1) %>s load time</s-paragraph>
+              <% end %>
+              <% if scan.issues.any? %>
+              <s-paragraph>• <%= scan.issues.count %> issue<%= scan.issues.count > 1 ? 's' : '' %> detected</s-paragraph>
+              <% end %>
+            </s-stack>
+          </s-stack>
+          <s-paragraph><%= scan.status.capitalize %></s-paragraph>
+        </s-grid>
+      </s-box>
       <% end %>
+      <% end %>
+    </s-stack>
+    <% else %>
+    <s-grid gap="base" justifyItems="center" paddingBlock="large-400">
+      <s-box maxInlineSize="120px" maxBlockSize="120px">
+        <s-icon type="clock" tone="subdued"></s-icon>
+      </s-box>
+      <s-grid justifyItems="center" maxInlineSize="450px" gap="base">
+        <s-stack align="center" gap="tight">
+          <s-heading>No scans yet</s-heading>
+          <s-paragraph>The first scan will run automatically soon.</s-paragraph>
+        </s-stack>
+      </s-grid>
+    </s-grid>
     <% end %>
-  <% else %>
-    <div class="empty-state">
-      <div class="empty-state-icon">🔍</div>
-      <h3 class="empty-state-title">No scans yet</h3>
-      <p class="empty-state-description">The first scan will run automatically soon.</p>
-    </div>
-  <% end %>
-</div>
+  </s-section>
+</s-box>
