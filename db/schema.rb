@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_18_185914) do
+ActiveRecord::Schema[8.1].define(version: 2026_02_19_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -119,6 +119,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_18_185914) do
     t.string "iana_timezone"
     t.boolean "installed", default: true, null: false
     t.datetime "installed_at"
+    t.datetime "onboarding_dismissed_at"
     t.boolean "password_enabled"
     t.string "plan_display_name"
     t.string "plan_name"

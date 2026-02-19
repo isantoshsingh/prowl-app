@@ -1,0 +1,218 @@
+<%# Onboarding Setup Guide — Planet-style flow %>
+<%# Shows a welcome hero + collapsible setup steps with progress tracking %>
+
+<s-page heading="Welcome to Silent Profit">
+  <s-button slot="primary-action" variant="primary" href="<%= product_pages_path(host: @host) %>">
+    Get started
+  </s-button>
+</s-page>
+
+<%# Welcome hero section %>
+<s-section>
+  <s-grid gridTemplateColumns="1fr auto" gap="base" alignItems="center">
+    <s-stack direction="block" gap="base">
+      <s-heading>Protect your revenue from silent PDP failures</s-heading>
+      <s-paragraph>
+        Silent Profit monitors your product pages for JavaScript errors, broken UI elements, and performance issues that silently prevent customers from buying. Set up in minutes.
+      </s-paragraph>
+    </s-stack>
+    <s-box maxInlineSize="120px">
+      <svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" style="width: 100%; height: auto;">
+        <rect x="10" y="20" width="100" height="80" rx="8" fill="#F6F0FD" stroke="#8C6BB1" stroke-width="2"/>
+        <rect x="20" y="32" width="60" height="8" rx="2" fill="#8C6BB1" opacity="0.3"/>
+        <rect x="20" y="46" width="40" height="6" rx="2" fill="#8C6BB1" opacity="0.2"/>
+        <rect x="20" y="58" width="50" height="6" rx="2" fill="#8C6BB1" opacity="0.2"/>
+        <circle cx="85" cy="70" r="18" fill="#D4BFEA" stroke="#8C6BB1" stroke-width="2"/>
+        <path d="M78 70 L83 75 L92 65" stroke="#6B3FA0" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </s-box>
+  </s-grid>
+</s-section>
+
+<%# Setup guide with progress %>
+<s-box paddingBlockStart="base">
+  <s-section heading="Setup guide">
+    <s-stack direction="block" gap="base">
+      <%# Progress bar %>
+      <s-stack direction="inline" gap="base-tight" align="center">
+        <s-paragraph>
+          <strong><%= @onboarding_progress[:completed] %> of <%= @onboarding_progress[:total] %></strong> completed
+        </s-paragraph>
+      </s-stack>
+
+      <div class="onboarding-progress-bar">
+        <div class="onboarding-progress-fill" style="width: <%= (@onboarding_progress[:completed].to_f / @onboarding_progress[:total] * 100).round %>%"></div>
+      </div>
+
+      <%# Setup steps %>
+      <s-stack direction="block" gap="none">
+        <% @onboarding_steps.each_with_index do |step, index| %>
+        <div class="onboarding-step <%= 'onboarding-step--completed' if step[:completed] %> <%= 'onboarding-step--active' if !step[:completed] && (index == 0 || @onboarding_steps[index - 1][:completed]) %>" id="onboarding-step-<%= step[:key] %>">
+          <s-box border="base" padding="base">
+            <div class="onboarding-step-clickable" onclick="toggleOnboardingStep('<%= step[:key] %>')">
+              <s-grid gridTemplateColumns="auto 1fr auto" gap="base" alignItems="center">
+                <%# Step status icon %>
+                <% if step[:completed] %>
+                  <s-icon type="check-circle-filled" tone="success"></s-icon>
+                <% else %>
+                  <div class="onboarding-step-number"><%= index + 1 %></div>
+                <% end %>
+
+                <%# Step title %>
+                <s-paragraph>
+                  <strong><%= step[:title] %></strong>
+                </s-paragraph>
+
+                <%# Expand/collapse indicator %>
+                <% unless step[:completed] %>
+                  <s-icon type="chevron-down" tone="subdued" class="onboarding-step-chevron"></s-icon>
+                <% end %>
+              </s-grid>
+            </div>
+
+            <%# Expandable content (hidden by default, shown for active step) %>
+            <% unless step[:completed] %>
+            <div class="onboarding-step-content" id="onboarding-content-<%= step[:key] %>" style="<%= (!step[:completed] && (index == 0 || @onboarding_steps[index - 1][:completed])) ? '' : 'display: none;' %>">
+              <s-box paddingBlockStart="base" paddingInlineStart="large-400">
+                <s-stack direction="block" gap="base">
+                  <s-paragraph><%= step[:description] %></s-paragraph>
+                  <% case step[:key] %>
+                  <% when :add_products %>
+                    <s-button variant="primary" href="<%= product_pages_path(host: @host) %>">
+                      Add product pages
+                    </s-button>
+                  <% when :first_scan %>
+                    <% if @total_pages > 0 %>
+                      <s-paragraph>
+                        You have <strong><%= @total_pages %></strong> product <%= @total_pages == 1 ? 'page' : 'pages' %> added. Go to your monitored pages to trigger a scan.
+                      </s-paragraph>
+                      <s-button variant="primary" href="<%= product_pages_path(host: @host) %>">
+                        View monitored pages
+                      </s-button>
+                    <% else %>
+                      <s-banner tone="info">
+                        <s-paragraph>Complete step 1 first to add product pages, then you can run a scan.</s-paragraph>
+                      </s-banner>
+                    <% end %>
+                  <% when :configure_alerts %>
+                    <s-button variant="primary" href="<%= settings_path(host: @host) %>">
+                      Configure alerts
+                    </s-button>
+                  <% end %>
+                </s-stack>
+              </s-box>
+            </div>
+            <% end %>
+          </s-box>
+        </div>
+        <% end %>
+      </s-stack>
+
+      <%# Dismiss link %>
+      <s-stack direction="inline" justify="end">
+        <s-button variant="tertiary" id="dismiss-onboarding-btn">
+          Dismiss setup guide
+        </s-button>
+      </s-stack>
+    </s-stack>
+  </s-section>
+</s-box>
+
+<%# What we monitor section %>
+<s-box paddingBlockStart="base">
+  <s-section heading="What we detect">
+    <s-grid gridTemplateColumns="repeat(2, 1fr)" gap="base">
+      <s-stack direction="inline" gap="base-tight" align="start">
+        <s-icon type="check-circle" tone="success"></s-icon>
+        <s-stack direction="block" gap="extra-tight">
+          <s-paragraph><strong>Missing add-to-cart</strong></s-paragraph>
+          <s-paragraph>Detect when the buy button is broken or missing</s-paragraph>
+        </s-stack>
+      </s-stack>
+
+      <s-stack direction="inline" gap="base-tight" align="start">
+        <s-icon type="check-circle" tone="success"></s-icon>
+        <s-stack direction="block" gap="extra-tight">
+          <s-paragraph><strong>JavaScript errors</strong></s-paragraph>
+          <s-paragraph>Find console errors that break functionality</s-paragraph>
+        </s-stack>
+      </s-stack>
+
+      <s-stack direction="inline" gap="base-tight" align="start">
+        <s-icon type="check-circle" tone="success"></s-icon>
+        <s-stack direction="block" gap="extra-tight">
+          <s-paragraph><strong>Broken images and prices</strong></s-paragraph>
+          <s-paragraph>Catch missing product images and price displays</s-paragraph>
+        </s-stack>
+      </s-stack>
+
+      <s-stack direction="inline" gap="base-tight" align="start">
+        <s-icon type="check-circle" tone="success"></s-icon>
+        <s-stack direction="block" gap="extra-tight">
+          <s-paragraph><strong>Slow page loads</strong></s-paragraph>
+          <s-paragraph>Monitor performance that impacts conversions</s-paragraph>
+        </s-stack>
+      </s-stack>
+    </s-grid>
+  </s-section>
+</s-box>
+
+<% content_for :javascript do %>
+<script>
+  function toggleOnboardingStep(key) {
+    const content = document.getElementById('onboarding-content-' + key);
+    if (!content) return;
+
+    const isHidden = content.style.display === 'none';
+    // Collapse all other step contents
+    document.querySelectorAll('.onboarding-step-content').forEach(function(el) {
+      el.style.display = 'none';
+    });
+    // Toggle clicked step
+    if (isHidden) {
+      content.style.display = '';
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    const dismissBtn = document.getElementById('dismiss-onboarding-btn');
+    if (dismissBtn) {
+      dismissBtn.addEventListener('click', async function(e) {
+        e.preventDefault();
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+
+        try {
+          const headers = {
+            'X-CSRF-Token': csrfToken,
+            'Accept': 'text/html'
+          };
+
+          try {
+            const token = await shopify.idToken();
+            if (token) headers['Authorization'] = 'Bearer ' + token;
+          } catch (tokenErr) {
+            console.warn('Could not get session token:', tokenErr);
+          }
+
+          const response = await fetch('<%= dismiss_onboarding_path(host: @host) %>', {
+            method: 'POST',
+            headers: headers,
+            credentials: 'same-origin',
+            redirect: 'manual'
+          });
+
+          if (response.ok || response.type === 'opaqueredirect' || (response.status >= 300 && response.status < 400)) {
+            shopify.toast.show('Setup guide dismissed', { duration: 3000 });
+            setTimeout(function() { window.location.reload(); }, 500);
+          } else {
+            throw new Error('Server returned ' + response.status);
+          }
+        } catch (error) {
+          console.error('Failed to dismiss onboarding:', error);
+          shopify.toast.show('Failed to dismiss. Please try again.', { duration: 3000, isError: true });
+        }
+      });
+    }
+  });
+</script>
+<% end %>

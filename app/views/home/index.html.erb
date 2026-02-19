@@ -1,94 +1,11 @@
-<%# PDP Diagnostics - Built for Shopify Compliant Home Page %>
-<%# Using correct Polaris Web Component APIs for App Home %>
+<%# Silent Profit - App Home Page %>
+<%# Shows onboarding setup guide for new merchants, or the active dashboard %>
 
-<% if @total_pages == 0 %>
-<%# Empty State - Clear onboarding for new users %>
-<s-page heading="Welcome to PDP Diagnostics">
-  <s-button slot="primary-action" variant="primary" href="<%= product_pages_path(host: @host) %>">
-    Add Your First Product
-  </s-button>
-</s-page>
-
-<%# Setup Guide %>
-<s-section heading="Get started">
-  <s-stack direction="block" gap="base">
-    <s-paragraph>
-      Protect your sales from silent failures. PDP Diagnostics monitors your product pages for JavaScript errors, broken UI elements, and performance issues.
-    </s-paragraph>
-
-    <s-stack direction="block" gap="base-tight">
-      <s-stack direction="inline" gap="base-tight" align="start">
-        <s-badge tone="info">1</s-badge>
-        <s-stack direction="block" gap="extra-tight">
-          <s-paragraph><strong>Add products to monitor</strong></s-paragraph>
-          <s-paragraph>Select up to <%= @shop.shop_setting&.max_monitored_pages || 5 %> critical product pages</s-paragraph>
-        </s-stack>
-      </s-stack>
-
-      <s-stack direction="inline" gap="base-tight" align="start">
-        <s-badge tone="info">2</s-badge>
-        <s-stack direction="block" gap="extra-tight">
-          <s-paragraph><strong>Automatic daily scans</strong></s-paragraph>
-          <s-paragraph>We'll check your pages every day for issues</s-paragraph>
-        </s-stack>
-      </s-stack>
-
-      <s-stack direction="inline" gap="base-tight" align="start">
-        <s-badge tone="info">3</s-badge>
-        <s-stack direction="block" gap="extra-tight">
-          <s-paragraph><strong>Get instant alerts</strong></s-paragraph>
-          <s-paragraph>Receive notifications when critical issues are detected</s-paragraph>
-        </s-stack>
-      </s-stack>
-    </s-stack>
-
-    <s-button variant="primary" href="<%= product_pages_path(host: @host) %>">
-      Add Product Pages
-    </s-button>
-  </s-stack>
-</s-section>
-
-<s-box paddingBlockStart="small">
-  <s-section heading="What we monitor">
-    <s-grid gridTemplateColumns="repeat(2, 1fr)" gap="base">
-      <s-stack direction="inline" gap="base-tight" align="start">
-        <s-icon type="check-circle" tone="success"></s-icon>
-        <s-stack direction="block" gap="extra-tight">
-          <s-paragraph><strong>JavaScript Errors</strong></s-paragraph>
-          <s-paragraph>Detect console errors that break critical functionality</s-paragraph>
-        </s-stack>
-      </s-stack>
-
-      <s-stack direction="inline" gap="base-tight" align="start">
-        <s-icon type="check-circle" tone="success"></s-icon>
-        <s-stack direction="block" gap="extra-tight">
-          <s-paragraph><strong>UI Elements</strong></s-paragraph>
-          <s-paragraph>Ensure buttons, forms, and images load correctly</s-paragraph>
-        </s-stack>
-      </s-stack>
-
-      <s-stack direction="inline" gap="base-tight" align="start">
-        <s-icon type="check-circle" tone="success"></s-icon>
-        <s-stack direction="block" gap="extra-tight">
-          <s-paragraph><strong>Page Performance</strong></s-paragraph>
-          <s-paragraph>Monitor load times and page speed</s-paragraph>
-        </s-stack>
-      </s-stack>
-
-      <s-stack direction="inline" gap="base-tight" align="start">
-        <s-icon type="check-circle" tone="success"></s-icon>
-        <s-stack direction="block" gap="extra-tight">
-          <s-paragraph><strong>Console Logs</strong></s-paragraph>
-          <s-paragraph>Capture detailed diagnostics for debugging</s-paragraph>
-        </s-stack>
-      </s-stack>
-    </s-grid>
-  </s-section>
-</s-box>
-
+<% if @show_onboarding %>
+  <%= render "home/onboarding" %>
 <% else %>
 <%# Active Dashboard %>
-<s-page heading="PDP Diagnostics" inlineSize="base">
+<s-page heading="Silent Profit" inlineSize="base">
   <s-button slot="primary-action" variant="primary" href="<%= product_pages_path(host: @host) %>">
     Add products
   </s-button>
@@ -143,6 +60,7 @@
   <% end %>
 
   <%# Status Indicator %>
+  <% if @total_pages > 0 %>
   <s-section>
     <s-stack direction="inline" gap="base" align="center">
       <% if @open_issues_count == 0 %>
@@ -156,7 +74,7 @@
       <% else %>
       <s-icon type="alert-circle" tone="<%= @critical_pages > 0 ? 'critical' : 'caution' %>"></s-icon>
       <s-stack direction="block" gap="extra-tight">
-        <s-heading><%= @open_issues_count %> <%= @open_issues_count == 1 ? 'Issue' : 'Issues' %> Detected</s-heading>
+        <s-heading><%= @open_issues_count %> <%= @open_issues_count == 1 ? 'issue' : 'issues' %> detected</s-heading>
         <s-paragraph>
           Monitoring <%= @total_pages %> product <%= @total_pages == 1 ? 'page' : 'pages' %>
         </s-paragraph>
@@ -193,6 +111,17 @@
       </s-box>
     </s-grid>
   </s-section>
+  <% else %>
+  <%# Empty state when onboarding was dismissed but no pages added yet %>
+  <s-section>
+    <s-stack direction="block" gap="base" align="center">
+      <s-icon type="search" tone="subdued"></s-icon>
+      <s-heading>No product pages monitored yet</s-heading>
+      <s-paragraph>Add product pages to start monitoring for issues that affect your sales.</s-paragraph>
+      <s-button variant="primary" href="<%= product_pages_path(host: @host) %>">Add product pages</s-button>
+    </s-stack>
+  </s-section>
+  <% end %>
 
   <%# Open Issues %>
   <% if @open_issues_count > 0 %>
@@ -226,7 +155,7 @@
     <% if @open_issues_count > 5 %>
     <s-box padding="base">
       <s-button href="<%= issues_path(host: @host) %>" fullWidth>
-        View All <%= @open_issues_count %> Issues
+        View all <%= @open_issues_count %> issues
       </s-button>
     </s-box>
     <% end %>

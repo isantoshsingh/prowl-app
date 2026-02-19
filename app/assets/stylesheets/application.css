@@ -11,3 +11,79 @@
   margin: 0 auto;
   padding: var(--sp-spacing-md);
 }
+
+/* ========================================
+   Onboarding Setup Guide
+   ======================================== */
+.onboarding-progress-bar {
+  width: 100%;
+  height: 6px;
+  background-color: var(--p-color-bg-surface-secondary, #f1f1f1);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.onboarding-progress-fill {
+  height: 100%;
+  background-color: var(--p-color-bg-fill-success, #008060);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+  min-width: 0;
+}
+
+.onboarding-step {
+  transition: background-color 0.15s ease;
+}
+
+.onboarding-step-clickable {
+  cursor: pointer;
+}
+
+.onboarding-step-clickable:hover {
+  opacity: 0.85;
+}
+
+.onboarding-step--completed .onboarding-step-clickable {
+  cursor: default;
+}
+
+.onboarding-step--completed .onboarding-step-clickable:hover {
+  opacity: 1;
+}
+
+.onboarding-step-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background-color: var(--p-color-bg-fill-emphasis, #005bd3);
+  color: var(--p-color-text-on-fill, #ffffff);
+  font-size: 12px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.onboarding-step--completed .onboarding-step-number {
+  background-color: var(--p-color-bg-fill-success, #008060);
+}
+
+.onboarding-step-content {
+  animation: onboarding-slide-down 0.2s ease;
+}
+
+@keyframes onboarding-slide-down {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.onboarding-step-chevron {
+  transition: transform 0.2s ease;
+}

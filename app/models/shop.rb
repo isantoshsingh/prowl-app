@@ -53,6 +53,59 @@ class Shop < ActiveRecord::Base
     self[:subscription_status] || 'none'
   end
 
+  # Onboarding: checks if the setup guide should be shown
+  def show_onboarding?
+    onboarding_dismissed_at.nil? && !onboarding_completed?
+  end
+
+  # Onboarding: all steps completed
+  def onboarding_completed?
+    onboarding_steps.all? { |step| step[:completed] }
+  end
+
+  # Onboarding: computes step states dynamically from actual data
+  def onboarding_steps
+    has_pages = product_pages.monitoring_enabled.exists?
+    has_scans = has_pages && Scan.joins(:product_page)
+                                 .where(product_pages: { shop_id: id })
+                                 .where(status: "completed")
+                                 .exists?
+    has_alerts_configured = shop_setting&.alert_email.present?
+
+    [
+      {
+        key: :add_products,
+        title: "Add product pages to monitor",
+        description: "Select your most important product pages to start monitoring for issues that silently hurt sales.",
+        completed: has_pages
+      },
+      {
+        key: :first_scan,
+        title: "Run your first scan",
+        description: "Scan your product pages to detect JavaScript errors, broken UI elements, and performance issues.",
+        completed: has_scans
+      },
+      {
+        key: :configure_alerts,
+        title: "Configure alert settings",
+        description: "Set up your email address to receive notifications when critical issues are detected on your pages.",
+        completed: has_alerts_configured
+      }
+    ]
+  end
+
+  # Onboarding: returns progress as completed/total
+  def onboarding_progress
+    steps = onboarding_steps
+    completed = steps.count { |s| s[:completed] }
+    { completed: completed, total: steps.size }
+  end
+
+  # Dismiss the onboarding setup guide
+  def dismiss_onboarding!
+    update!(onboarding_dismissed_at: Time.current)
+  end
+
   # Returns the number of product pages currently being monitored
   def monitored_pages_count
     product_pages.monitoring_enabled.count

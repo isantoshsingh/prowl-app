@@ -11,6 +11,7 @@ Rails.application.routes.draw do
 
   # Root - Dashboard (App Home Page)
   root to: "home#index"
+  post "/dismiss_onboarding", to: "home#dismiss_onboarding", as: :dismiss_onboarding
 
   # Dashboard API
   get "/dashboard/stats", to: "dashboard#stats"
