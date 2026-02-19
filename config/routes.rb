@@ -18,6 +18,7 @@ Rails.application.routes.draw do
   # Product Pages (monitored PDPs)
   resources :product_pages, only: [:index, :show, :create, :destroy] do
     member do
+      get  :status
       match :rescan, via: [:get, :post]
     end
   end

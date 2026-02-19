@@ -11,7 +11,7 @@ class ProductPagesController < AuthenticatedController
   include ShopifyApp::EmbeddedApp
 
   # Note: set_shop is inherited from AuthenticatedController
-  before_action :set_product_page, only: [:show, :destroy, :rescan]
+  before_action :set_product_page, only: [:show, :status, :destroy, :rescan]
   
   # For embedded apps using token auth, CSRF is handled differently
   protect_from_forgery with: :null_session, only: [:create]
@@ -45,7 +45,19 @@ class ProductPagesController < AuthenticatedController
   def show
     @recent_scans = @product_page.scans.recent.limit(10)
     @open_issues = @product_page.open_issues.order(severity: :asc, last_detected_at: :desc)
+    @scanning = @product_page.scans.where(status: %w[pending running]).any?
     @host = params[:host]
+  end
+
+  # Lightweight JSON endpoint polled by the show page to check scan progress
+  def status
+    scanning = @product_page.scans.where(status: %w[pending running]).any?
+    latest_scan = @product_page.scans.recent.first
+    render json: {
+      scanning: scanning,
+      scan_status: latest_scan&.status,
+      page_status: @product_page.status
+    }
   end
 
 

@@ -1,13 +1,35 @@
 <%# Product Page Detail — Polaris Web Components (Built for Shopify) %>
 
 <s-page heading="<%= @product_page.title %>">
-  <s-button slot="primary-action" onclick="document.getElementById('rescan-form').submit()">Rescan now</s-button>
+  <s-button slot="primary-action" onclick="rescanNow(this)" id="rescan-btn" <%= 'loading' if @scanning %>>Rescan now</s-button>
   <s-link slot="breadcrumb-actions" href="<%= product_pages_path(host: @host) %>">Monitored Pages</s-link>
   <s-badge slot="accessory" tone="<%= @product_page.status == 'healthy' ? 'success' : (@product_page.status == 'critical' ? 'critical' : 'warning') %>"><%= @product_page.status.capitalize %></s-badge>
 </s-page>
 
-<%= form_with url: rescan_product_page_path(@product_page, host: @host), method: :post, id: "rescan-form", style: "display: none;" do %>
+<%# Hidden config for JS — status polling URL and initial scan state %>
+<div id="status-config"
+     data-status-url="<%= status_product_page_path(@product_page, host: @host) %>"
+     data-rescan-url="<%= rescan_product_page_path(@product_page, host: @host) %>"
+     data-csrf="<%= form_authenticity_token %>"
+     data-scanning="<%= @scanning %>"
+     style="display: none;">
+</div>
+
+<% if @scanning %>
+<%# Scanning banner — only rendered when a scan is in-progress at page load %>
+<s-box paddingBlockEnd="base">
+  <s-banner tone="info">
+    <s-stack direction="inline" alignItems="center" gap="base">
+      <s-spinner accessibilityLabel="Scan in progress"></s-spinner>
+      <s-stack direction="block" gap="extra-tight">
+        <strong>Scan in progress</strong>
+        <s-paragraph>The page is being scanned for issues. Results will appear automatically when complete.</s-paragraph>
+      </s-stack>
+    </s-stack>
+  </s-banner>
+</s-box>
 <% end %>
+
 
 <!-- Stats -->
 <s-section heading="Overview">
@@ -128,3 +150,92 @@
     <% end %>
   </s-section>
 </s-box>
+
+<% content_for :javascript do %>
+<script>
+  (function() {
+    const config    = document.getElementById('status-config');
+    const statusUrl = config.dataset.statusUrl;
+    const rescanUrl = config.dataset.rescanUrl;
+    const csrfToken = config.dataset.csrf;
+    const isScanning = config.dataset.scanning === 'true';
+
+    // ── Rescan Now button ────────────────────────────────────────────────────
+    async function rescanNow(btn) {
+      btn.loading = true;
+
+      try {
+        const headers = { 'X-CSRF-Token': csrfToken, 'Accept': 'text/html' };
+        try {
+          const token = await shopify.idToken();
+          if (token) headers['Authorization'] = `Bearer ${token}`;
+        } catch (e) { console.warn('idToken failed:', e); }
+
+        shopify.toast.show('Rescan queued! This may take a minute.', { duration: 3000 });
+
+        const response = await fetch(rescanUrl, {
+          method: 'POST',
+          headers,
+          credentials: 'same-origin',
+          redirect: 'manual'
+        });
+
+        if (response.ok || response.type === 'opaqueredirect' || (response.status >= 300 && response.status < 400)) {
+          // Reload so the scanning banner appears and polling kicks in
+          setTimeout(() => window.location.reload(), 300);
+        } else {
+          throw new Error(`Server returned ${response.status}`);
+        }
+      } catch (error) {
+        console.error('Rescan failed:', error);
+        btn.loading = false;
+        shopify.toast.show('Failed to start rescan. Please try again.', { duration: 3000, isError: true });
+      }
+    }
+
+    window.rescanNow = rescanNow;
+
+    // ── Scan progress polling ────────────────────────────────────────────────
+    if (!isScanning) return;
+
+    const POLL_INTERVAL_MS = 3000;   // check every 3 seconds
+    const MAX_POLL_MS      = 120000; // give up after 2 minutes
+    let elapsed = 0;
+    let pollTimer;
+
+    async function pollStatus() {
+      try {
+        const response = await fetch(statusUrl, {
+          headers: { 'Accept': 'application/json' },
+          credentials: 'same-origin'
+        });
+
+        if (!response.ok) return; // transient error — keep polling
+
+        const data = await response.json();
+
+        if (!data.scanning) {
+          clearInterval(pollTimer);
+          shopify.toast.show('Scan complete! Refreshing…', { duration: 2000 });
+          setTimeout(() => window.location.reload(), 800);
+          return;
+        }
+      } catch (e) {
+        console.warn('Status poll error:', e);
+      }
+
+      elapsed += POLL_INTERVAL_MS;
+      if (elapsed >= MAX_POLL_MS) {
+        clearInterval(pollTimer);
+        shopify.toast.show(
+          'Scan is taking longer than expected. Refresh the page to check results.',
+          { duration: 6000 }
+        );
+      }
+    }
+
+    pollStatus();
+    pollTimer = setInterval(pollStatus, POLL_INTERVAL_MS);
+  })();
+</script>
+<% end %>
