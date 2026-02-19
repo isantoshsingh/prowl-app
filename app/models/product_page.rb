@@ -13,11 +13,16 @@
 class ProductPage < ApplicationRecord
   # Associations
   belongs_to :shop
-  has_many :scans, dependent: :destroy
-  has_many :issues, dependent: :destroy
+  # No dependent: :destroy — scans/issues are retained for analytics history
+  has_many :scans
+  has_many :issues
+
+  # Soft delete — exclude deleted records from all queries by default
+  default_scope { where(deleted_at: nil) }
 
   # Validations
-  validates :shopify_product_id, presence: true, uniqueness: { scope: :shop_id }
+  # Uniqueness scoped to non-deleted records only (allow re-adding a previously deleted product)
+  validates :shopify_product_id, presence: true, uniqueness: { scope: :shop_id, conditions: -> { where(deleted_at: nil) } }
   validates :handle, presence: true
   validates :title, presence: true
   validates :url, presence: true
@@ -31,6 +36,17 @@ class ProductPage < ApplicationRecord
   scope :healthy, -> { by_status("healthy") }
   scope :warning, -> { by_status("warning") }
   scope :critical, -> { by_status("critical") }
+  scope :deleted, -> { unscoped.where.not(deleted_at: nil) }
+
+  # Soft delete — sets deleted_at and disables monitoring
+  def soft_delete!
+    update!(deleted_at: Time.current, monitoring_enabled: false)
+  end
+
+  # Restore a previously soft-deleted record
+  def restore!
+    update!(deleted_at: nil)
+  end
 
   # Returns the most recent scan
   def latest_scan

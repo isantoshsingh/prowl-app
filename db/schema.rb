@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_12_030607) do
+ActiveRecord::Schema[8.1].define(version: 2026_02_18_185914) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -55,6 +55,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_12_030607) do
 
   create_table "product_pages", force: :cascade do |t|
     t.datetime "created_at", null: false
+    t.datetime "deleted_at"
     t.string "handle", null: false
     t.string "image_url"
     t.datetime "last_scanned_at"
@@ -65,6 +66,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_12_030607) do
     t.string "title", null: false
     t.datetime "updated_at", null: false
     t.string "url", null: false
+    t.index ["deleted_at"], name: "index_product_pages_on_deleted_at"
     t.index ["shop_id", "monitoring_enabled"], name: "index_product_pages_on_shop_id_and_monitoring_enabled"
     t.index ["shop_id", "shopify_product_id"], name: "index_product_pages_on_shop_id_and_shopify_product_id", unique: true
     t.index ["shop_id"], name: "index_product_pages_on_shop_id"

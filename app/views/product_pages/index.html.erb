@@ -32,18 +32,10 @@
         <%# Action buttons %>
         <s-stack direction="inline" gap="tight">
           <s-button href="<%= product_page_path(page, host: @host) %>">View</s-button>
-          <s-button onclick="document.getElementById('rescan-form-<%= page.id %>').submit()">Rescan</s-button>
-          <s-button tone="critical" onclick="if(confirm('Remove <%= page.title %> from monitoring?')) document.getElementById('delete-form-<%= page.id %>').submit()">Remove</s-button>
+          <s-button onclick="rescanProduct('<%= rescan_product_page_path(page, host: @host) %>')">Rescan</s-button>
+          <s-button tone="critical" onclick="deleteProduct('<%= product_page_path(page, host: @host) %>', '<%= page.title %>')">Remove</s-button>
         </s-stack>
       </s-grid>
-
-      <form id="rescan-form-<%= page.id %>" action="<%= rescan_product_page_path(page, host: @host) %>" method="post" style="display: none;">
-        <input type="hidden" name="authenticity_token" value="<%= form_authenticity_token %>">
-      </form>
-      <form id="delete-form-<%= page.id %>" action="<%= product_page_path(page, host: @host) %>" method="post" style="display: none;">
-        <input type="hidden" name="_method" value="delete">
-        <input type="hidden" name="authenticity_token" value="<%= form_authenticity_token %>">
-      </form>
     </s-box>
     <% end %>
   </s-stack>
@@ -91,6 +83,87 @@
 
 <% content_for :javascript do %>
 <script>
+  const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content ||
+                    document.getElementById('picker-config')?.dataset?.csrfToken || '';
+
+  async function deleteProduct(url, title) {
+    if (!confirm(`Remove ${title} from monitoring?`)) return;
+
+    try {
+      const headers = {
+        'X-CSRF-Token': csrfToken,
+        'Accept': 'text/html'
+      };
+
+      try {
+        const token = await shopify.idToken();
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+      } catch (e) {
+        console.warn('Could not get session token for delete:', e);
+      }
+
+      const response = await fetch(url, {
+        method: 'DELETE',
+        headers: headers,
+        credentials: 'same-origin',
+        redirect: 'manual'
+      });
+
+      // 302 redirect means success (controller redirects after destroy)
+      // type 'opaqueredirect' is what fetch returns when redirect: 'manual' intercepts a redirect
+      if (response.ok || response.type === 'opaqueredirect' || (response.status >= 300 && response.status < 400)) {
+        shopify.toast.show('Product removed from monitoring.', { duration: 3000 });
+        setTimeout(() => window.location.reload(), 500);
+      } else {
+        throw new Error(`Server returned ${response.status}`);
+      }
+    } catch (error) {
+      console.error('Delete failed:', error);
+      shopify.toast.show('Failed to remove product. Please try again.', {
+        duration: 3000,
+        isError: true
+      });
+    }
+  }
+
+  async function rescanProduct(url) {
+    try {
+      const headers = {
+        'X-CSRF-Token': csrfToken,
+        'Accept': 'text/html'
+      };
+
+      try {
+        const token = await shopify.idToken();
+        if (token) headers['Authorization'] = `Bearer ${token}`;
+      } catch (e) {
+        console.warn('Could not get session token for rescan:', e);
+      }
+
+      shopify.toast.show('Rescan started...', { duration: 2000 });
+
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: headers,
+        credentials: 'same-origin',
+        redirect: 'manual'
+      });
+
+      if (response.ok || response.type === 'opaqueredirect' || (response.status >= 300 && response.status < 400)) {
+        shopify.toast.show('Rescan completed!', { duration: 3000 });
+        setTimeout(() => window.location.reload(), 500);
+      } else {
+        throw new Error(`Server returned ${response.status}`);
+      }
+    } catch (error) {
+      console.error('Rescan failed:', error);
+      shopify.toast.show('Failed to rescan. Please try again.', {
+        duration: 3000,
+        isError: true
+      });
+    }
+  }
+
   document.addEventListener('DOMContentLoaded', function() {
     const config = document.getElementById('picker-config');
     const createUrl = config.dataset.createUrl;

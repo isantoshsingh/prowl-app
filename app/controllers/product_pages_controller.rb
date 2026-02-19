@@ -81,10 +81,25 @@ class ProductPagesController < AuthenticatedController
       title = product_data[:title]
       image_url = product_data[:image_url]
 
-      # Skip if already monitored
+      # Skip if already actively monitored
       if @shop.product_pages.exists?(shopify_product_id: product_id)
         Rails.logger.info("[ProductPagesController#create] Product #{product_id} already monitored, skipping")
         skipped_count += 1
+        next
+      end
+
+      # Restore if previously soft-deleted (preserves scan/issue history)
+      existing_deleted = @shop.product_pages.unscoped
+                              .where(shop_id: @shop.id, shopify_product_id: product_id)
+                              .where.not(deleted_at: nil)
+                              .first
+
+      if existing_deleted
+        Rails.logger.info("[ProductPagesController#create] Restoring soft-deleted product page #{existing_deleted.id} for #{title}")
+        existing_deleted.update!(deleted_at: nil, monitoring_enabled: true, status: "pending", title: title, image_url: image_url)
+        ScanPdpJob.perform_later(existing_deleted.id)
+        created_count += 1
+        created_products << { id: existing_deleted.id, title: title }
         next
       end
 
@@ -158,7 +173,7 @@ class ProductPagesController < AuthenticatedController
   end
 
   def destroy
-    @product_page.destroy
+    @product_page.soft_delete!
     flash[:success] = "#{@product_page.title} removed from monitoring."
     redirect_to product_pages_path(host: params[:host])
   end
