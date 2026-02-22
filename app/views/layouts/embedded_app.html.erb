@@ -4,8 +4,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="Silent Profit is a Shopify app that helps you monitor your product pages for silent failures." />
-  <% application_name = ShopifyApp.configuration.application_name || "Silent Profit" %>
+  <meta name="description" content="Prowl is a Shopify app that helps you monitor your product pages for silent failures." />
+  <% application_name = ShopifyApp.configuration.application_name || "Prowl" %>
   <title><%= application_name %></title>
 
   <meta name="shopify-api-key" content="<%= ShopifyApp.configuration.api_key %>" />
@@ -72,7 +72,7 @@
 
         if (window.shopify) {
           // App Bridge is loaded
-          console.log('Silent Profit: App Bridge initialized');
+          console.log('Prowl: App Bridge initialized');
         }
       }
     });

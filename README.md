@@ -1,6 +1,6 @@
-# Silent Profit — Shopify PDP Monitoring & Diagnostics
+# Prowl — Shopify PDP Monitoring & Diagnostics
 
-Silent Profit is a Shopify app that helps merchants **detect, monitor, and prevent revenue loss** caused by broken product pages (PDPs), app conflicts, theme changes, and hidden frontend issues.
+Prowl is a Shopify app that helps merchants **detect, monitor, and prevent revenue loss** caused by broken product pages (PDPs), app conflicts, theme changes, and hidden frontend issues.
 
 Instead of guessing why conversions dropped, merchants get **clear alerts, diagnostics, and guidance** when something breaks — before revenue is lost.
 
@@ -217,7 +217,7 @@ Configuration for each shop.
 
 ## 🧭 Philosophy
 
-Silent Profit is built with one principle:
+Prowl is built with one principle:
 > **Calm growth beats chaotic growth**
 
 We value:

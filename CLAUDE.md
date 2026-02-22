@@ -1,10 +1,10 @@
-# CLAUDE.md — Silent Profit (PDP-Diagnostics)
+# CLAUDE.md — Prowl (PDP-Diagnostics)
 
 This file provides context for AI assistants working on this codebase.
 
 ## Project Overview
 
-**Silent Profit** is a Shopify app that detects, monitors, and alerts merchants about broken product detail pages (PDPs) causing silent revenue loss. It scans pages with a headless browser, detects issues (missing add-to-cart, JS errors, broken images, etc.), and sends alerts.
+**Prowl** is a Shopify app that detects, monitors, and alerts merchants about broken product detail pages (PDPs) causing silent revenue loss. It scans pages with a headless browser, detects issues (missing add-to-cart, JS errors, broken images, etc.), and sends alerts.
 
 **Current phase: Phase 1 (MVP)** — scanning, detection, alerts, dashboard only. No auto-fix, SEO tooling, or optimization features.
 

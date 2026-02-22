@@ -1,4 +1,4 @@
-# Silent Profit Roadmap
+# Prowl Roadmap
 
 This roadmap prioritizes **reliability, trust, and calm execution** over speed or hype.
 

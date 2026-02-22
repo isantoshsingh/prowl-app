@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# Shop model represents a Shopify store that has installed Silent Profit.
+# Shop model represents a Shopify store that has installed Prowl.
 # This is the central model that connects to all other domain models.
 #
 # Associations:

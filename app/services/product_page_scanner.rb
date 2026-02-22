@@ -71,7 +71,7 @@ class ProductPageScanner
 
     unless nav_result[:success]
       error_msg = if nav_result[:password_protected]
-        "Store is password-protected. Disable password protection or add Silent Profit to the allowlist."
+        "Store is password-protected. Disable password protection or add Prowl to the allowlist."
       else
         "Navigation failed: #{nav_result[:error]}"
       end

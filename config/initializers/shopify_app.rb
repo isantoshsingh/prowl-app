@@ -3,7 +3,7 @@
 ShopifyApp.configure do |config|
   config.application_name = "PDP Diagnostics"
 
-  # Minimal scopes needed for Silent Profit
+  # Minimal scopes needed for Prowl
   # read_products: To fetch product list for monitoring selection
   config.scope = "read_products, read_themes"
   
@@ -26,10 +26,10 @@ ShopifyApp.configure do |config|
   config.api_key = ENV.fetch("SHOPIFY_API_KEY", "").presence
   config.secret = ENV.fetch("SHOPIFY_API_SECRET", "").presence
 
-  # Billing configuration for Silent Profit
+  # Billing configuration for Prowl
   # $10/month with 14-day free trial
   config.billing = ShopifyApp::BillingConfiguration.new(
-    charge_name: "Silent Profit Monthly",
+    charge_name: "Prowl Monthly",
     amount: 10,
     interval: ShopifyApp::BillingConfiguration::INTERVAL_EVERY_30_DAYS,
     currency_code: "USD",

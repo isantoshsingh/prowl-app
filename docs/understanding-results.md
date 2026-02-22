@@ -1,6 +1,6 @@
 # Understanding Your Results
 
-After Silent Profit scans your product pages, you'll see results on your dashboard. This guide explains what the different statuses, severity levels, and confidence scores mean.
+After Prowl scans your product pages, you'll see results on your dashboard. This guide explains what the different statuses, severity levels, and confidence scores mean.
 
 ## Page Status Colors
 
@@ -22,7 +22,7 @@ One or more high-priority issues were found. These could directly prevent custom
 
 ## Issue Severity Levels
 
-Every issue Silent Profit detects is assigned a severity level based on how much it could affect your sales.
+Every issue Prowl detects is assigned a severity level based on how much it could affect your sales.
 
 ### High Priority
 
@@ -56,12 +56,12 @@ Low-priority issues appear on your dashboard but do not trigger email alerts.
 
 ## Confidence Scores
 
-For each detected issue, Silent Profit assigns a confidence score. This reflects how certain the detection is.
+For each detected issue, Prowl assigns a confidence score. This reflects how certain the detection is.
 
 - **High confidence** — The issue was clearly identified. For example, the Add to Cart button is definitely missing from the page.
 - **Moderate confidence** — There are strong signs of the issue, but it may need a closer look. For example, an image request failed, but it might be a non-essential image.
 
-Silent Profit only reports issues when the confidence score is above a minimum threshold. Detections that fall below this threshold are not shown, which helps reduce noise and keep your dashboard focused on real problems.
+Prowl only reports issues when the confidence score is above a minimum threshold. Detections that fall below this threshold are not shown, which helps reduce noise and keep your dashboard focused on real problems.
 
 ---
 
@@ -79,13 +79,13 @@ You've reviewed the issue and marked it as acknowledged. This is useful when you
 
 ### Resolved
 
-The issue was not detected on the most recent scan — it's gone. Silent Profit automatically resolves issues when a scan shows the problem has been fixed. You'll also get a notification when all issues on a page are resolved, confirming that the page is healthy again.
+The issue was not detected on the most recent scan — it's gone. Prowl automatically resolves issues when a scan shows the problem has been fixed. You'll also get a notification when all issues on a page are resolved, confirming that the page is healthy again.
 
 ---
 
 ## How Alerts Work
 
-Silent Profit sends email alerts only for **high-priority issues** that are **confirmed across two consecutive scans**. This two-scan requirement exists to avoid false alarms — a one-time glitch won't trigger a notification.
+Prowl sends email alerts only for **high-priority issues** that are **confirmed across two consecutive scans**. This two-scan requirement exists to avoid false alarms — a one-time glitch won't trigger a notification.
 
 When all issues on a page are resolved, you'll receive a follow-up email letting you know the page is healthy.
 

@@ -1,6 +1,6 @@
-# Agent Instructions — Silent Profit Project
+# Agent Instructions — Prowl Project
 
-You are an AI agent assisting with the **Silent Profit** Shopify app project.
+You are an AI agent assisting with the **Prowl** Shopify app project.
 
 Your role is to help build, refine, and scale a **Shopify PDP monitoring & diagnostics platform**.
 
@@ -20,7 +20,7 @@ Every suggestion, design, or code change must support this goal.
 ---
 
 ## 🧠 Product Identity
-Silent Profit is:
+Prowl is:
 - A monitoring tool, not a theme builder
 - A diagnostics assistant, not an optimizer
 - A reliability platform, not a marketing app

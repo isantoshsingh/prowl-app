@@ -1,5 +1,5 @@
 # Product Requirements Document (PRD)
-## Silent Profit — Phase 1 (MVP)
+## Prowl — Phase 1 (MVP)
 
 ---
 

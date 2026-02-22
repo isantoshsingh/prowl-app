@@ -1,6 +1,6 @@
-# Security Policy — Silent Profit
+# Security Policy — Prowl
 
-Silent Profit monitors Shopify product pages and handles sensitive store data.
+Prowl monitors Shopify product pages and handles sensitive store data.
 Security, trust, and privacy are non-negotiable.
 
 This document defines how security is handled in Phase 1 (MVP) and beyond.
@@ -9,7 +9,7 @@ This document defines how security is handled in Phase 1 (MVP) and beyond.
 
 ## 🔒 Data We Access
 
-Silent Profit only accesses what is necessary:
+Prowl only accesses what is necessary:
 
 - Store domain
 - Product page URLs
@@ -94,7 +94,7 @@ No scan can:
 ## 📣 Vulnerability Disclosure
 
 If you find a security issue:
-- Email: security@silentprofit.app
+- Email: security@prowlapp.com
 - Include steps to reproduce
 - No public disclosure before fix
 
@@ -113,6 +113,6 @@ We commit to responding within **48 hours**.
 ---
 
 ## ❤️ Our Promise
-Silent Profit exists to **protect merchants**, not spy on them.
+Prowl exists to **protect merchants**, not spy on them.
 
 Trust is the product.

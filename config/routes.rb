@@ -41,6 +41,9 @@ Rails.application.routes.draw do
 
 
 
+  # Privacy Policy (public, no auth required)
+  get "/privacy", to: "privacy#show", as: :privacy
+
   # Health check
   get "up" => "rails/health#show", as: :rails_health_check
 

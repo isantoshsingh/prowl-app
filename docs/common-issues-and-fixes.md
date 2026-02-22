@@ -1,6 +1,6 @@
 # Common Issues and Fixes
 
-When Silent Profit finds a problem on one of your product pages, it tells you what's wrong and how serious it is. This guide explains each issue type in detail and walks you through what you can do about it.
+When Prowl finds a problem on one of your product pages, it tells you what's wrong and how serious it is. This guide explains each issue type in detail and walks you through what you can do about it.
 
 ---
 
@@ -10,7 +10,7 @@ When Silent Profit finds a problem on one of your product pages, it tells you wh
 
 ### What It Means
 
-Silent Profit couldn't find a working "Add to Cart" button on your product page. This means customers visiting this page may not be able to add the product to their cart.
+Prowl couldn't find a working "Add to Cart" button on your product page. This means customers visiting this page may not be able to add the product to their cart.
 
 ### Why It Matters
 
@@ -32,7 +32,7 @@ This is the most critical issue a product page can have. If customers can't add 
 
 ### What It Means
 
-Silent Profit detected errors related to the variant selector — the part of the page where customers choose options like size, color, or material.
+Prowl detected errors related to the variant selector — the part of the page where customers choose options like size, color, or material.
 
 ### Why It Matters
 
@@ -53,7 +53,7 @@ If the variant selector isn't working, customers can't choose the specific versi
 
 ### What It Means
 
-Silent Profit found JavaScript errors occurring when your product page loads. JavaScript powers most of the interactive features on your page.
+Prowl found JavaScript errors occurring when your product page loads. JavaScript powers most of the interactive features on your page.
 
 ### Why It Matters
 
@@ -75,7 +75,7 @@ JavaScript errors can break things like image galleries, variant selectors, quan
 
 ### What It Means
 
-Silent Profit found Liquid rendering errors in your page content. Liquid is the template language Shopify uses to build your store pages. When a Liquid error occurs, part of your page may display incorrectly or show error text.
+Prowl found Liquid rendering errors in your page content. Liquid is the template language Shopify uses to build your store pages. When a Liquid error occurs, part of your page may display incorrectly or show error text.
 
 ### Why It Matters
 
@@ -97,7 +97,7 @@ Liquid errors can cause missing sections, broken layouts, or visible error messa
 
 ### What It Means
 
-One or more product images failed to load when Silent Profit scanned the page. Customers visiting this page may see broken image placeholders instead of your product photos.
+One or more product images failed to load when Prowl scanned the page. Customers visiting this page may see broken image placeholders instead of your product photos.
 
 ### Why It Matters
 
@@ -119,7 +119,7 @@ Product images are one of the biggest factors in a customer's decision to buy. M
 
 ### What It Means
 
-Silent Profit couldn't find a visible product price on the page. Customers visiting this page may not see how much the product costs.
+Prowl couldn't find a visible product price on the page. Customers visiting this page may not see how much the product costs.
 
 ### Why It Matters
 
@@ -131,7 +131,7 @@ Price is essential information for any purchase decision. If customers can't see
 2. **Verify the product has a price** — In Shopify admin, open the product and confirm all variants have a price set.
 3. **Check your theme customization** — Some themes allow you to hide the price in theme settings. Check **Online Store > Themes > Customize** and look for price-related settings on the product page template.
 4. **Review recent theme changes** — If you recently edited your theme code, you may have accidentally removed or broken the price display.
-5. **Check for Liquid errors** — A Liquid error in the price section of your template could prevent the price from rendering. Look for related Liquid errors in your Silent Profit dashboard.
+5. **Check for Liquid errors** — A Liquid error in the price section of your template could prevent the price from rendering. Look for related Liquid errors in your Prowl dashboard.
 
 ---
 
@@ -141,7 +141,7 @@ Price is essential information for any purchase decision. If customers can't see
 
 ### What It Means
 
-Your product page took more than 5 seconds to fully load. Silent Profit measures load time the same way a customer's browser would.
+Your product page took more than 5 seconds to fully load. Prowl measures load time the same way a customer's browser would.
 
 ### Why It Matters
 
@@ -153,7 +153,7 @@ Slow pages frustrate customers. Studies consistently show that longer load times
 2. **Review installed apps** — Each app can add scripts that slow down your page. Audit your apps and remove any you're not actively using.
 3. **Reduce custom code** — If you've added custom JavaScript or CSS to your theme, check if any of it is slowing things down.
 4. **Use a lightweight theme** — Some themes are more performance-optimized than others. If you're consistently seeing slow load times, consider switching to a faster theme.
-5. **Check Shopify's speed report** — Shopify has a built-in speed report in **Online Store > Themes**. Compare it with what Silent Profit is showing you.
+5. **Check Shopify's speed report** — Shopify has a built-in speed report in **Online Store > Themes**. Compare it with what Prowl is showing you.
 
 ---
 
@@ -161,7 +161,7 @@ Slow pages frustrate customers. Studies consistently show that longer load times
 
 If you've tried the steps above and the issue persists, here are your options:
 
-- **Rescan the page** — After making changes, use the Rescan button in your Silent Profit dashboard to verify the fix.
+- **Rescan the page** — After making changes, use the Rescan button in your Prowl dashboard to verify the fix.
 - **Contact your theme developer** — For theme-related issues, they're your best resource.
 - **Reach out to Shopify support** — For issues with products, settings, or your Shopify account.
-- **Check our [Troubleshooting Guide](troubleshooting.md)** — For problems with Silent Profit itself.
+- **Check our [Troubleshooting Guide](troubleshooting.md)** — For problems with Prowl itself.

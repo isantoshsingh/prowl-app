@@ -17,7 +17,7 @@ class AlertMailer < ApplicationMailer
 
     mail(
       to: shop.shop_setting&.effective_alert_email || shop.shopify_domain,
-      subject: "Silent Profit: Issue detected on #{@product_page.title}"
+      subject: "Prowl: Issue detected on #{@product_page.title}"
     )
   end
 
@@ -29,7 +29,7 @@ class AlertMailer < ApplicationMailer
 
     mail(
       to: shop.shop_setting&.effective_alert_email || shop.shopify_domain,
-      subject: "Silent Profit: #{@product_page.title} is now healthy"
+      subject: "Prowl: #{@product_page.title} is now healthy"
     )
   end
 end

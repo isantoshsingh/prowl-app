@@ -43,6 +43,6 @@ module PdpDiagnostics
     config.active_job.queue_adapter = :solid_queue
 
     # Application name for Shopify
-    config.application_name = "Silent Profit"
+    config.application_name = "Prowl"
   end
 end

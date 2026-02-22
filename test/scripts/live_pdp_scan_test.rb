@@ -213,7 +213,7 @@ class LivePdpScanTest
   def print_header
     puts ""
     puts "=" * 70
-    puts "  Silent Profit — Live PDP Scan Test Suite"
+    puts "  Prowl — Live PDP Scan Test Suite"
     puts "  #{TEST_CASES.length} test cases | #{Time.current.strftime('%Y-%m-%d %H:%M:%S')}"
     puts "=" * 70
     puts ""

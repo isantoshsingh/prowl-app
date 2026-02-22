@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
 class ApplicationMailer < ActionMailer::Base
-  default from: "Silent Profit <alerts@silentprofit.app>"
+  default from: "Prowl <alerts@prowlapp.com>"
   layout "mailer"
 end

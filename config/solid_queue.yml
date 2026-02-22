@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-# Solid Queue configuration for Silent Profit
+# Solid Queue configuration for Prowl
 # 
 # Queues:
 #   - default: Standard priority jobs
