@@ -1,7 +1,7 @@
-<%# Onboarding Setup Guide — Planet-style flow %>
-<%# Shows a welcome hero + collapsible setup steps with progress tracking %>
+<%# Onboarding Setup Guide — Planet-style collapsible design %>
+<%# Single card with inline steps, dashed circle indicators, and expandable content %>
 
-<s-page heading="Welcome to Prowl">
+<s-page heading="Prowl">
   <s-button slot="primary-action" variant="primary" href="<%= product_pages_path(host: @host) %>">
     Get started
   </s-button>
@@ -29,96 +29,96 @@
   </s-grid>
 </s-section>
 
-<%# Setup guide with progress %>
+<%# Setup guide — Planet-style single card with collapsible steps %>
+<% first_incomplete = @onboarding_steps.index { |s| !s[:completed] } %>
+
 <s-box paddingBlockStart="base">
-  <s-section heading="Setup guide">
-    <s-stack direction="block" gap="base">
-      <%# Progress bar %>
-      <s-stack direction="inline" gap="base-tight" align="center">
-        <s-paragraph>
-          <strong><%= @onboarding_progress[:completed] %> of <%= @onboarding_progress[:total] %></strong> completed
-        </s-paragraph>
-      </s-stack>
-
-      <div class="onboarding-progress-bar">
-        <div class="onboarding-progress-fill" style="width: <%= (@onboarding_progress[:completed].to_f / @onboarding_progress[:total] * 100).round %>%"></div>
+  <div class="onboarding-card">
+    <%# Card header with title, progress, and dismiss button %>
+    <div class="onboarding-card-header">
+      <div class="onboarding-card-header-text">
+        <div class="onboarding-card-title">Setup guide</div>
+        <div class="onboarding-card-subtitle">Get started using Prowl to protect your revenue.</div>
       </div>
-
-      <%# Setup steps %>
-      <s-stack direction="block" gap="none">
-        <% @onboarding_steps.each_with_index do |step, index| %>
-        <div class="onboarding-step <%= 'onboarding-step--completed' if step[:completed] %> <%= 'onboarding-step--active' if !step[:completed] && (index == 0 || @onboarding_steps[index - 1][:completed]) %>" id="onboarding-step-<%= step[:key] %>">
-          <s-box border="base" padding="base">
-            <div class="onboarding-step-clickable" onclick="toggleOnboardingStep('<%= step[:key] %>')">
-              <s-grid gridTemplateColumns="auto 1fr auto" gap="base" alignItems="center">
-                <%# Step status icon %>
-                <% if step[:completed] %>
-                  <s-icon type="check-circle-filled" tone="success"></s-icon>
-                <% else %>
-                  <div class="onboarding-step-number"><%= index + 1 %></div>
-                <% end %>
-
-                <%# Step title %>
-                <s-paragraph>
-                  <strong><%= step[:title] %></strong>
-                </s-paragraph>
-
-                <%# Expand/collapse indicator %>
-                <% unless step[:completed] %>
-                  <s-icon type="chevron-down" tone="subdued" class="onboarding-step-chevron"></s-icon>
-                <% end %>
-              </s-grid>
-            </div>
-
-            <%# Expandable content (hidden by default, shown for active step) %>
-            <% unless step[:completed] %>
-            <div class="onboarding-step-content" id="onboarding-content-<%= step[:key] %>" style="<%= (!step[:completed] && (index == 0 || @onboarding_steps[index - 1][:completed])) ? '' : 'display: none;' %>">
-              <s-box paddingBlockStart="base" paddingInlineStart="large-400">
-                <s-stack direction="block" gap="base">
-                  <s-paragraph><%= step[:description] %></s-paragraph>
-                  <% case step[:key] %>
-                  <% when :add_products %>
-                    <s-button variant="primary" href="<%= product_pages_path(host: @host) %>">
-                      Add product pages
-                    </s-button>
-                  <% when :first_scan %>
-                    <% if @total_pages > 0 %>
-                      <s-paragraph>
-                        You have <strong><%= @total_pages %></strong> product <%= @total_pages == 1 ? 'page' : 'pages' %> added. Go to your monitored pages to trigger a scan.
-                      </s-paragraph>
-                      <s-button variant="primary" href="<%= product_pages_path(host: @host) %>">
-                        View monitored pages
-                      </s-button>
-                    <% else %>
-                      <s-banner tone="info">
-                        <s-paragraph>Complete step 1 first to add product pages, then you can run a scan.</s-paragraph>
-                      </s-banner>
-                    <% end %>
-                  <% when :configure_alerts %>
-                    <s-button variant="primary" href="<%= settings_path(host: @host) %>">
-                      Configure alerts
-                    </s-button>
-                  <% end %>
-                </s-stack>
-              </s-box>
-            </div>
-            <% end %>
-          </s-box>
+      <div class="onboarding-card-header-right">
+        <div class="onboarding-card-progress">
+          <span class="onboarding-card-progress-text">
+            <%= @onboarding_progress[:completed] %>/<%= @onboarding_progress[:total] %> completed
+          </span>
+          <div class="onboarding-progress-bar">
+            <div class="onboarding-progress-fill" style="width: <%= (@onboarding_progress[:completed].to_f / @onboarding_progress[:total] * 100).round %>%"></div>
+          </div>
         </div>
-        <% end %>
-      </s-stack>
+        <button class="onboarding-close-btn" id="dismiss-onboarding-btn" type="button" aria-label="Dismiss setup guide">
+          <svg viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+            <path d="M6.707 5.293a1 1 0 0 0-1.414 1.414L8.586 10l-3.293 3.293a1 1 0 1 0 1.414 1.414L10 11.414l3.293 3.293a1 1 0 0 0 1.414-1.414L11.414 10l3.293-3.293a1 1 0 0 0-1.414-1.414L10 8.586 6.707 5.293Z"/>
+          </svg>
+        </button>
+      </div>
+    </div>
 
-      <%# Dismiss link %>
-      <s-stack direction="inline" justify="end">
-        <s-button variant="tertiary" id="dismiss-onboarding-btn">
-          Dismiss setup guide
-        </s-button>
-      </s-stack>
-    </s-stack>
-  </s-section>
+    <%# Collapsible steps %>
+    <% @onboarding_steps.each_with_index do |step, index| %>
+      <div class="onboarding-card-divider"></div>
+      <% is_expanded = !step[:completed] && index == first_incomplete %>
+      <div class="onboarding-step-row <%= 'onboarding-step-row--expanded' if is_expanded %>"
+           id="onboarding-step-<%= step[:key] %>"
+           data-step-key="<%= step[:key] %>"
+           data-completed="<%= step[:completed] %>">
+
+        <%# Step header — always visible %>
+        <div class="onboarding-step-header" onclick="toggleOnboardingStep('<%= step[:key] %>')">
+          <% if step[:completed] %>
+            <svg class="onboarding-check-icon" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg" aria-label="Completed">
+              <circle cx="10" cy="10" r="10" fill="#29845a"/>
+              <path d="M6 10.5l2.5 2.5 5.5-5.5" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          <% else %>
+            <div class="onboarding-circle-indicator"></div>
+          <% end %>
+          <span class="onboarding-step-title"><%= step[:title] %></span>
+        </div>
+
+        <%# Expandable body — hidden by default unless active %>
+        <% unless step[:completed] %>
+          <div class="onboarding-step-body" id="onboarding-content-<%= step[:key] %>" style="<%= is_expanded ? '' : 'display: none;' %>">
+            <div class="onboarding-step-body-inner">
+              <s-paragraph><%= step[:description] %></s-paragraph>
+              <div class="onboarding-step-actions">
+                <% case step[:key] %>
+                <% when :add_products %>
+                  <s-button variant="primary" href="<%= product_pages_path(host: @host) %>">
+                    Add product pages
+                  </s-button>
+                <% when :first_scan %>
+                  <% if @total_pages > 0 %>
+                    <s-paragraph>
+                      You have <strong><%= @total_pages %></strong> product <%= @total_pages == 1 ? 'page' : 'pages' %> added. Go to your monitored pages to trigger a scan.
+                    </s-paragraph>
+                    <s-button variant="primary" href="<%= product_pages_path(host: @host) %>">
+                      View monitored pages
+                    </s-button>
+                  <% else %>
+                    <s-banner tone="info">
+                      <s-paragraph>Complete step 1 first to add product pages, then you can run a scan.</s-paragraph>
+                    </s-banner>
+                  <% end %>
+                <% when :configure_alerts %>
+                  <s-button variant="primary" href="<%= settings_path(host: @host) %>">
+                    Configure alerts
+                  </s-button>
+                <% end %>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+
+  </div>
 </s-box>
 
-<%# What we monitor section %>
+<%# What we detect section %>
 <s-box paddingBlockStart="base">
   <s-section heading="What we detect">
     <s-grid gridTemplateColumns="repeat(2, 1fr)" gap="base">
@@ -160,41 +160,50 @@
 <% content_for :javascript do %>
 <script>
   function toggleOnboardingStep(key) {
+    const stepRow = document.querySelector('[data-step-key="' + key + '"]');
+    if (!stepRow || stepRow.dataset.completed === 'true') return;
+
     const content = document.getElementById('onboarding-content-' + key);
     if (!content) return;
 
     const isHidden = content.style.display === 'none';
-    // Collapse all other step contents
-    document.querySelectorAll('.onboarding-step-content').forEach(function(el) {
+
+    // Collapse all steps
+    document.querySelectorAll('.onboarding-step-body').forEach(function(el) {
       el.style.display = 'none';
     });
-    // Toggle clicked step
+    document.querySelectorAll('.onboarding-step-row').forEach(function(el) {
+      el.classList.remove('onboarding-step-row--expanded');
+    });
+
+    // Expand clicked step (if it was collapsed)
     if (isHidden) {
       content.style.display = '';
+      stepRow.classList.add('onboarding-step-row--expanded');
     }
   }
 
   document.addEventListener('DOMContentLoaded', function() {
-    const dismissBtn = document.getElementById('dismiss-onboarding-btn');
+    var dismissBtn = document.getElementById('dismiss-onboarding-btn');
     if (dismissBtn) {
       dismissBtn.addEventListener('click', async function(e) {
         e.preventDefault();
-        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+        var csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
 
         try {
-          const headers = {
+          var headers = {
             'X-CSRF-Token': csrfToken,
             'Accept': 'text/html'
           };
 
           try {
-            const token = await shopify.idToken();
+            var token = await shopify.idToken();
             if (token) headers['Authorization'] = 'Bearer ' + token;
           } catch (tokenErr) {
             console.warn('Could not get session token:', tokenErr);
           }
 
-          const response = await fetch('<%= dismiss_onboarding_path(host: @host) %>', {
+          var response = await fetch('<%= dismiss_onboarding_path(host: @host) %>', {
             method: 'POST',
             headers: headers,
             credentials: 'same-origin',

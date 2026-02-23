@@ -13,10 +13,67 @@
 }
 
 /* ========================================
-   Onboarding Setup Guide
+   Onboarding Setup Guide — Planet-style
    ======================================== */
+
+/* Card container */
+.onboarding-card {
+  background: var(--p-color-bg-surface, #ffffff);
+  border: 1px solid var(--p-color-border, #e1e3e5);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+/* Card header */
+.onboarding-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 20px;
+  gap: 16px;
+}
+
+.onboarding-card-header-text {
+  min-width: 0;
+}
+
+.onboarding-card-header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.onboarding-card-title {
+  font-size: 14px;
+  font-weight: 650;
+  color: var(--p-color-text, #303030);
+  line-height: 20px;
+}
+
+.onboarding-card-subtitle {
+  font-size: 13px;
+  color: var(--p-color-text-secondary, #616161);
+  margin-top: 2px;
+  line-height: 18px;
+}
+
+/* Progress indicator (inline in header) */
+.onboarding-card-progress {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.onboarding-card-progress-text {
+  font-size: 13px;
+  color: var(--p-color-text-secondary, #616161);
+  white-space: nowrap;
+}
+
 .onboarding-progress-bar {
-  width: 100%;
+  width: 72px;
   height: 6px;
   background-color: var(--p-color-bg-surface-secondary, #f1f1f1);
   border-radius: 3px;
@@ -31,46 +88,86 @@
   min-width: 0;
 }
 
-.onboarding-step {
+/* Divider between sections */
+.onboarding-card-divider {
+  height: 1px;
+  background: var(--p-color-border, #e1e3e5);
+}
+
+/* Step rows */
+.onboarding-step-row {
   transition: background-color 0.15s ease;
 }
 
-.onboarding-step-clickable {
+.onboarding-step-row--expanded {
+  background: var(--p-color-bg-surface-secondary, #f7f7f7);
+}
+
+/* Step header (always visible) */
+.onboarding-step-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 20px;
   cursor: pointer;
+  user-select: none;
 }
 
-.onboarding-step-clickable:hover {
-  opacity: 0.85;
+.onboarding-step-header:hover {
+  opacity: 0.8;
 }
 
-.onboarding-step--completed .onboarding-step-clickable {
+.onboarding-step-row[data-completed="true"] .onboarding-step-header {
   cursor: default;
 }
 
-.onboarding-step--completed .onboarding-step-clickable:hover {
+.onboarding-step-row[data-completed="true"] .onboarding-step-header:hover {
   opacity: 1;
 }
 
-.onboarding-step-number {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
+/* Dashed circle indicator (incomplete steps) */
+.onboarding-circle-indicator {
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
-  background-color: var(--p-color-bg-fill-emphasis, #005bd3);
-  color: var(--p-color-text-on-fill, #ffffff);
-  font-size: 12px;
-  font-weight: 600;
+  border: 2px dashed var(--p-color-border-secondary, #b5b5b5);
   flex-shrink: 0;
 }
 
-.onboarding-step--completed .onboarding-step-number {
-  background-color: var(--p-color-bg-fill-success, #008060);
+/* Green check icon (completed steps) */
+.onboarding-check-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
 }
 
-.onboarding-step-content {
+/* Step title */
+.onboarding-step-title {
+  font-size: 13px;
+  font-weight: 550;
+  color: var(--p-color-text, #303030);
+  line-height: 18px;
+}
+
+.onboarding-step-row[data-completed="true"] .onboarding-step-title {
+  color: var(--p-color-text-secondary, #616161);
+}
+
+/* Expandable body */
+.onboarding-step-body {
   animation: onboarding-slide-down 0.2s ease;
+}
+
+.onboarding-step-body-inner {
+  padding: 0 20px 16px 52px; /* 20px left padding + 20px circle + 12px gap = 52px */
+}
+
+.onboarding-step-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+  margin-top: 12px;
 }
 
 @keyframes onboarding-slide-down {
@@ -84,6 +181,29 @@
   }
 }
 
-.onboarding-step-chevron {
-  transition: transform 0.2s ease;
+/* Close button (top-right X) */
+.onboarding-close-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: 6px;
+  color: var(--p-color-icon-secondary, #8a8a8a);
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+  flex-shrink: 0;
+}
+
+.onboarding-close-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.onboarding-close-btn:hover {
+  color: var(--p-color-icon, #303030);
+  background: var(--p-color-bg-surface-hover, #f1f1f1);
 }
