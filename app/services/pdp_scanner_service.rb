@@ -250,7 +250,11 @@ class PdpScannerService
         "--disable-setuid-sandbox",
         "--disable-dev-shm-usage",
         "--disable-gpu",
-        "--single-process"
+        "--single-process",
+        "--js-flags=--max-old-space-size=128",
+        "--disable-extensions",
+        "--disable-background-networking",
+        "--disable-software-rasterizer"
       ]
     }
 
