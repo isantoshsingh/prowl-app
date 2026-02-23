@@ -23,9 +23,9 @@ class ScheduledScanJob < ApplicationJob
       next unless shop.billing_active?
 
       # Get pages that need scanning
-      pages_to_scan = shop.product_pages.needs_scan.limit(5)
+      pages_to_scan = shop.product_pages.needs_scan
 
-      pages_to_scan.each do |page|
+      pages_to_scan.find_each do |page|
         ScanPdpJob.perform_later(page.id)
         scans_queued += 1
       end
