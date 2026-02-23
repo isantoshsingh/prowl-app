@@ -3,7 +3,7 @@
 client_id = "45aaac72a33c1acaa7128a33239d3d40"
 name = "Prowl"
 handle = "prowl-store-health-monitor"
-application_url = "http://prowl.lucyapps.com"
+application_url = "https://prowl.lucyapps.com"
 embedded = true
 
 [webhooks]
