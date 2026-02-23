@@ -304,7 +304,10 @@ class BrowserService
       "--disable-setuid-sandbox",
       "--disable-dev-shm-usage",
       "--disable-gpu",
-      "--disable-software-rasterizer"
+      "--disable-software-rasterizer",
+      "--js-flags=--max-old-space-size=128",
+      "--single-process",
+      "--disable-extensions"
     ]
 
     args << "--window-size=#{@options[:viewport_width]},#{@options[:viewport_height]}"

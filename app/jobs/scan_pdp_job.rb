@@ -17,6 +17,9 @@ class ScanPdpJob < ApplicationJob
 
   RESCAN_DELAY = 30.minutes
 
+  # Limit to 1 concurrent scan to prevent memory exhaustion from multiple browser instances
+  limits_concurrency to: 1, key: ->(product_page_id) { "scan_pdp" }
+
   # Retry configuration
   retry_on StandardError, wait: :polynomially_longer, attempts: 3
   discard_on ActiveRecord::RecordNotFound
