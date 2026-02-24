@@ -1,0 +1,58 @@
+{
+  "name": "Prowl",
+  "description": "Shopify PDP diagnostics — detect broken product pages causing silent revenue loss",
+  "keywords": ["rails", "shopify", "pdp", "diagnostics"],
+  "stack": "heroku-24",
+  "buildpacks": [
+    { "url": "heroku/nodejs" },
+    { "url": "https://github.com/heroku/heroku-buildpack-chrome-for-testing" },
+    { "url": "heroku/ruby" }
+  ],
+  "env": {
+    "RAILS_ENV": {
+      "value": "production"
+    },
+    "RAILS_LOG_TO_STDOUT": {
+      "value": "enabled"
+    },
+    "RAILS_SERVE_STATIC_FILES": {
+      "value": "enabled"
+    },
+    "RAILS_MASTER_KEY": {
+      "description": "Rails master key for credentials decryption",
+      "required": true
+    },
+    "SHOPIFY_API_KEY": {
+      "description": "Shopify app API key",
+      "required": true
+    },
+    "SHOPIFY_API_SECRET": {
+      "description": "Shopify app API secret",
+      "required": true
+    },
+    "HOST": {
+      "description": "Application host URL (e.g. https://your-app.herokuapp.com)",
+      "required": true
+    },
+    "PUPPETEER_SKIP_DOWNLOAD": {
+      "description": "Skip Puppeteer Chromium download — use system Chrome from buildpack",
+      "value": "true"
+    }
+  },
+  "addons": [
+    "heroku-postgresql:essential-0"
+  ],
+  "formation": {
+    "web": {
+      "quantity": 1,
+      "size": "basic"
+    },
+    "worker": {
+      "quantity": 1,
+      "size": "basic"
+    }
+  },
+  "scripts": {
+    "postdeploy": "bin/rails db:migrate db:seed"
+  }
+}

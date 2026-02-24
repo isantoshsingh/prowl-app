@@ -34,7 +34,7 @@ production:
       threads: 2
       polling_interval: 0.1
     - queues: [scans]
-      threads: 2
+      threads: 1
       polling_interval: 0.5
     - queues: [mailers]
       threads: 1

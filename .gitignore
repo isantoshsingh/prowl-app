@@ -30,6 +30,9 @@
 
 /public/assets
 
+# Ignore Node.js dependencies (installed by Heroku Node.js buildpack for puppeteer-ruby).
+/node_modules
+
 # Ignore key files for decrypting credentials and more.
 /config/*.key
 

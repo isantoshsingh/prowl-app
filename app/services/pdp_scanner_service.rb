@@ -63,10 +63,7 @@ class PdpScannerService
     url = product_page.scannable_url
 
     Timeout.timeout(SCAN_TIMEOUT_SECONDS, TimeoutError, "Scan exceeded #{SCAN_TIMEOUT_SECONDS}s timeout") do
-      Puppeteer.launch(
-        headless: true,
-        args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"]
-      ) do |browser|
+      Puppeteer.launch(**launch_options) do |browser|
         page = browser.new_page
         setup_page(page)
         load_page(page, url)
@@ -243,6 +240,28 @@ class PdpScannerService
     JAVASCRIPT
 
     checks
+  end
+
+  def launch_options
+    options = {
+      headless: true,
+      args: [
+        "--no-sandbox",
+        "--disable-setuid-sandbox",
+        "--disable-dev-shm-usage",
+        "--disable-gpu",
+        "--single-process",
+        "--js-flags=--max-old-space-size=128",
+        "--disable-extensions",
+        "--disable-background-networking",
+        "--disable-software-rasterizer"
+      ]
+    }
+
+    chrome_path = Rails.application.config.puppeteer.executable_path
+    options[:executable_path] = chrome_path if chrome_path
+
+    options
   end
 
   def store_screenshot(screenshot_data)
