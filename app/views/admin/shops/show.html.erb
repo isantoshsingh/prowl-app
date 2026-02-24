@@ -1,0 +1,183 @@
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h2 class="mb-0"><%= @shop.shopify_domain %></h2>
+  <%= link_to "Back to Shops", admin_shops_path, class: "btn btn-outline-secondary btn-sm" %>
+</div>
+
+<!-- Shop Metadata -->
+<div class="card mb-4">
+  <div class="card-header"><h5 class="card-title mb-0">Shop Details</h5></div>
+  <div class="card-body">
+    <div class="row">
+      <div class="col-md-6">
+        <dl class="row mb-0">
+          <dt class="col-sm-5">Domain</dt>
+          <dd class="col-sm-7"><%= @shop.shopify_domain %></dd>
+
+          <dt class="col-sm-5">Owner</dt>
+          <dd class="col-sm-7"><%= @shop.shop_owner || "-" %></dd>
+
+          <dt class="col-sm-5">Email</dt>
+          <dd class="col-sm-7"><%= @shop.email || "-" %></dd>
+
+          <dt class="col-sm-5">Plan</dt>
+          <dd class="col-sm-7"><%= @shop.plan_display_name || @shop.plan_name || "-" %></dd>
+
+          <dt class="col-sm-5">Country</dt>
+          <dd class="col-sm-7"><%= [@shop.country_name, @shop.country_code].compact.join(" / ").presence || "-" %></dd>
+        </dl>
+      </div>
+      <div class="col-md-6">
+        <dl class="row mb-0">
+          <dt class="col-sm-5">Status</dt>
+          <dd class="col-sm-7">
+            <% if @shop.installed? %>
+              <span class="badge bg-success">Installed</span>
+            <% else %>
+              <span class="badge bg-secondary">Uninstalled</span>
+            <% end %>
+          </dd>
+
+          <dt class="col-sm-5">Installed At</dt>
+          <dd class="col-sm-7"><%= @shop.installed_at&.strftime("%Y-%m-%d %H:%M") || "-" %></dd>
+
+          <dt class="col-sm-5">Subscription</dt>
+          <dd class="col-sm-7"><%= @shop.subscription_status.humanize %></dd>
+
+          <dt class="col-sm-5">Billing Exempt</dt>
+          <dd class="col-sm-7"><%= @shop.billing_exempt? ? "Yes" : "No" %></dd>
+
+          <dt class="col-sm-5">Timezone</dt>
+          <dd class="col-sm-7"><%= @shop.iana_timezone || @shop.timezone || "-" %></dd>
+        </dl>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Monitored Product Pages -->
+<div class="card mb-4">
+  <div class="card-header"><h5 class="card-title mb-0">Monitored Product Pages (<%= @product_pages.count %>)</h5></div>
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead>
+        <tr>
+          <th>Title</th>
+          <th>Handle</th>
+          <th>Status</th>
+          <th>Last Scanned</th>
+          <th>Monitoring</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @product_pages.each do |page| %>
+          <tr>
+            <td><%= page.title %></td>
+            <td><code><%= page.handle %></code></td>
+            <td>
+              <% badge_class = case page.status
+                when "healthy" then "bg-success"
+                when "warning" then "bg-warning text-dark"
+                when "critical" then "bg-danger"
+                when "error" then "bg-dark"
+                else "bg-secondary"
+              end %>
+              <span class="badge <%= badge_class %>"><%= page.status.humanize %></span>
+            </td>
+            <td><%= page.last_scanned_at&.strftime("%Y-%m-%d %H:%M") || "Never" %></td>
+            <td><%= page.monitoring_enabled? ? "Yes" : "No" %></td>
+          </tr>
+        <% end %>
+        <% if @product_pages.empty? %>
+          <tr>
+            <td colspan="5" class="text-muted text-center py-3">No product pages monitored.</td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Recent Scans -->
+<div class="card mb-4">
+  <div class="card-header"><h5 class="card-title mb-0">Recent Scans</h5></div>
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Product Page</th>
+          <th>Status</th>
+          <th>Issues Found</th>
+          <th>Date</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @recent_scans.each do |scan| %>
+          <tr>
+            <td><%= link_to "##{scan.id}", admin_scan_path(scan) %></td>
+            <td><%= scan.product_page.title %></td>
+            <td>
+              <% scan_badge = case scan.status
+                when "completed" then "bg-success"
+                when "failed" then "bg-danger"
+                when "running" then "bg-primary"
+                else "bg-secondary"
+              end %>
+              <span class="badge <%= scan_badge %>"><%= scan.status.humanize %></span>
+            </td>
+            <td><%= scan.issues.count %></td>
+            <td><%= scan.created_at.strftime("%Y-%m-%d %H:%M") %></td>
+          </tr>
+        <% end %>
+        <% if @recent_scans.empty? %>
+          <tr>
+            <td colspan="5" class="text-muted text-center py-3">No scans yet.</td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Open Issues -->
+<div class="card">
+  <div class="card-header"><h5 class="card-title mb-0">Open Issues (<%= @open_issues.count %>)</h5></div>
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead>
+        <tr>
+          <th>Issue</th>
+          <th>Severity</th>
+          <th>Type</th>
+          <th>Status</th>
+          <th>Occurrences</th>
+          <th>Last Detected</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @open_issues.each do |issue| %>
+          <tr>
+            <td><%= link_to issue.title, admin_issue_path(issue) %></td>
+            <td>
+              <% severity_badge = case issue.severity
+                when "high" then "bg-danger"
+                when "medium" then "bg-warning text-dark"
+                else "bg-info"
+              end %>
+              <span class="badge <%= severity_badge %>"><%= issue.severity.humanize %></span>
+            </td>
+            <td><%= issue.issue_type.humanize %></td>
+            <td><%= issue.status.humanize %></td>
+            <td><%= issue.occurrence_count %></td>
+            <td><%= issue.last_detected_at.strftime("%Y-%m-%d %H:%M") %></td>
+          </tr>
+        <% end %>
+        <% if @open_issues.empty? %>
+          <tr>
+            <td colspan="6" class="text-muted text-center py-3">No open issues.</td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>

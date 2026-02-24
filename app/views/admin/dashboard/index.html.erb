@@ -1,0 +1,102 @@
+<h2 class="mb-4">Dashboard</h2>
+
+<!-- Summary Cards -->
+<div class="row g-3 mb-4">
+  <div class="col-md-3">
+    <div class="card">
+      <div class="card-body">
+        <div class="text-muted small">Total Shops</div>
+        <div class="fs-3 fw-bold"><%= @total_shops %></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card">
+      <div class="card-body">
+        <div class="text-muted small">Active Shops (30d)</div>
+        <div class="fs-3 fw-bold"><%= @active_shops %></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card">
+      <div class="card-body">
+        <div class="text-muted small">Total Scans</div>
+        <div class="fs-3 fw-bold"><%= @total_scans %></div>
+        <div class="text-muted small"><%= @scans_last_7_days %> in last 7 days</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card">
+      <div class="card-body">
+        <div class="text-muted small">Total Issues</div>
+        <div class="fs-3 fw-bold"><%= @total_issues %></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Issues by Severity -->
+<div class="row g-3 mb-4">
+  <div class="col-md-4">
+    <div class="card border-danger">
+      <div class="card-body">
+        <div class="text-danger small fw-semibold">High Severity</div>
+        <div class="fs-4 fw-bold"><%= @issues_by_severity[:high] %></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card border-warning">
+      <div class="card-body">
+        <div class="text-warning small fw-semibold">Medium Severity</div>
+        <div class="fs-4 fw-bold"><%= @issues_by_severity[:medium] %></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card border-info">
+      <div class="card-body">
+        <div class="text-info small fw-semibold">Low Severity</div>
+        <div class="fs-4 fw-bold"><%= @issues_by_severity[:low] %></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Recent Installs -->
+<div class="card">
+  <div class="card-header">
+    <h5 class="card-title mb-0">Recent Installs</h5>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead>
+        <tr>
+          <th>Domain</th>
+          <th>Owner</th>
+          <th>Plan</th>
+          <th>Country</th>
+          <th>Installed At</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @recent_installs.each do |shop| %>
+          <tr>
+            <td><%= link_to shop.shopify_domain, admin_shop_path(shop) %></td>
+            <td><%= shop.shop_owner || "-" %></td>
+            <td><%= shop.plan_display_name || shop.plan_name || "-" %></td>
+            <td><%= shop.country_code || "-" %></td>
+            <td><%= shop.installed_at ? shop.installed_at.strftime("%Y-%m-%d %H:%M") : shop.created_at.strftime("%Y-%m-%d %H:%M") %></td>
+          </tr>
+        <% end %>
+        <% if @recent_installs.empty? %>
+          <tr>
+            <td colspan="5" class="text-muted text-center py-3">No shops installed yet.</td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>

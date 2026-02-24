@@ -1,4 +1,6 @@
 module ApplicationHelper
+  include Pagy::Frontend
+
   # Renders a <time> element that JavaScript converts to the browser's local timezone.
   # Falls back to the UTC-formatted string if JS is disabled.
   # Use date_only: true for dates without time (e.g., trial expiration).

@@ -1,0 +1,140 @@
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h2 class="mb-0">Scan #<%= @scan.id %></h2>
+  <%= link_to "Back to Scans", admin_scans_path, class: "btn btn-outline-secondary btn-sm" %>
+</div>
+
+<!-- Scan Metadata -->
+<div class="card mb-4">
+  <div class="card-header"><h5 class="card-title mb-0">Scan Details</h5></div>
+  <div class="card-body">
+    <div class="row">
+      <div class="col-md-6">
+        <dl class="row mb-0">
+          <dt class="col-sm-5">Shop</dt>
+          <dd class="col-sm-7"><%= link_to @scan.product_page.shop.shopify_domain, admin_shop_path(@scan.product_page.shop) %></dd>
+
+          <dt class="col-sm-5">Product Page</dt>
+          <dd class="col-sm-7"><%= @scan.product_page.title %></dd>
+
+          <dt class="col-sm-5">Status</dt>
+          <dd class="col-sm-7">
+            <% scan_badge = case @scan.status
+              when "completed" then "bg-success"
+              when "failed" then "bg-danger"
+              when "running" then "bg-primary"
+              else "bg-secondary"
+            end %>
+            <span class="badge <%= scan_badge %>"><%= @scan.status.humanize %></span>
+          </dd>
+
+          <dt class="col-sm-5">Page Load Time</dt>
+          <dd class="col-sm-7"><%= @scan.page_load_time_ms ? "#{@scan.page_load_time_ms}ms" : "-" %></dd>
+        </dl>
+      </div>
+      <div class="col-md-6">
+        <dl class="row mb-0">
+          <dt class="col-sm-5">Created</dt>
+          <dd class="col-sm-7"><%= @scan.created_at.strftime("%Y-%m-%d %H:%M:%S") %></dd>
+
+          <dt class="col-sm-5">Started</dt>
+          <dd class="col-sm-7"><%= @scan.started_at&.strftime("%Y-%m-%d %H:%M:%S") || "-" %></dd>
+
+          <dt class="col-sm-5">Completed</dt>
+          <dd class="col-sm-7"><%= @scan.completed_at&.strftime("%Y-%m-%d %H:%M:%S") || "-" %></dd>
+
+          <dt class="col-sm-5">Duration</dt>
+          <dd class="col-sm-7"><%= @scan.duration_seconds ? "#{@scan.duration_seconds}s" : "-" %></dd>
+        </dl>
+      </div>
+    </div>
+
+    <% if @scan.error_message.present? %>
+      <div class="alert alert-danger mt-3 mb-0">
+        <strong>Error:</strong> <%= @scan.error_message %>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<!-- Screenshot -->
+<% if @scan.screenshot_url.present? %>
+  <div class="card mb-4">
+    <div class="card-header"><h5 class="card-title mb-0">Screenshot</h5></div>
+    <div class="card-body">
+      <img src="<%= @scan.screenshot_url %>" alt="Page screenshot" class="img-fluid border rounded" style="max-height: 400px;">
+    </div>
+  </div>
+<% end %>
+
+<!-- Issues Detected -->
+<div class="card mb-4">
+  <div class="card-header"><h5 class="card-title mb-0">Issues Detected (<%= @issues.count %>)</h5></div>
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead>
+        <tr>
+          <th>Issue</th>
+          <th>Severity</th>
+          <th>Type</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @issues.each do |issue| %>
+          <tr>
+            <td><%= link_to issue.title, admin_issue_path(issue) %></td>
+            <td>
+              <% severity_badge = case issue.severity
+                when "high" then "bg-danger"
+                when "medium" then "bg-warning text-dark"
+                else "bg-info"
+              end %>
+              <span class="badge <%= severity_badge %>"><%= issue.severity.humanize %></span>
+            </td>
+            <td><%= issue.issue_type.humanize %></td>
+            <td><%= issue.status.humanize %></td>
+          </tr>
+        <% end %>
+        <% if @issues.empty? %>
+          <tr>
+            <td colspan="4" class="text-muted text-center py-3">No issues detected in this scan.</td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Raw Logs -->
+<div class="card mb-4">
+  <div class="card-header"><h5 class="card-title mb-0">JS Errors</h5></div>
+  <div class="card-body">
+    <% if @scan.parsed_js_errors.any? %>
+      <pre class="bg-dark text-light p-3 rounded" style="max-height: 300px; overflow-y: auto;"><%= JSON.pretty_generate(@scan.parsed_js_errors) %></pre>
+    <% else %>
+      <p class="text-muted mb-0">No JS errors recorded.</p>
+    <% end %>
+  </div>
+</div>
+
+<div class="card mb-4">
+  <div class="card-header"><h5 class="card-title mb-0">Network Errors</h5></div>
+  <div class="card-body">
+    <% if @scan.parsed_network_errors.any? %>
+      <pre class="bg-dark text-light p-3 rounded" style="max-height: 300px; overflow-y: auto;"><%= JSON.pretty_generate(@scan.parsed_network_errors) %></pre>
+    <% else %>
+      <p class="text-muted mb-0">No network errors recorded.</p>
+    <% end %>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header"><h5 class="card-title mb-0">DOM Checks Data</h5></div>
+  <div class="card-body">
+    <% if @scan.parsed_dom_checks_data.any? %>
+      <pre class="bg-dark text-light p-3 rounded" style="max-height: 300px; overflow-y: auto;"><%= JSON.pretty_generate(@scan.parsed_dom_checks_data) %></pre>
+    <% else %>
+      <p class="text-muted mb-0">No DOM checks data recorded.</p>
+    <% end %>
+  </div>
+</div>
