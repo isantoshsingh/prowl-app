@@ -1,0 +1,78 @@
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h2 class="mb-0">Scans</h2>
+</div>
+
+<!-- Filters -->
+<div class="card mb-3">
+  <div class="card-body">
+    <%= form_tag(admin_scans_path, method: :get, class: "row g-2 align-items-end") do %>
+      <div class="col-md-4">
+        <label class="form-label small">Shop Domain</label>
+        <%= text_field_tag :shop_domain, params[:shop_domain], class: "form-control", placeholder: "Filter by domain..." %>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label small">From</label>
+        <%= date_field_tag :date_from, params[:date_from], class: "form-control" %>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label small">To</label>
+        <%= date_field_tag :date_to, params[:date_to], class: "form-control" %>
+      </div>
+      <div class="col-md-2">
+        <button type="submit" class="btn btn-primary w-100">Filter</button>
+      </div>
+    <% end %>
+    <% if params[:shop_domain].present? || params[:date_from].present? || params[:date_to].present? %>
+      <div class="mt-2">
+        <%= link_to "Clear filters", admin_scans_path, class: "btn btn-outline-secondary btn-sm" %>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<!-- Scans Table -->
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Shop</th>
+          <th>Product Page</th>
+          <th>Status</th>
+          <th>Load Time</th>
+          <th>Issues</th>
+          <th>Date</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @scans.each do |scan| %>
+          <tr>
+            <td><%= link_to "##{scan.id}", admin_scan_path(scan) %></td>
+            <td><%= link_to scan.product_page.shop.shopify_domain, admin_shop_path(scan.product_page.shop) %></td>
+            <td><%= scan.product_page.title %></td>
+            <td>
+              <% scan_badge = case scan.status
+                when "completed" then "bg-success"
+                when "failed" then "bg-danger"
+                when "running" then "bg-primary"
+                else "bg-secondary"
+              end %>
+              <span class="badge <%= scan_badge %>"><%= scan.status.humanize %></span>
+            </td>
+            <td><%= scan.page_load_time_ms ? "#{scan.page_load_time_ms}ms" : "-" %></td>
+            <td><%= scan.issues.count %></td>
+            <td><%= scan.created_at.strftime("%Y-%m-%d %H:%M") %></td>
+          </tr>
+        <% end %>
+        <% if @scans.empty? %>
+          <tr>
+            <td colspan="7" class="text-muted text-center py-3">No scans found.</td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<%== pagy_nav(@pagy) if @pagy.pages > 1 %>

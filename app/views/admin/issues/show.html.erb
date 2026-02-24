@@ -1,0 +1,106 @@
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h2 class="mb-0"><%= @issue.title %></h2>
+  <%= link_to "Back to Issues", admin_issues_path, class: "btn btn-outline-secondary btn-sm" %>
+</div>
+
+<!-- Issue Details -->
+<div class="card mb-4">
+  <div class="card-header"><h5 class="card-title mb-0">Issue Details</h5></div>
+  <div class="card-body">
+    <div class="row">
+      <div class="col-md-6">
+        <dl class="row mb-0">
+          <dt class="col-sm-5">Issue Type</dt>
+          <dd class="col-sm-7"><%= @issue.issue_type.humanize %></dd>
+
+          <dt class="col-sm-5">Severity</dt>
+          <dd class="col-sm-7">
+            <% severity_badge = case @issue.severity
+              when "high" then "bg-danger"
+              when "medium" then "bg-warning text-dark"
+              else "bg-info"
+            end %>
+            <span class="badge <%= severity_badge %>"><%= @issue.severity_label %></span>
+          </dd>
+
+          <dt class="col-sm-5">Status</dt>
+          <dd class="col-sm-7"><%= @issue.status.humanize %></dd>
+
+          <dt class="col-sm-5">Occurrences</dt>
+          <dd class="col-sm-7"><%= @issue.occurrence_count %></dd>
+        </dl>
+      </div>
+      <div class="col-md-6">
+        <dl class="row mb-0">
+          <dt class="col-sm-5">Shop</dt>
+          <dd class="col-sm-7"><%= link_to @shop.shopify_domain, admin_shop_path(@shop) %></dd>
+
+          <dt class="col-sm-5">Product Page</dt>
+          <dd class="col-sm-7"><%= @product_page.title %></dd>
+
+          <dt class="col-sm-5">First Detected</dt>
+          <dd class="col-sm-7"><%= @issue.first_detected_at.strftime("%Y-%m-%d %H:%M:%S") %></dd>
+
+          <dt class="col-sm-5">Last Detected</dt>
+          <dd class="col-sm-7"><%= @issue.last_detected_at.strftime("%Y-%m-%d %H:%M:%S") %></dd>
+        </dl>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Description -->
+<div class="card mb-4">
+  <div class="card-header"><h5 class="card-title mb-0">Description</h5></div>
+  <div class="card-body">
+    <p class="mb-0"><%= @issue.description || "No description available." %></p>
+  </div>
+</div>
+
+<!-- Acknowledgement Info -->
+<% if @issue.acknowledged_at.present? %>
+  <div class="card mb-4">
+    <div class="card-header"><h5 class="card-title mb-0">Acknowledgement</h5></div>
+    <div class="card-body">
+      <dl class="row mb-0">
+        <dt class="col-sm-3">Acknowledged At</dt>
+        <dd class="col-sm-9"><%= @issue.acknowledged_at.strftime("%Y-%m-%d %H:%M:%S") %></dd>
+
+        <dt class="col-sm-3">Acknowledged By</dt>
+        <dd class="col-sm-9"><%= @issue.acknowledged_by || "-" %></dd>
+      </dl>
+    </div>
+  </div>
+<% end %>
+
+<!-- Debug: Scan Info -->
+<div class="card mb-4">
+  <div class="card-header"><h5 class="card-title mb-0">Related Scan (#<%= @scan.id %>)</h5></div>
+  <div class="card-body">
+    <dl class="row mb-0">
+      <dt class="col-sm-3">Scan Status</dt>
+      <dd class="col-sm-9"><%= @scan.status.humanize %></dd>
+
+      <dt class="col-sm-3">Scan Date</dt>
+      <dd class="col-sm-9"><%= @scan.created_at.strftime("%Y-%m-%d %H:%M:%S") %></dd>
+
+      <dt class="col-sm-3">Page Load Time</dt>
+      <dd class="col-sm-9"><%= @scan.page_load_time_ms ? "#{@scan.page_load_time_ms}ms" : "-" %></dd>
+    </dl>
+    <div class="mt-2">
+      <%= link_to "View Full Scan", admin_scan_path(@scan), class: "btn btn-outline-primary btn-sm" %>
+    </div>
+  </div>
+</div>
+
+<!-- Debug: Evidence -->
+<div class="card">
+  <div class="card-header"><h5 class="card-title mb-0">Evidence (Debug)</h5></div>
+  <div class="card-body">
+    <% if @issue.evidence.present? %>
+      <pre class="bg-dark text-light p-3 rounded" style="max-height: 400px; overflow-y: auto;"><%= JSON.pretty_generate(@issue.evidence) rescue @issue.evidence.to_s %></pre>
+    <% else %>
+      <p class="text-muted mb-0">No evidence data available.</p>
+    <% end %>
+  </div>
+</div>

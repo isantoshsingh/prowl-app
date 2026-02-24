@@ -31,10 +31,16 @@ gem "solid_queue"
 gem "shopify_app", "~> 23.0"
 
 # Headless browser for PDP scanning
-gem "puppeteer-ruby", "~> 0.45"
+gem "puppeteer-ruby", "~> 0.45.0"
 
 # HTTP client for API requests
 gem "httparty", "~> 0.22"
+
+# Admin authentication
+gem "devise", "~> 4.9"
+
+# Pagination
+gem "pagy", "~> 9.0"
 
 
 # Reduces boot times through caching; required in config/boot.rb

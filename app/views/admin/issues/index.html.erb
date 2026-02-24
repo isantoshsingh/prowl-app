@@ -1,0 +1,77 @@
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h2 class="mb-0">Issues</h2>
+</div>
+
+<!-- Filters -->
+<div class="card mb-3">
+  <div class="card-body">
+    <%= form_tag(admin_issues_path, method: :get, class: "row g-2 align-items-end") do %>
+      <div class="col-md-3">
+        <label class="form-label small">Severity</label>
+        <%= select_tag :severity, options_for_select([["All severities", ""], ["High", "high"], ["Medium", "medium"], ["Low", "low"]], params[:severity]), class: "form-select" %>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label small">Issue Type</label>
+        <%= select_tag :issue_type, options_for_select([["All types", ""]] + Issue::ISSUE_TYPES.keys.map { |t| [t.humanize, t] }, params[:issue_type]), class: "form-select" %>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label small">Status</label>
+        <%= select_tag :status_filter, options_for_select([["All", ""], ["Unresolved", "unresolved"], ["Resolved", "resolved"]], params[:status_filter]), class: "form-select" %>
+      </div>
+      <div class="col-md-3">
+        <button type="submit" class="btn btn-primary w-100">Filter</button>
+      </div>
+    <% end %>
+    <% if params[:severity].present? || params[:issue_type].present? || params[:status_filter].present? %>
+      <div class="mt-2">
+        <%= link_to "Clear filters", admin_issues_path, class: "btn btn-outline-secondary btn-sm" %>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<!-- Issues Table -->
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead>
+        <tr>
+          <th>Issue</th>
+          <th>Shop</th>
+          <th>Severity</th>
+          <th>Type</th>
+          <th>Status</th>
+          <th>Occurrences</th>
+          <th>Last Detected</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @issues.each do |issue| %>
+          <tr>
+            <td><%= link_to issue.title, admin_issue_path(issue) %></td>
+            <td><%= link_to issue.product_page.shop.shopify_domain, admin_shop_path(issue.product_page.shop) %></td>
+            <td>
+              <% severity_badge = case issue.severity
+                when "high" then "bg-danger"
+                when "medium" then "bg-warning text-dark"
+                else "bg-info"
+              end %>
+              <span class="badge <%= severity_badge %>"><%= issue.severity.humanize %></span>
+            </td>
+            <td><%= issue.issue_type.humanize %></td>
+            <td><%= issue.status.humanize %></td>
+            <td><%= issue.occurrence_count %></td>
+            <td><%= issue.last_detected_at.strftime("%Y-%m-%d %H:%M") %></td>
+          </tr>
+        <% end %>
+        <% if @issues.empty? %>
+          <tr>
+            <td colspan="7" class="text-muted text-center py-3">No issues found.</td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<%== pagy_nav(@pagy) if @pagy.pages > 1 %>

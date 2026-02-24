@@ -1,0 +1,71 @@
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h2 class="mb-0">Shops</h2>
+</div>
+
+<!-- Search -->
+<div class="card mb-3">
+  <div class="card-body">
+    <%= form_tag(admin_shops_path, method: :get, class: "row g-2 align-items-end") do %>
+      <div class="col-md-8">
+        <%= text_field_tag :search, params[:search], class: "form-control", placeholder: "Search by domain..." %>
+      </div>
+      <div class="col-md-4">
+        <button type="submit" class="btn btn-primary">Search</button>
+        <% if params[:search].present? %>
+          <%= link_to "Clear", admin_shops_path, class: "btn btn-outline-secondary" %>
+        <% end %>
+      </div>
+    <% end %>
+  </div>
+</div>
+
+<!-- Shops Table -->
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead>
+        <tr>
+          <th>Domain</th>
+          <th>Plan</th>
+          <th>Installed At</th>
+          <th>Last Scan</th>
+          <th>Issues</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% @shops.each do |shop| %>
+          <% last_scan = Scan.joins(:product_page).where(product_pages: { shop_id: shop.id }).order(created_at: :desc).first %>
+          <% issue_count = Issue.joins(:product_page).where(product_pages: { shop_id: shop.id }).where.not(status: "resolved").count %>
+          <tr>
+            <td><%= link_to shop.shopify_domain, admin_shop_path(shop) %></td>
+            <td><%= shop.plan_display_name || shop.plan_name || "-" %></td>
+            <td><%= shop.installed_at&.strftime("%Y-%m-%d") || shop.created_at.strftime("%Y-%m-%d") %></td>
+            <td><%= last_scan&.created_at&.strftime("%Y-%m-%d %H:%M") || "Never" %></td>
+            <td>
+              <% if issue_count > 0 %>
+                <span class="badge bg-warning text-dark"><%= issue_count %></span>
+              <% else %>
+                <span class="text-muted">0</span>
+              <% end %>
+            </td>
+            <td>
+              <% if shop.installed? %>
+                <span class="badge bg-success">Installed</span>
+              <% else %>
+                <span class="badge bg-secondary">Uninstalled</span>
+              <% end %>
+            </td>
+          </tr>
+        <% end %>
+        <% if @shops.empty? %>
+          <tr>
+            <td colspan="6" class="text-muted text-center py-3">No shops found.</td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<%== pagy_nav(@pagy) if @pagy.pages > 1 %>

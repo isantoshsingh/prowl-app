@@ -1,6 +1,22 @@
 # frozen_string_literal: true
 
 Rails.application.routes.draw do
+  # Admin authentication and section
+  devise_for :admins, path: "admin", controllers: {
+    sessions: "admin/sessions"
+  }, path_names: {
+    sign_in: "login",
+    sign_out: "logout"
+  }
+
+  namespace :admin do
+    root to: "dashboard#index"
+
+    resources :shops, only: [:index, :show]
+    resources :scans, only: [:index, :show]
+    resources :issues, only: [:index, :show]
+  end
+
   # Webhook handlers (must be before ShopifyApp::Engine)
   post '/webhooks/app_uninstalled', to: 'webhooks/app_uninstalled#create'
   post '/webhooks/shop_update', to: 'webhooks/shop_update#create'
