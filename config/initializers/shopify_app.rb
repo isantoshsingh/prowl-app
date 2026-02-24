@@ -1,12 +1,12 @@
 # frozen_string_literal: true
 
 ShopifyApp.configure do |config|
-  config.application_name = "PDP Diagnostics"
+  config.application_name = "Prowl - Store Health Monitor"
 
   # Minimal scopes needed for Prowl
   # read_products: To fetch product list for monitoring selection
   config.scope = "read_products, read_themes"
-  
+
   config.embedded_app = true
   config.new_embedded_auth_strategy = true
 
@@ -15,7 +15,7 @@ ShopifyApp.configure do |config|
   config.shop_session_repository = "Shop"
   config.log_level = :info
   config.reauth_on_access_scope_changes = true
-  
+
   # Webhooks are configured in shopify.app.toml and handled by controllers
   # config.webhooks = [
   #   { topic: "app/uninstalled", path: "webhooks/app_uninstalled" }
