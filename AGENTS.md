@@ -23,16 +23,18 @@ Prowl is a Shopify embedded app that monitors product detail pages (PDPs) for br
 | Layer | Technology |
 |---|---|
 | Backend | Rails 8.1 (Ruby) |
-| Database | PostgreSQL (AWS RDS) |
-| Background jobs | Solid Queue (database-backed, no Redis) |
-| Headless browser | `puppeteer-ruby` gem (~0.45) |
+| Database | PostgreSQL (Heroku Postgres Essential-0) |
+| Background jobs | Solid Queue (in-process via Puma plugin in production, no Redis) |
+| Headless browser | `puppeteer-ruby` gem (~0.45), **Browserless.io** cloud browser in production |
 | Shopify integration | `shopify_app` gem (~23.0), embedded app with token-based OAuth |
 | Asset pipeline | Propshaft + importmap-rails |
 | Frontend framework | Hotwire (Turbo + Stimulus), Shopify Polaris Web Components |
 | HTTP client | HTTParty |
-| Email | `letter_opener` in dev (Resend planned for production) |
-| Screenshots | Local `tmp/screenshots/` in dev (AWS S3 planned for production) |
-| Deployment | Docker via Kamal |
+| AI analysis | Google Gemini 2.5 Flash (issue confirmation + merchant explanations) |
+| Email | `letter_opener` in dev, **Resend** SMTP in production |
+| Screenshots | Local `tmp/screenshots/` in dev, **Cloudflare R2** in production |
+| Cloud storage | Cloudflare R2 via `aws-sdk-s3` gem (S3-compatible, zero egress fees) |
+| Deployment | Heroku (single Basic dyno, web + Solid Queue in-process) |
 
 ### Request Flow
 
@@ -41,9 +43,11 @@ Prowl is a Shopify embedded app that monitors product detail pages (PDPs) for br
 3. Merchant selects up to 5 product pages to monitor.
 4. `ScheduledScanJob` runs daily at 6am UTC (configured in `config/recurring.yml`).
 5. It queues one `ScanPdpJob` per monitored `ProductPage`.
-6. `ScanPdpJob` uses `ProductPageScanner` which launches `BrowserService` (Puppeteer), navigates to the page, captures data, runs all Tier 1 detectors, then hands results to `DetectionService`.
-7. `DetectionService` creates or updates `Issue` records based on confidence-scored detection results.
-8. `AlertService` sends email/admin notifications for high-severity issues that persist across 2+ scans.
+6. `ScanPdpJob` uses `ProductPageScanner` which connects to `BrowserService` (Puppeteer via Browserless in production, local Chrome in dev), navigates to the page, captures data, runs all Tier 1 detectors, then hands results to `DetectionService`.
+7. Screenshots are uploaded to Cloudflare R2 via `ScreenshotUploader` and the public URL is stored in `scans.screenshot_url`. Files are organized as `{shop-slug}/{product-handle}/scan_{id}_{timestamp}.png`.
+8. `DetectionService` creates or updates `Issue` records based on confidence-scored detection results.
+9. `AiIssueAnalyzer` sends each issue (with screenshot for high-severity) to Gemini Flash for merchant-friendly explanations and suggested fixes. High-severity issues also get visual confirmation. AI is fail-open — if it fails, hardcoded descriptions are used.
+10. `AlertService` sends email/admin notifications for high-severity issues that persist across 2+ scans. Emails include inline screenshots and AI-generated explanations via Resend SMTP.
 
 ---
 
@@ -53,9 +57,9 @@ Prowl is a Shopify embedded app that monitors product detail pages (PDPs) for br
 
 - **ProductPage** (`app/models/product_page.rb`): A PDP URL being monitored. Belongs to a Shop. Has statuses: `pending`, `healthy`, `warning`, `critical`, `error`. Supports soft-delete via `deleted_at`. Each shop can monitor up to 5 pages (Phase 1).
 
-- **Scan** (`app/models/scan.rb`): One headless browser run against a ProductPage. Captures screenshot URL, HTML snapshot, JS errors, network errors, console logs, DOM check data, and page load time. Statuses: `pending`, `running`, `completed`, `failed`.
+- **Scan** (`app/models/scan.rb`): One headless browser run against a ProductPage. Captures screenshot URL (R2 public URL in production, local path in dev), HTML snapshot, JS errors, network errors, console logs, DOM check data, and page load time. Statuses: `pending`, `running`, `completed`, `failed`.
 
-- **Issue** (`app/models/issue.rb`): A detected problem linked to a ProductPage and the Scan that found it. Has `issue_type`, `severity` (high/medium/low), `status` (open/acknowledged/resolved), `occurrence_count`, and serialized `evidence` JSON. Only alerts after 2+ occurrences to avoid false positives.
+- **Issue** (`app/models/issue.rb`): A detected problem linked to a ProductPage and the Scan that found it. Has `issue_type`, `severity` (high/medium/low), `status` (open/acknowledged/resolved), `occurrence_count`, and serialized `evidence` JSON. Includes AI analysis columns: `ai_confirmed`, `ai_confidence`, `ai_reasoning`, `ai_explanation`, `ai_suggested_fix`, `ai_verified_at`. The `merchant_explanation` method returns AI-generated text with fallback to hardcoded descriptions. Only alerts after 2+ occurrences to avoid false positives.
 
 - **Alert** (`app/models/alert.rb`): A notification sent to a merchant about an Issue. Types: `email`, `admin`. Delivery statuses: `pending`, `sent`, `failed`. Unique constraint: one alert per shop+issue+type.
 
@@ -84,8 +88,10 @@ app/models/
 ### Scan Orchestration
 ```
 app/services/
-  product_page_scanner.rb  # Top-level scan orchestrator — launches browser, runs detectors, saves results
-  browser_service.rb       # Puppeteer lifecycle manager — navigation, JS eval, screenshots, event capture
+  product_page_scanner.rb  # Top-level scan orchestrator — connects browser, runs detectors, saves results
+  browser_service.rb       # Puppeteer lifecycle — Browserless (remote) in production, local Chrome in dev
+  screenshot_uploader.rb   # Upload/download screenshots to Cloudflare R2 (local tmp/ fallback in dev)
+  ai_issue_analyzer.rb     # Gemini Flash AI — issue confirmation, merchant explanations, suggested fixes
   pdp_scanner_service.rb   # Legacy scanner (kept for reference, replaced by ProductPageScanner)
   detection_service.rb     # Processes detector results into Issue records
   alert_service.rb         # Sends email/admin alerts for qualifying Issues
@@ -303,9 +309,10 @@ bin/rails test test/models/issue_test.rb  # Single file
 ### Updating email templates
 
 1. Templates are in `app/views/alert_mailer/`.
-2. The mailer is `app/mailers/alert_mailer.rb`.
-3. In development, emails render in the browser via `letter_opener`.
-4. Production will use Resend — configuration is in `config/environments/production.rb`. # confirm path
+2. The mailer is `app/mailers/alert_mailer.rb`. Screenshots are attached inline from R2.
+3. Use `@issue.merchant_explanation` (AI-generated with hardcoded fallback) instead of `@issue.description` in templates.
+4. In development, emails render in the browser via `letter_opener`.
+5. Production uses Resend SMTP — configuration is in `config/environments/production.rb`.
 
 ### Changing scan scheduling logic
 
@@ -316,7 +323,49 @@ bin/rails test test/models/issue_test.rb  # Single file
 
 ---
 
-## 8. What NOT to Do
+## 8. Infrastructure & Environment Variables
+
+### Production environment variables
+```bash
+# Cloudflare R2 (screenshot storage)
+CLOUDFLARE_R2_ACCESS_KEY_ID=
+CLOUDFLARE_R2_SECRET_ACCESS_KEY=
+CLOUDFLARE_R2_BUCKET=prowl-screenshots
+CLOUDFLARE_R2_ENDPOINT=https://<account_id>.r2.cloudflarestorage.com
+CLOUDFLARE_R2_PUBLIC_URL=https://pub-xxxx.r2.dev
+
+# Browserless (cloud browser for scans)
+BROWSERLESS_URL=wss://production-sfo.browserless.io?token=YOUR_TOKEN
+
+# Google Gemini (AI issue analysis)
+GEMINI_API_KEY=
+GEMINI_MODEL=gemini-2.5-flash  # optional override
+
+# Resend (production email)
+RESEND_API_KEY=re_xxxxx
+```
+
+### Deployment architecture (single dyno)
+```
+┌─ Heroku Basic Dyno ($7/mo) ──────────────────┐
+│  Puma (web server)                            │
+│  + Solid Queue (in-process via Puma plugin)   │
+│  + HTTP calls to Browserless/R2/Gemini        │
+│  Total: ~200MB of 512MB                       │
+└───────────────────────────────────────────────┘
+```
+
+### R2 screenshot organization
+```
+prowl-screenshots/
+  {shop-slug}/                    ← from shopify_domain minus .myshopify.com
+    {product-handle}/             ← from product_page.handle
+      scan_{id}_{timestamp}.png
+```
+
+---
+
+## 9. What NOT to Do
 
 - **Do not auto-resolve Issues** without merchant confirmation. Issues are resolved only when a subsequent scan no longer detects the problem (handled by `DetectionService#resolve_existing_issue`), or manually by the merchant via acknowledge/resolve.
 
@@ -333,3 +382,7 @@ bin/rails test test/models/issue_test.rb  # Single file
 - **Do not send alerts for issues with fewer than 2 occurrences.** The two-scan confirmation rule exists to minimize false positives. See `Issue#should_alert?`.
 
 - **Do not bypass billing checks.** All authenticated controllers inherit from `AuthenticatedController`, which checks `has_active_payment?`. Scans also verify `shop.billing_active?` before executing.
+
+- **Do not let AI gate alerts.** AI analysis is informational in Phase 1. `AiIssueAnalyzer` results are stored on Issue records but `Issue#should_alert?` does NOT check AI confirmation. If AI fails, alerts still send with hardcoded descriptions (fail-open).
+
+- **Do not launch local Chrome in production.** `BrowserService` must use `BROWSERLESS_URL` in production to avoid R14 memory errors. Local Chrome is only for development.

@@ -55,6 +55,42 @@ class ScanPdpJob < ApplicationJob
 
       Rails.logger.info("[ScanPdpJob] Detection found #{issues.length} issues")
 
+      # AI analysis for all issues (explanation + suggested fix)
+      # High-severity also gets visual confirmation via screenshot
+      issues.each do |issue|
+        begin
+          ai_result = AiIssueAnalyzer.new(
+            scan: result[:scan],
+            issue: issue,
+            product_page: product_page
+          ).perform
+
+          update_attrs = {
+            ai_verified_at: Time.current
+          }
+
+          # All issues get explanation and suggested fix
+          if ai_result[:merchant_explanation].present?
+            update_attrs[:ai_explanation] = ai_result[:merchant_explanation]
+          end
+          if ai_result[:suggested_fix].present?
+            update_attrs[:ai_suggested_fix] = ai_result[:suggested_fix]
+          end
+
+          # High-severity issues also get confirmation data
+          if issue.high_severity? && ai_result.key?(:confirmed) && !ai_result[:confirmed].nil?
+            update_attrs[:ai_confirmed] = ai_result[:confirmed]
+            update_attrs[:ai_confidence] = ai_result[:confidence]
+            update_attrs[:ai_reasoning] = ai_result[:reasoning]
+          end
+
+          issue.update!(update_attrs) if update_attrs.keys.length > 1
+        rescue StandardError => e
+          Rails.logger.error("[ScanPdpJob] AI analysis failed for issue #{issue.id}: #{e.message}")
+          # Fail-open: continue without AI — alerts still work with hardcoded descriptions
+        end
+      end
+
       # Send alerts for any alertable issues
       issues.each do |issue|
         if issue.should_alert?

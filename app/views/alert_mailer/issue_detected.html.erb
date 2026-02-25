@@ -12,8 +12,30 @@
 
 <div style="background-color: #fef3cd; border-left: 4px solid #f0b429; padding: 16px; margin-bottom: 24px; border-radius: 4px;">
   <strong style="color: #856404;"><%= @issue.title %></strong>
-  <p style="margin: 8px 0 0 0; color: #856404;"><%= @issue.description %></p>
+  <p style="margin: 8px 0 0 0; color: #856404;"><%= @issue.merchant_explanation %></p>
 </div>
+
+<% if @has_screenshot %>
+<div style="margin-bottom: 24px;">
+  <p style="font-weight: 600; margin-bottom: 8px; color: #202223;">Here's what we saw:</p>
+  <img src="<%= attachments['screenshot.png'].url %>"
+       alt="Screenshot of <%= @product_page.title %>"
+       style="max-width: 100%; border: 1px solid #e1e3e5; border-radius: 8px;" />
+</div>
+<% end %>
+
+<% if @issue.merchant_suggested_fix.present? %>
+<div style="background-color: #f0faf5; border-left: 4px solid #008060; padding: 16px; margin-bottom: 24px; border-radius: 4px;">
+  <strong style="color: #004c3f;">💡 Suggested fix:</strong>
+  <p style="margin: 8px 0 0 0; color: #004c3f; white-space: pre-line;"><%= @issue.merchant_suggested_fix %></p>
+</div>
+<% end %>
+
+<% if @issue.ai_confirmed == true && @issue.ai_confidence.present? %>
+<p style="margin-bottom: 16px; color: #2c6ecb; font-size: 14px;">
+  🤖 Our AI also confirmed this issue with <%= (@issue.ai_confidence * 100).round %>% confidence.
+</p>
+<% end %>
 
 <p style="margin-bottom: 8px;">
   <strong>What this means:</strong>

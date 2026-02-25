@@ -174,13 +174,12 @@ class ProductPageScanner
   end
 
   def store_screenshot(screenshot_data)
-    filename = "scan_#{@scan.id}_#{Time.current.to_i}.png"
-    filepath = Rails.root.join("tmp", "screenshots", filename)
-
-    FileUtils.mkdir_p(File.dirname(filepath))
-    File.binwrite(filepath, screenshot_data)
-
-    "/screenshots/#{filename}"
+    ScreenshotUploader.new.upload(
+      screenshot_data,
+      @scan.id,
+      shop: product_page.shop,
+      product_page: product_page
+    )
   end
 
   def close_browser_if_owned

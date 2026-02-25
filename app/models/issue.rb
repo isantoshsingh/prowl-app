@@ -142,4 +142,15 @@ class Issue < ApplicationRecord
     else severity.humanize
     end
   end
+
+  # Returns the best available explanation for the merchant.
+  # Prefers AI-generated explanation, falls back to hardcoded description.
+  def merchant_explanation
+    ai_explanation.presence || Issue::ISSUE_TYPES.dig(issue_type, :description) || description
+  end
+
+  # Returns the AI-suggested fix if available.
+  def merchant_suggested_fix
+    ai_suggested_fix
+  end
 end

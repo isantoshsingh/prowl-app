@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_19_120000) do
+ActiveRecord::Schema[8.1].define(version: 2026_02_24_170652) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -32,6 +32,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_19_120000) do
   create_table "issues", force: :cascade do |t|
     t.datetime "acknowledged_at"
     t.string "acknowledged_by"
+    t.float "ai_confidence"
+    t.boolean "ai_confirmed"
+    t.text "ai_explanation"
+    t.text "ai_reasoning"
+    t.text "ai_suggested_fix"
+    t.datetime "ai_verified_at"
     t.datetime "created_at", null: false
     t.text "description"
     t.text "evidence"

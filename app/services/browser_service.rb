@@ -63,45 +63,63 @@ class BrowserService
     @started = false
   end
 
-  # Launches the browser instance with one retry for transient failures
+  # Launches the browser instance (local) or connects to remote (Browserless)
+  # Uses Browserless.io cloud browser when BROWSERLESS_URL is set (production).
+  # Falls back to local Chrome launch when not set (development).
   def start
     return if @started
 
     retries = 0
     begin
-      @browser = Puppeteer.launch(
-        headless: @options[:headless],
-        args: browser_launch_args
-      )
+      if ENV["BROWSERLESS_URL"].present?
+        # Connect to remote Browserless.io Chrome via WebSocket
+        # This uses ~0MB local RAM vs ~350MB for local Chrome
+        @browser = Puppeteer.connect(
+          browser_ws_endpoint: ENV["BROWSERLESS_URL"]
+        )
+        @remote_browser = true
+        Rails.logger.info("[BrowserService] Connected to remote browser (Browserless)")
+      else
+        # Launch local Chrome for development
+        @browser = Puppeteer.launch(
+          headless: @options[:headless],
+          args: browser_launch_args
+        )
+        @remote_browser = false
+        Rails.logger.info("[BrowserService] Browser launched locally")
+      end
       @started = true
-      Rails.logger.info("[BrowserService] Browser launched")
       self
     rescue StandardError => e
       if retries < 1
         retries += 1
-        Rails.logger.warn("[BrowserService] Browser launch failed (attempt #{retries}): #{e.message}, retrying...")
+        Rails.logger.warn("[BrowserService] Browser #{@remote_browser ? 'connection' : 'launch'} failed (attempt #{retries}): #{e.message}, retrying...")
         sleep(1)
         retry
       end
-      Rails.logger.error("[BrowserService] Failed to launch browser after #{retries + 1} attempts: #{e.message}")
-      raise BrowserError, "Failed to launch browser: #{e.message}"
+      Rails.logger.error("[BrowserService] Failed to #{ENV['BROWSERLESS_URL'].present? ? 'connect to remote browser' : 'launch browser'} after #{retries + 1} attempts: #{e.message}")
+      raise BrowserError, "Failed to start browser: #{e.message}"
     end
   end
 
-  # Closes the browser and cleans up resources
+  # Closes or disconnects the browser and cleans up resources
   def close
     return unless @started
 
     begin
       @page&.close rescue nil
-      @browser&.close
+      if @remote_browser
+        @browser&.disconnect
+      else
+        @browser&.close
+      end
     rescue StandardError => e
       Rails.logger.warn("[BrowserService] Error closing browser: #{e.message}")
     ensure
       @browser = nil
       @page = nil
       @started = false
-      Rails.logger.info("[BrowserService] Browser closed")
+      Rails.logger.info("[BrowserService] Browser #{@remote_browser ? 'disconnected' : 'closed'}")
     end
   end
 
