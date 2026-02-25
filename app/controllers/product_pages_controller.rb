@@ -3,7 +3,7 @@
 # ProductPagesController manages the product pages being monitored.
 # Merchants can:
 #   - View monitored pages
-#   - Add new pages (up to 5) via the inline Shopify Resource Picker on the index page
+#   - Add new pages (up to 3) via the inline Shopify Resource Picker on the index page
 #   - Remove pages from monitoring
 #   - Trigger manual rescans
 #
@@ -18,7 +18,7 @@ class ProductPagesController < AuthenticatedController
   def index
     # Eager load shop_setting to avoid N+1
     @shop_setting = @shop.shop_setting
-    max_pages = @shop_setting&.max_monitored_pages || 5
+    max_pages = @shop_setting&.max_monitored_pages || Shop::MAX_MONITORED_PAGES
 
     # Load product pages once
     @product_pages = @shop.product_pages.order(created_at: :desc).to_a

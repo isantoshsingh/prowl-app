@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_24_170652) do
+ActiveRecord::Schema[8.1].define(version: 2026_02_25_172019) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -105,7 +105,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_24_170652) do
     t.string "alert_email"
     t.datetime "created_at", null: false
     t.boolean "email_alerts_enabled", default: true, null: false
-    t.integer "max_monitored_pages", default: 5, null: false
+    t.integer "max_monitored_pages", default: 3, null: false
     t.string "scan_frequency", default: "daily", null: false
     t.bigint "shop_id", null: false
     t.datetime "updated_at", null: false
