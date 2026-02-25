@@ -50,7 +50,6 @@ Rails.application.routes.draw do
   # Health check
   get "up" => "rails/health#show", as: :rails_health_check
 
-  # Screenshots — proxied from R2 (production) or local tmp/ (development)
-  # Path matches R2 key: /screenshots/shop-slug/product-handle/scan_123_xxx.png
-  get "/screenshots/*path", to: "screenshots#show", as: :screenshot
+  # Screenshots (for development - in production use S3/CDN)
+  get "/screenshots/:filename", to: "screenshots#show", as: :screenshot
 end

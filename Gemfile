@@ -36,6 +36,9 @@ gem "puppeteer-ruby", "~> 0.45"
 # HTTP client for API requests
 gem "httparty", "~> 0.22"
 
+# S3-compatible cloud storage (Cloudflare R2)
+gem "aws-sdk-s3", "~> 1.0", require: false
+
 
 # Reduces boot times through caching; required in config/boot.rb
 gem "bootsnap", require: false
