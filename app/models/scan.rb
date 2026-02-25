@@ -113,4 +113,16 @@ class Scan < ApplicationRecord
       []
     end
   end
+
+  # Whether a screenshot is available for display
+  def has_screenshot?
+    screenshot_url.present?
+  end
+
+  # Returns the key/path suitable for use with screenshot_path() route helper.
+  # Strips leading "/" from local paths since the route adds /screenshots/ prefix.
+  def screenshot_display_key
+    return nil unless screenshot_url.present?
+    screenshot_url.sub(%r{^/screenshots/}, "")
+  end
 end
