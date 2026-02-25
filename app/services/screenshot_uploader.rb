@@ -15,13 +15,18 @@
 #       classic-tee/
 #         scan_456_1709123457.png
 #
+# Storage approach:
+#   - The R2 object KEY is stored in scans.screenshot_url (not a public URL)
+#   - Downloads happen server-side via S3 API (no public access needed)
+#   - This is more secure — screenshots are never publicly accessible
+#
 # Falls back to local tmp/ storage if R2 credentials are not configured
 # (development environment).
 #
 # Usage:
 #   uploader = ScreenshotUploader.new
-#   url = uploader.upload(screenshot_bytes, scan_id, shop: shop, product_page: page)
-#   bytes = uploader.download(url)
+#   key = uploader.upload(screenshot_bytes, scan_id, shop: shop, product_page: page)
+#   bytes = uploader.download(key)
 #
 class ScreenshotUploader
   class UploadError < StandardError; end
@@ -30,14 +35,14 @@ class ScreenshotUploader
     @configured = r2_configured?
   end
 
-  # Uploads screenshot PNG to R2 and returns the public URL.
+  # Uploads screenshot PNG to R2 and returns the object key.
   # Falls back to local tmp/ storage if R2 is not configured.
   #
   # @param screenshot_data [String] binary PNG data
   # @param scan_id [Integer] scan record ID
   # @param shop [Shop] the shop record (for directory organization)
   # @param product_page [ProductPage] the product page record (for directory organization)
-  # @return [String] the public URL or local path
+  # @return [String] the R2 object key or local path
   def upload(screenshot_data, scan_id, shop: nil, product_page: nil)
     return upload_local(screenshot_data, scan_id, shop: shop, product_page: product_page) unless @configured
 
@@ -50,7 +55,8 @@ class ScreenshotUploader
       content_type: "image/png"
     )
 
-    public_url(key)
+    Rails.logger.info("[ScreenshotUploader] Uploaded to R2: #{key}")
+    key
   rescue Aws::S3::Errors::ServiceError => e
     Rails.logger.error("[ScreenshotUploader] R2 upload failed: #{e.message}, falling back to local")
     upload_local(screenshot_data, scan_id, shop: shop, product_page: product_page)
@@ -59,22 +65,26 @@ class ScreenshotUploader
     upload_local(screenshot_data, scan_id, shop: shop, product_page: product_page)
   end
 
-  # Downloads screenshot bytes from R2 for AI analysis or email attachment.
+  # Downloads screenshot bytes from R2 (via S3 API) or local tmp/.
+  # Used by AiIssueAnalyzer and AlertMailer for server-side processing.
   #
-  # @param url [String] the public URL or local path
+  # @param key_or_path [String] the R2 object key or local path
   # @return [String] binary PNG data
-  def download(url)
+  def download(key_or_path)
     # Handle local files stored in tmp/
-    if url.start_with?("/screenshots/")
-      local_path = Rails.root.join("tmp", url.sub(%r{^/}, ""))
+    if key_or_path.start_with?("/screenshots/")
+      local_path = Rails.root.join("tmp", key_or_path.sub(%r{^/}, ""))
       return File.binread(local_path) if File.exist?(local_path)
-      raise UploadError, "Local screenshot not found: #{url}"
+      raise UploadError, "Local screenshot not found: #{key_or_path}"
     end
 
-    # Handle R2 URLs — extract key from public URL
-    return download_from_r2(url) if @configured
+    # Download from R2 via S3 API (private, no public access needed)
+    if @configured
+      response = client.get_object(bucket: bucket, key: key_or_path)
+      return response.body.read
+    end
 
-    raise UploadError, "Cannot download screenshot: R2 not configured and URL is not local"
+    raise UploadError, "Cannot download screenshot: R2 not configured and path is not local"
   rescue Aws::S3::Errors::ServiceError => e
     Rails.logger.error("[ScreenshotUploader] R2 download failed: #{e.message}")
     raise UploadError, "Failed to download screenshot: #{e.message}"
@@ -125,19 +135,6 @@ class ScreenshotUploader
     return "unknown-shop" unless shop&.shopify_domain.present?
 
     shop.shopify_domain.sub(/\.myshopify\.com\z/i, "")
-  end
-
-  def public_url(key)
-    base_url = ENV.fetch("CLOUDFLARE_R2_PUBLIC_URL", "")
-    "#{base_url}/#{key}"
-  end
-
-  def download_from_r2(url)
-    base_url = ENV.fetch("CLOUDFLARE_R2_PUBLIC_URL", "")
-    key = url.sub("#{base_url}/", "")
-
-    response = client.get_object(bucket: bucket, key: key)
-    response.body.read
   end
 
   # Fallback: store screenshot locally in tmp/screenshots/
