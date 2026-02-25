@@ -50,7 +50,8 @@ plugin :tmp_restart
 # Run the Solid Queue supervisor inside of Puma for single-server deployments.
 # In production: always enabled (no separate worker dyno needed).
 # In development: opt-in via SOLID_QUEUE_IN_PUMA=1 (worker usually runs separately).
-if Rails.env.production?
+# Note: Rails.env is NOT available here — Puma config runs before Rails boots.
+if ENV.fetch("RAILS_ENV", "development") == "production"
   plugin :solid_queue
 elsif ENV["SOLID_QUEUE_IN_PUMA"]
   plugin :solid_queue
