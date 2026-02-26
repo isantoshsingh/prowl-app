@@ -41,7 +41,7 @@
   <s-section heading="Page screenshot">
     <s-box>
       <img
-        src="<%= @scan.screenshot_url %>"
+        src="<%= screenshot_path(@scan.id) %>"
         alt="Screenshot when issue was detected"
         style="max-width: 240px; border: 1px solid var(--p-color-border); border-radius: 8px; cursor: pointer;"
         onclick="document.getElementById('screenshot-modal-issue').showOverlay()"
@@ -56,7 +56,7 @@
 <s-modal id="screenshot-modal-issue" heading="Page Screenshot — <%= @product_page.title %>" size="large" padding="none">
   <s-box padding="none">
     <img
-      src="<%= @scan.screenshot_url %>"
+      src="<%= screenshot_path(@scan.id) %>"
       alt="Full screenshot of <%= @product_page.title %>"
       style="width: 100%; display: block;"
     />

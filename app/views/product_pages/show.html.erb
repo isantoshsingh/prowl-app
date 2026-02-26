@@ -72,7 +72,7 @@
   <s-section heading="Latest screenshot">
     <s-box>
       <img
-        src="<%= latest_screenshot_scan.screenshot_url %>"
+        src="<%= screenshot_path(latest_screenshot_scan.id) %>"
         alt="Latest screenshot of <%= @product_page.title %>"
         style="max-width: 240px; border: 1px solid var(--p-color-border); border-radius: 8px; cursor: pointer;"
         onclick="document.getElementById('screenshot-modal-pdp').showOverlay()"
@@ -87,7 +87,7 @@
 <s-modal id="screenshot-modal-pdp" heading="Page Screenshot — <%= @product_page.title %>" size="large" padding="none">
   <s-box padding="none">
     <img
-      src="<%= latest_screenshot_scan.screenshot_url %>"
+      src="<%= screenshot_path(latest_screenshot_scan.id) %>"
       alt="Full screenshot of <%= @product_page.title %>"
       style="width: 100%; display: block;"
     />
@@ -237,8 +237,16 @@
 
     async function pollStatus() {
       try {
+        const headers = { 'Accept': 'application/json' };
+        try {
+          const token = await shopify.idToken();
+          if (token) headers['Authorization'] = `Bearer ${token}`;
+        } catch (e) {
+          console.warn('idToken failed for poll:', e);
+        }
+
         const response = await fetch(statusUrl, {
-          headers: { 'Accept': 'application/json' },
+          headers: headers,
           credentials: 'same-origin'
         });
 
