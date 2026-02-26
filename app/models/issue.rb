@@ -53,7 +53,7 @@ class Issue < ApplicationRecord
   scope :low_severity, -> { where(severity: "low") }
   scope :recent, -> { order(last_detected_at: :desc) }
   scope :by_type, ->(type) { where(issue_type: type) }
-  scope :alertable, -> { open.high_severity.where("occurrence_count >= ?", 2) }
+  scope :alertable, -> { open.high_severity.where("occurrence_count >= ? OR ai_confirmed = ?", 2, true) }
 
 # Issue type configuration
   ISSUE_TYPES = {
@@ -137,10 +137,22 @@ class Issue < ApplicationRecord
     )
   end
 
-  # Checks if this issue should trigger an alert
-  # Only alerts after 2 occurrences to avoid false positives
+  # Checks if this issue should trigger an alert.
+  # Two paths to alerting:
+  #   1. AI-confirmed: alert immediately on first occurrence (high confidence)
+  #   2. No AI confirmation: wait for 2 occurrences to avoid false positives
   def should_alert?
-    open? && high_severity? && occurrence_count >= 2 && alerts.none?
+    return false unless open? && high_severity? && alerts.none?
+
+    # If AI confirmed the issue, trust it on first scan
+    return true if ai_confirmed?
+
+    # Otherwise require 2 occurrences (rescan confirmation)
+    occurrence_count >= 2
+  end
+
+  def ai_confirmed?
+    ai_confirmed == true
   end
 
   def open?
