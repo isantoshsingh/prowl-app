@@ -333,23 +333,39 @@ class DetectionService
     existing = product_page.issues.where(issue_type: issue_type, status: ["open", "acknowledged"]).first
 
     if existing
-      existing.record_occurrence!(scan)
-      detected_issues << existing
-    else
-      issue = product_page.issues.create!(
+      merged_issue = existing.merge_new_detection!(
         scan: scan,
-        issue_type: issue_type,
-        severity: severity,
-        title: title,
-        description: description,
-        evidence: evidence,
-        occurrence_count: 1,
-        first_detected_at: Time.current,
-        last_detected_at: Time.current,
-        status: "open"
+        new_severity: severity,
+        new_title: title,
+        new_description: description,
+        new_evidence: evidence
       )
-      detected_issues << issue
+
+      if merged_issue
+        detected_issues << merged_issue
+      else
+        # De-escalation occurred (old issue was resolved), so we create a new one for the lower severity
+        create_new_issue(issue_type: issue_type, severity: severity, title: title, description: description, evidence: evidence)
+      end
+    else
+      create_new_issue(issue_type: issue_type, severity: severity, title: title, description: description, evidence: evidence)
     end
+  end
+
+  def create_new_issue(issue_type:, severity:, title:, description:, evidence:)
+    issue = product_page.issues.create!(
+      scan: scan,
+      issue_type: issue_type,
+      severity: severity,
+      title: title,
+      description: description,
+      evidence: evidence,
+      occurrence_count: 1,
+      first_detected_at: Time.current,
+      last_detected_at: Time.current,
+      status: "open"
+    )
+    detected_issues << issue
   end
 
   def resolve_existing_issue(issue_type)

@@ -128,6 +128,8 @@ class Issue < ApplicationRecord
     update!(status: "open")
   end
 
+  SEVERITY_WEIGHTS = { "high" => 3, "medium" => 2, "low" => 1 }.freeze
+
   # Increments occurrence count and updates last detected time
   def record_occurrence!(scan)
     update!(
@@ -135,6 +137,45 @@ class Issue < ApplicationRecord
       last_detected_at: Time.current,
       scan: scan
     )
+  end
+
+  # Smart merge that evaluates the severity trend to escalate, de-escalate, or persist context.
+  def merge_new_detection!(scan:, new_severity:, new_title:, new_description:, new_evidence:)
+    old_weight = SEVERITY_WEIGHTS[severity] || 0
+    new_weight = SEVERITY_WEIGHTS[new_severity] || 0
+
+    if new_weight > old_weight
+      # Escalation: override everything and clear AI cache to force re-evaluation
+      update!(
+        severity: new_severity,
+        title: new_title,
+        description: new_description,
+        evidence: new_evidence,
+        occurrence_count: occurrence_count + 1,
+        last_detected_at: Time.current,
+        scan: scan,
+        ai_confirmed: nil,
+        ai_explanation: nil,
+        ai_reasoning: nil,
+        ai_suggested_fix: nil
+      )
+      self
+    elsif new_weight < old_weight
+      # De-escalation: resolve the higher severity issue and return nil to signal caller to create a new one
+      resolve!
+      nil
+    else
+      # Persistent Context Refresh (Same severity): always use latest data to avoid ghostly stale UI
+      update!(
+        title: new_title,
+        description: new_description,
+        evidence: new_evidence,
+        occurrence_count: occurrence_count + 1,
+        last_detected_at: Time.current,
+        scan: scan
+      )
+      self
+    end
   end
 
   # Checks if this issue should trigger an alert.
