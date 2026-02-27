@@ -92,6 +92,10 @@ class ScanPdpJob < ApplicationJob
             update_attrs[:ai_confirmed] = ai_result[:confirmed]
             update_attrs[:ai_confidence] = ai_result[:confidence]
             update_attrs[:ai_reasoning] = ai_result[:reasoning]
+          elsif issue.high_severity? && issue.evidence["confidence"].to_f >= 0.85
+            update_attrs[:ai_confirmed] = true
+            update_attrs[:ai_confidence] = issue.evidence["confidence"].to_f
+            update_attrs[:ai_reasoning] = "Programmatic detection found this issue with #{issue.evidence["confidence"]} confidence. AI visual confirmation was unavailable or skipped."
           end
 
           issue.update!(update_attrs) if update_attrs.keys.length > 1

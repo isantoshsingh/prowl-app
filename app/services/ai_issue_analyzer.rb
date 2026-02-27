@@ -116,7 +116,7 @@ class AiIssueAnalyzer
       3. Are product images loading correctly?
       4. Are there any error messages visible on the page?
       5. Is the layout broken or elements overlapping?
-      6. Is there anything else that would prevent a customer from buying?
+      6. Are there any OTHER critical technical errors that would prevent buying?
 
       IMPORTANT: Be precise. Only report issues you can actually see in the screenshot.
       If everything looks fine, return an empty issues array.
@@ -226,7 +226,7 @@ class AiIssueAnalyzer
 
       Please provide:
 
-      1. CONFIRMATION: Is this issue visible in the screenshot? (true/false)
+      1. CONFIRMATION: Is this issue genuinely occurring in the screenshot? (true/false) For "missing" errors, return true if the element is indeed missing.
       2. CONFIDENCE: How confident are you? (0.0 to 1.0)
       3. REASONING: Brief technical reasoning (1-2 sentences)
       4. MERCHANT EXPLANATION: Explain this issue in simple, non-technical language that a store owner would understand. Be specific about what this means for their customers and sales. 2-3 sentences max. Do not be alarming — be calm and helpful.
