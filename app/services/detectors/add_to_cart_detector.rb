@@ -71,7 +71,7 @@ module Detectors
       record_validation(form_valid)
 
       # Check for sold-out product (disabled button is expected)
-      if button_found && !button_enabled && sold_out_text?(structural["button_text"])
+      if button_found && !button_enabled && sold_out_text?(structural["button_text"], structural)
         record_validation(true) # Disabled is expected for sold out
         return pass_result(
           message: "Add-to-Cart button found but disabled (product appears sold out)",
@@ -280,15 +280,25 @@ module Detectors
       end
     end
 
-    # Text patterns indicating sold-out (English-only is fine here since
-    # Shopify themes use `product.available` logic, not just text)
-    def sold_out_text?(text)
+    # Checks if a product appears sold out using multiple signals:
+    #   1. Button text (English patterns)
+    #   2. Structural data from the DOM (language-independent)
+    def sold_out_text?(text, structural = nil)
+      # Check DOM-level sold-out signal (language-independent)
+      if structural
+        return true if structural["product_unavailable"]
+      end
+
+      # Check button text patterns
       return false if text.blank?
       normalized = text.to_s.downcase.strip
       normalized.include?("sold out") ||
         normalized.include?("unavailable") ||
         normalized.include?("out of stock") ||
-        normalized.include?("notify me")
+        normalized.include?("notify me") ||
+        normalized.include?("epuise") ||       # French
+        normalized.include?("agotado") ||      # Spanish
+        normalized.include?("ausverkauft")     # German
     end
 
     def atc_detection_script
@@ -353,6 +363,17 @@ module Detectors
           const formAction = parentForm ? parentForm.getAttribute('action') : null;
           const formValid = !!(parentForm && formAction && formAction.includes('/cart/add'));
 
+          // Language-independent sold-out detection via Shopify product JSON
+          // Shopify exposes product.available in the product JSON (set by Liquid)
+          let productUnavailable = false;
+          try {
+            const productJson = document.querySelector('[data-product-json], script[type="application/json"][data-product-json], #ProductJson-product-template');
+            if (productJson) {
+              const product = JSON.parse(productJson.textContent);
+              productUnavailable = product.available === false;
+            }
+          } catch(e) { /* ignore parse errors */ }
+
           return {
             button_found: true,
             button_visible: isVisible,
@@ -363,6 +384,7 @@ module Detectors
             form_valid: formValid,
             form_action: formAction,
             has_click_handler: button.onclick !== null || button.hasAttribute('onclick') || formValid,
+            product_unavailable: productUnavailable,
             visibility_details: {
               display: style.display,
               visibility: style.visibility,

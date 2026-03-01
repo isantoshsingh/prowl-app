@@ -100,17 +100,19 @@ class Scan < ApplicationRecord
     end
   end
 
-  # Returns parsed detection results from the detection engine
+  # Returns parsed detection results from the detection engine.
+  # Always returns an array of hashes with symbol keys for consistent downstream access.
   def parsed_dom_checks_data
     return [] if dom_checks_data.blank?
 
-    # Handle both Array (properly deserialized) and String (JSON string) formats
-    if dom_checks_data.is_a?(Array)
+    raw = if dom_checks_data.is_a?(Array)
       dom_checks_data
     elsif dom_checks_data.is_a?(String)
       JSON.parse(dom_checks_data) rescue []
     else
       []
     end
+
+    raw.map { |r| r.is_a?(Hash) ? r.deep_symbolize_keys : r }
   end
 end

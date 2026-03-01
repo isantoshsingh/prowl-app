@@ -53,7 +53,11 @@ class Issue < ApplicationRecord
   scope :low_severity, -> { where(severity: "low") }
   scope :recent, -> { order(last_detected_at: :desc) }
   scope :by_type, ->(type) { where(issue_type: type) }
-  scope :alertable, -> { open.high_severity.where("occurrence_count >= ? OR ai_confirmed = ?", 2, true) }
+  scope :alertable, -> {
+    open.high_severity
+      .where("occurrence_count >= ? OR ai_confirmed = ?", 2, true)
+      .left_joins(:alerts).where(alerts: { id: nil })
+  }
 
 # Issue type configuration
   ISSUE_TYPES = {
@@ -161,9 +165,11 @@ class Issue < ApplicationRecord
       )
       self
     elsif new_weight < old_weight
-      # De-escalation: resolve the higher severity issue and return nil to signal caller to create a new one
+      # De-escalation: resolve the higher severity issue and return :de_escalated
+      # to signal the caller to create a new issue at the lower severity.
+      # The resolved issue retains its full history (occurrences, AI analysis).
       resolve!
-      nil
+      :de_escalated
     else
       # Persistent Context Refresh (Same severity): always use latest data to avoid ghostly stale UI
       update!(
@@ -216,12 +222,22 @@ class Issue < ApplicationRecord
 
   # Returns the best available explanation for the merchant.
   # Prefers AI-generated explanation, falls back to hardcoded description.
+  # AI-generated content is sanitized to strip any HTML/script tags.
   def merchant_explanation
-    ai_explanation.presence || Issue::ISSUE_TYPES.dig(issue_type, :description) || description
+    text = ai_explanation.presence || Issue::ISSUE_TYPES.dig(issue_type, :description) || description
+    sanitize_ai_text(text)
   end
 
   # Returns the AI-suggested fix if available.
+  # AI-generated content is sanitized to strip any HTML/script tags.
   def merchant_suggested_fix
-    ai_suggested_fix
+    sanitize_ai_text(ai_suggested_fix)
+  end
+
+  private
+
+  def sanitize_ai_text(text)
+    return nil if text.blank?
+    ActionController::Base.helpers.strip_tags(text)
   end
 end

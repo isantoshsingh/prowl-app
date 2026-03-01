@@ -74,6 +74,11 @@ class ScreenshotUploader
     # Handle local files stored in tmp/
     if key_or_path.start_with?("/screenshots/")
       local_path = Rails.root.join("tmp", key_or_path.sub(%r{^/}, ""))
+      # Prevent path traversal — ensure resolved path stays within tmp/screenshots/
+      safe_dir = Rails.root.join("tmp", "screenshots").to_s
+      unless File.expand_path(local_path).start_with?(safe_dir)
+        raise UploadError, "Invalid screenshot path: #{key_or_path}"
+      end
       return File.binread(local_path) if File.exist?(local_path)
       raise UploadError, "Local screenshot not found: #{key_or_path}"
     end

@@ -113,7 +113,11 @@ class BrowserService
     return unless @started
 
     begin
-      @page&.close rescue nil
+      begin
+        @page&.close
+      rescue StandardError => e
+        Rails.logger.debug("[BrowserService] Error closing page: #{e.message}")
+      end
       if @remote_browser
         @browser&.disconnect
       else
@@ -366,8 +370,8 @@ class BrowserService
       }
     JS
 
-    # Wait for DOM to update after variant selection
-    sleep(1.5) if result && result["selected"]
+    # Wait for DOM to settle after variant selection
+    wait_for_network_idle(timeout: 2.0) if result && result["selected"]
 
     result&.symbolize_keys || { selected: false, variant_name: nil, method: "error" }
   rescue StandardError => e
@@ -392,7 +396,7 @@ class BrowserService
     selectors.each do |selector|
       if click(selector)
         Rails.logger.info("[BrowserService] Clicked ATC button: #{selector}")
-        sleep(2) # Wait for cart update (AJAX or page reload)
+        wait_for_network_idle(timeout: 3.0) # Wait for cart update (AJAX or page reload)
         return { clicked: true, error: nil, selector: selector }
       end
     end
@@ -448,6 +452,9 @@ class BrowserService
   def clear_cart_item(line_item_key)
     ensure_page_loaded!
 
+    # Sanitize line_item_key to prevent JS injection — only allow safe characters
+    sanitized_key = line_item_key.to_s.gsub(/[^a-zA-Z0-9_:\-]/, "")
+
     result = evaluate_script(<<~JS)
       async () => {
         try {
@@ -457,7 +464,7 @@ class BrowserService
               'Content-Type': 'application/json',
               'Accept': 'application/json'
             },
-            body: JSON.stringify({ id: '#{line_item_key}', quantity: 0 })
+            body: JSON.stringify({ id: #{sanitized_key.to_json}, quantity: 0 })
           });
           if (!response.ok) return { success: false, error: 'HTTP ' + response.status };
           return { success: true, error: null };
@@ -505,6 +512,23 @@ class BrowserService
   end
 
   private
+
+  # Waits for network activity to settle by polling for idle state.
+  # More reliable than fixed sleep — adapts to actual page responsiveness.
+  def wait_for_network_idle(timeout: 2.0)
+    return unless @page
+
+    deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + timeout
+    loop do
+      break if Process.clock_gettime(Process::CLOCK_MONOTONIC) >= deadline
+      sleep(0.25)
+      # Check if there are pending network requests
+      idle = @page.evaluate("() => { return document.readyState === 'complete'; }") rescue true
+      break if idle
+    end
+  rescue StandardError => e
+    Rails.logger.debug("[BrowserService] wait_for_network_idle error: #{e.message}")
+  end
 
   def default_options
     {

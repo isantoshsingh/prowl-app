@@ -31,7 +31,7 @@ class AlertMailer < ApplicationMailer
     end
 
     mail(
-      to: shop.shop_setting&.effective_alert_email || shop.shopify_domain,
+      to: shop.shop_setting&.effective_alert_email || shop.email,
       subject: "Prowl: Issue detected on #{@product_page.title}"
     )
   end
@@ -43,7 +43,7 @@ class AlertMailer < ApplicationMailer
     @app_url = "#{ENV.fetch('HOST', 'https://localhost:3000')}/product_pages/#{product_page.id}"
 
     mail(
-      to: shop.shop_setting&.effective_alert_email || shop.shopify_domain,
+      to: shop.shop_setting&.effective_alert_email || shop.email,
       subject: "Prowl: #{@product_page.title} is now healthy"
     )
   end

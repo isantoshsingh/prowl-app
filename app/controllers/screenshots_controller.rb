@@ -3,10 +3,14 @@
 # ScreenshotsController serves scan screenshots.
 # Downloads from R2 (production) or local tmp/ (development) and streams to browser.
 # Screenshots are private — served through this controller, never publicly accessible.
+# Authorization: only serves screenshots belonging to the current shop's scans.
 #
-class ScreenshotsController < ApplicationController
+class ScreenshotsController < AuthenticatedController
   def show
-    scan = Scan.find_by(id: params[:scan_id])
+    # Scope scan lookup to current shop to prevent unauthorized access (IDOR)
+    scan = Scan.joins(product_page: :shop)
+      .where(shops: { id: @shop&.id })
+      .find_by(id: params[:scan_id])
 
     unless scan&.screenshot_url.present?
       head :not_found

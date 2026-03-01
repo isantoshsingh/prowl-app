@@ -52,8 +52,30 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - Added `resend` gem and initializer for production email delivery.
 - Blocked local Chrome launch in production environment (`BrowserService` raises on missing `BROWSERLESS_URL`).
 
+### Security Fixes
+
+- **JS injection in `BrowserService#clear_cart_item`**: Sanitized `line_item_key` input and use `to_json` for safe JS interpolation instead of raw string interpolation.
+- **Path traversal in `ScreenshotUploader#download`**: Added `File.expand_path` validation to ensure resolved paths stay within `tmp/screenshots/`.
+- **Missing authorization in `ScreenshotsController`**: Changed parent class to `AuthenticatedController` and scoped scan lookup to the current shop to prevent IDOR.
+- **XSS in AI-generated mailer content**: Added `strip_tags` sanitization to `merchant_explanation` and `merchant_suggested_fix` methods on the `Issue` model.
+
+### Bug Fixes
+
+- **`ShopSetting#effective_alert_email`**: Fixed fallback from `shop.shopify_domain` (not an email) to `shop.email` (actual email from Shopify webhook data). Also fixed matching fallback in `AlertMailer`.
+- **`alertable` scope divergence**: Added `left_joins(:alerts).where(alerts: { id: nil })` to match `should_alert?` behavior, preventing re-alerting for already-alerted issues.
+- **`Issue#merge_new_detection!` de-escalation**: Changed return value from `nil` to `:de_escalated` symbol for explicit handling. Updated `DetectionService` to match.
+- **Bare `rescue nil` in `BrowserService#close`**: Replaced with explicit `StandardError` rescue that logs to debug level for diagnosing resource leaks.
+- **Hardcoded `sleep()` in funnel methods**: Replaced `sleep(1.5)` and `sleep(2)` with `wait_for_network_idle` polling helper that adapts to actual page responsiveness.
+- **Symbol/string key inconsistency**: Normalized `Scan#parsed_dom_checks_data` to always return symbol keys via `deep_symbolize_keys`. Cleaned up defensive dual-access in `DetectionService` and `AiIssueAnalyzer`.
+- **English-only sold-out detection**: Added language-independent check via Shopify product JSON (`product.available`), plus French/Spanish/German text patterns.
+
+### Refactored
+
+- **`ScanPipelineService`** (new): Extracted the 5-step post-scan pipeline from `ScanPdpJob` into a dedicated service. Each step is now a separate method, making the pipeline testable and the job thin.
+
 ### Database Migrations
 
 - `20260224170652_add_ai_analysis_to_issues`: Adds AI analysis columns to issues table.
 - `20260224172019_change_max_monitored_pages_default_to3`: Changes default from 5 to 3, migrates existing data.
 - `20260225173147_add_funnel_testing_to_scans`: Adds `scan_depth` and `funnel_results` to scans table.
+- `20260301000001_add_indexes_for_ai_and_scan_depth`: Adds partial index on `issues.ai_confirmed` and index on `scans.scan_depth`.

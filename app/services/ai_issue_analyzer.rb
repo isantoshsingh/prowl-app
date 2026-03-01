@@ -93,12 +93,10 @@ class AiIssueAnalyzer
   private
 
   # ── Page analysis prompt ────────────────────────────────────────────────
+  # Detection results arrive with symbol keys (normalized by Scan#parsed_dom_checks_data)
   def build_page_analysis_prompt(detection_results)
     programmatic_summary = detection_results.map do |r|
-      check = r[:check] || r["check"]
-      status = r[:status] || r["status"]
-      message = r.dig(:details, :message) || r.dig("details", "message") || ""
-      "  - #{check}: #{status} — #{message}"
+      "  - #{r[:check]}: #{r[:status]} — #{r.dig(:details, :message) || ''}"
     end.join("\n")
 
     <<~PROMPT
@@ -150,8 +148,8 @@ class AiIssueAnalyzer
 
     # Determine which issue types programmatic checks already caught
     programmatic_types = detection_results
-      .select { |r| (r[:status] || r["status"]) == "fail" }
-      .map { |r| DetectionService::CHECK_TO_ISSUE_TYPE[r[:check] || r["check"]] }
+      .select { |r| r[:status] == "fail" }
+      .map { |r| DetectionService::CHECK_TO_ISSUE_TYPE[r[:check]] }
       .compact
 
     findings = ai_issues.filter_map do |ai_issue|

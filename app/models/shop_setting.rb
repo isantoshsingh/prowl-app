@@ -22,9 +22,10 @@ class ShopSetting < ApplicationRecord
   # Default values set in migration, but ensure they're set
   after_initialize :set_defaults, if: :new_record?
 
-  # Returns the alert email, falling back to shop email
+  # Returns the alert email, falling back to shop's actual email address.
+  # shop.email is populated from Shopify webhook data (shop owner's email).
   def effective_alert_email
-    alert_email.presence || shop.shopify_domain
+    alert_email.presence || shop.email.presence
   end
 
   private
