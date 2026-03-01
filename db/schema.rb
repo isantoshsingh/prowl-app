@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_19_120000) do
+ActiveRecord::Schema[8.1].define(version: 2026_02_25_173147) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -32,6 +32,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_19_120000) do
   create_table "issues", force: :cascade do |t|
     t.datetime "acknowledged_at"
     t.string "acknowledged_by"
+    t.float "ai_confidence"
+    t.boolean "ai_confirmed"
+    t.text "ai_explanation"
+    t.text "ai_reasoning"
+    t.text "ai_suggested_fix"
+    t.datetime "ai_verified_at"
     t.datetime "created_at", null: false
     t.text "description"
     t.text "evidence"
@@ -79,11 +85,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_19_120000) do
     t.datetime "created_at", null: false
     t.text "dom_checks_data"
     t.text "error_message"
+    t.jsonb "funnel_results", default: {}
     t.text "html_snapshot"
     t.text "js_errors"
     t.text "network_errors"
     t.integer "page_load_time_ms"
     t.bigint "product_page_id", null: false
+    t.string "scan_depth", default: "quick"
     t.string "screenshot_url"
     t.datetime "started_at"
     t.string "status", default: "pending", null: false
@@ -99,7 +107,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_19_120000) do
     t.string "alert_email"
     t.datetime "created_at", null: false
     t.boolean "email_alerts_enabled", default: true, null: false
-    t.integer "max_monitored_pages", default: 5, null: false
+    t.integer "max_monitored_pages", default: 3, null: false
     t.string "scan_frequency", default: "daily", null: false
     t.bigint "shop_id", null: false
     t.datetime "updated_at", null: false

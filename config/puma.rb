@@ -48,7 +48,14 @@ preload_app! if ENV.fetch("WEB_CONCURRENCY", 0).to_i > 0
 plugin :tmp_restart
 
 # Run the Solid Queue supervisor inside of Puma for single-server deployments.
-plugin :solid_queue if ENV["SOLID_QUEUE_IN_PUMA"]
+# In production: always enabled (no separate worker dyno needed).
+# In development: opt-in via SOLID_QUEUE_IN_PUMA=1 (worker usually runs separately).
+# Note: Rails.env is NOT available here — Puma config runs before Rails boots.
+if ENV.fetch("RAILS_ENV", "development") == "production"
+  plugin :solid_queue
+elsif ENV["SOLID_QUEUE_IN_PUMA"]
+  plugin :solid_queue
+end
 
 # Specify the PID file. Defaults to tmp/pids/server.pid in development.
 # In other environments, only set the PID file if requested.

@@ -5,7 +5,7 @@
   <s-button slot="primary-action" variant="primary" id="open-product-picker">Add products</s-button>
   <% end %>
   <s-link slot="breadcrumb-actions" href="<%= root_path(host: @host) %>">Dashboard</s-link>
-  <s-badge slot="accessory" tone="info"><%= @product_pages_count %>/<%= @shop_setting&.max_monitored_pages || 5 %></s-badge>
+  <s-badge slot="accessory" tone="info"><%= @product_pages_count %>/<%= @shop_setting&.max_monitored_pages || Shop::MAX_MONITORED_PAGES %></s-badge>
 </s-page>
 
 <% if @product_pages_count > 0 %>
@@ -66,7 +66,7 @@
     <s-grid justifyItems="center" maxInlineSize="450px" gap="base">
       <s-heading>No product pages monitored yet</s-heading>
       <s-paragraph>
-        Add up to <%= @shop_setting&.max_monitored_pages || 5 %> product pages to start monitoring for JavaScript errors, broken UI elements, and performance issues.
+        Add up to <%= @shop_setting&.max_monitored_pages || Shop::MAX_MONITORED_PAGES %> product pages to start monitoring for JavaScript errors, broken UI elements, and performance issues.
       </s-paragraph>
       <s-button id="open-product-picker-empty" variant="primary">
         Add products

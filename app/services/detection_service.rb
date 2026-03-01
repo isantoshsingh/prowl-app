@@ -24,6 +24,9 @@ class DetectionService
   # Maps detector check names to issue types
   CHECK_TO_ISSUE_TYPE = {
     "add_to_cart" => "missing_add_to_cart",
+    "atc_funnel" => "atc_not_functional",
+    "checkout" => "checkout_broken",
+    "variant_interaction" => "variant_selection_broken",
     "javascript_errors" => "js_error",
     "liquid_errors" => "liquid_error",
     "price_visibility" => "missing_price",
@@ -33,6 +36,9 @@ class DetectionService
   # Maps detector check names to issue severity
   CHECK_SEVERITY = {
     "add_to_cart" => "high",
+    "atc_funnel" => "high",
+    "checkout" => "high",
+    "variant_interaction" => "high",
     "javascript_errors" => "high",
     "liquid_errors" => "medium",
     "price_visibility" => "high",
@@ -327,23 +333,39 @@ class DetectionService
     existing = product_page.issues.where(issue_type: issue_type, status: ["open", "acknowledged"]).first
 
     if existing
-      existing.record_occurrence!(scan)
-      detected_issues << existing
-    else
-      issue = product_page.issues.create!(
+      merged_issue = existing.merge_new_detection!(
         scan: scan,
-        issue_type: issue_type,
-        severity: severity,
-        title: title,
-        description: description,
-        evidence: evidence,
-        occurrence_count: 1,
-        first_detected_at: Time.current,
-        last_detected_at: Time.current,
-        status: "open"
+        new_severity: severity,
+        new_title: title,
+        new_description: description,
+        new_evidence: evidence
       )
-      detected_issues << issue
+
+      if merged_issue
+        detected_issues << merged_issue
+      else
+        # De-escalation occurred (old issue was resolved), so we create a new one for the lower severity
+        create_new_issue(issue_type: issue_type, severity: severity, title: title, description: description, evidence: evidence)
+      end
+    else
+      create_new_issue(issue_type: issue_type, severity: severity, title: title, description: description, evidence: evidence)
     end
+  end
+
+  def create_new_issue(issue_type:, severity:, title:, description:, evidence:)
+    issue = product_page.issues.create!(
+      scan: scan,
+      issue_type: issue_type,
+      severity: severity,
+      title: title,
+      description: description,
+      evidence: evidence,
+      occurrence_count: 1,
+      first_detected_at: Time.current,
+      last_detected_at: Time.current,
+      status: "open"
+    )
+    detected_issues << issue
   end
 
   def resolve_existing_issue(issue_type)

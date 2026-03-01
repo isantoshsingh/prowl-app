@@ -11,6 +11,8 @@
 class Shop < ActiveRecord::Base
   include ShopifyApp::ShopSessionStorage
 
+  MAX_MONITORED_PAGES = 3
+
   # Associations
   has_many :product_pages, dependent: :destroy
   has_one :shop_setting, dependent: :destroy
@@ -113,7 +115,7 @@ class Shop < ActiveRecord::Base
 
   # Checks if the shop can add more monitored pages
   def can_add_monitored_page?
-    monitored_pages_count < (shop_setting&.max_monitored_pages || 5)
+    monitored_pages_count < (shop_setting&.max_monitored_pages || MAX_MONITORED_PAGES)
   end
 
   # Returns a friendly display name for the shop
@@ -158,7 +160,7 @@ class Shop < ActiveRecord::Base
       email_alerts_enabled: true,
       admin_alerts_enabled: true,
       scan_frequency: "daily",
-      max_monitored_pages: 5
+      max_monitored_pages: MAX_MONITORED_PAGES
     )
   end
 end

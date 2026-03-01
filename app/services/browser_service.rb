@@ -63,45 +63,69 @@ class BrowserService
     @started = false
   end
 
-  # Launches the browser instance with one retry for transient failures
+  # Launches the browser instance (local) or connects to remote (Browserless)
+  # Uses Browserless.io cloud browser when BROWSERLESS_URL is set (production).
+  # Falls back to local Chrome launch when not set (development).
+  # In production, REFUSES to launch local Chrome (would cause R14 memory crash).
   def start
     return if @started
 
     retries = 0
     begin
-      @browser = Puppeteer.launch(
-        headless: @options[:headless],
-        args: browser_launch_args
-      )
+      if ENV["BROWSERLESS_URL"].present?
+        # Connect to remote Browserless.io Chrome via WebSocket
+        # This uses ~0MB local RAM vs ~350MB for local Chrome
+        @browser = Puppeteer.connect(
+          browser_ws_endpoint: ENV["BROWSERLESS_URL"]
+        )
+        @remote_browser = true
+        Rails.logger.info("[BrowserService] Connected to remote browser (Browserless)")
+      elsif Rails.env.production?
+        # NEVER launch local Chrome in production — it uses ~350MB and crashes the dyno
+        raise BrowserError, "BROWSERLESS_URL is not set. Cannot launch local Chrome in production (would cause R14 memory crash). Set BROWSERLESS_URL to use Browserless.io."
+      else
+        # Launch local Chrome for development only
+        @browser = Puppeteer.launch(
+          headless: @options[:headless],
+          args: browser_launch_args
+        )
+        @remote_browser = false
+        Rails.logger.info("[BrowserService] Browser launched locally")
+      end
       @started = true
-      Rails.logger.info("[BrowserService] Browser launched")
       self
+    rescue BrowserError
+      raise # Don't retry config errors
     rescue StandardError => e
       if retries < 1
         retries += 1
-        Rails.logger.warn("[BrowserService] Browser launch failed (attempt #{retries}): #{e.message}, retrying...")
+        Rails.logger.warn("[BrowserService] Browser #{@remote_browser ? 'connection' : 'launch'} failed (attempt #{retries}): #{e.message}, retrying...")
         sleep(1)
         retry
       end
-      Rails.logger.error("[BrowserService] Failed to launch browser after #{retries + 1} attempts: #{e.message}")
-      raise BrowserError, "Failed to launch browser: #{e.message}"
+      Rails.logger.error("[BrowserService] Failed to #{ENV['BROWSERLESS_URL'].present? ? 'connect to remote browser' : 'launch browser'} after #{retries + 1} attempts: #{e.message}")
+      raise BrowserError, "Failed to start browser: #{e.message}"
     end
   end
 
-  # Closes the browser and cleans up resources
+  # Closes or disconnects the browser and cleans up resources
   def close
     return unless @started
 
     begin
       @page&.close rescue nil
-      @browser&.close
+      if @remote_browser
+        @browser&.disconnect
+      else
+        @browser&.close
+      end
     rescue StandardError => e
       Rails.logger.warn("[BrowserService] Error closing browser: #{e.message}")
     ensure
       @browser = nil
       @page = nil
       @started = false
-      Rails.logger.info("[BrowserService] Browser closed")
+      Rails.logger.info("[BrowserService] Browser #{@remote_browser ? 'disconnected' : 'closed'}")
     end
   end
 
@@ -281,6 +305,203 @@ class BrowserService
   # Checks if the browser is running
   def started?
     @started && @browser
+  end
+
+  # ── Purchase Funnel Interaction Methods ─────────────────────────────────
+  # These methods interact with the page to test the full purchase flow.
+  # All use Shopify platform conventions (not text) so they're language-independent.
+
+  # Selects the first available variant option on the product page.
+  # Strategy: find <select> elements inside variant containers (DOM attributes, not text).
+  # Returns: { selected: true/false, variant_name: "value selected", method: "select|radio|swatch|none" }
+  def select_first_variant
+    ensure_page_loaded!
+
+    result = evaluate_script(<<~JS)
+      () => {
+        // Strategy 1: <select> inside variant-selects, variant-radios, or product-form
+        const selectEl = document.querySelector(
+          'variant-selects select, variant-radios select, product-form select[name*="option"], ' +
+          'form[action*="/cart/add"] select[name*="option"], product-form select'
+        );
+
+        if (selectEl && selectEl.tagName === 'SELECT') {
+          const options = Array.from(selectEl.options);
+          const available = options.find((opt, i) => i > 0 && !opt.disabled);
+          if (available) {
+            selectEl.value = available.value;
+            selectEl.dispatchEvent(new Event('change', { bubbles: true }));
+            return { selected: true, variant_name: available.value, method: 'select' };
+          }
+        }
+
+        // Strategy 2: Radio buttons inside variant containers
+        // Dawn theme uses radios inside variant-selects OR variant-radios
+        const radio = document.querySelector(
+          'variant-selects input[type="radio"]:not(:checked):not(:disabled), ' +
+          'variant-radios input[type="radio"]:not(:checked):not(:disabled), ' +
+          '.variant-input-wrapper input[type="radio"]:not(:checked):not(:disabled), ' +
+          'product-form input[type="radio"]:not(:checked):not(:disabled), ' +
+          'form[action*="/cart/add"] fieldset input[type="radio"]:not(:checked):not(:disabled)'
+        );
+        if (radio) {
+          radio.click();
+          radio.dispatchEvent(new Event('change', { bubbles: true }));
+          return { selected: true, variant_name: radio.value, method: 'radio' };
+        }
+
+        // Strategy 3: Swatch buttons / clickable option elements (custom themes)
+        const swatch = document.querySelector(
+          '[data-option-value-id]:not(:checked):not(:disabled):not([disabled]), ' +
+          '[data-option-value]:not(.is-disabled):not(.disabled):not([disabled]), ' +
+          '.swatch-element:not(.soldout) label'
+        );
+        if (swatch) {
+          swatch.click();
+          return { selected: true, variant_name: swatch.textContent?.trim() || swatch.value || '', method: 'swatch' };
+        }
+
+        // No variant selectors found (might be a simple product with no variants)
+        return { selected: false, variant_name: null, method: 'none' };
+      }
+    JS
+
+    # Wait for DOM to update after variant selection
+    sleep(1.5) if result && result["selected"]
+
+    result&.symbolize_keys || { selected: false, variant_name: nil, method: "error" }
+  rescue StandardError => e
+    Rails.logger.warn("[BrowserService] select_first_variant failed: #{e.message}")
+    { selected: false, variant_name: nil, method: "error", error: e.message }
+  end
+
+  # Clicks the Add to Cart button.
+  # Uses Shopify's standard selectors (form action + button type, not text).
+  # Returns: { clicked: true/false, error: nil|string }
+  def click_add_to_cart
+    ensure_page_loaded!
+
+    # Try selectors in priority order
+    selectors = [
+      'form[action*="/cart/add"] button[type="submit"]:not([disabled])',
+      'product-form button[type="submit"]:not([disabled])',
+      'button[name="add"]:not([disabled])',
+      '.product-form__submit:not([disabled])'
+    ]
+
+    selectors.each do |selector|
+      if click(selector)
+        Rails.logger.info("[BrowserService] Clicked ATC button: #{selector}")
+        sleep(2) # Wait for cart update (AJAX or page reload)
+        return { clicked: true, error: nil, selector: selector }
+      end
+    end
+
+    { clicked: false, error: "No enabled ATC button found", selector: nil }
+  rescue StandardError => e
+    Rails.logger.warn("[BrowserService] click_add_to_cart failed: #{e.message}")
+    { clicked: false, error: e.message, selector: nil }
+  end
+
+  # Reads the current cart state via Shopify's AJAX API.
+  # /cart.js is available on every Shopify store regardless of language/theme.
+  # Returns: { item_count: int, items: [...], total_price: string }
+  def read_cart_state
+    ensure_page_loaded!
+
+    result = evaluate_script(<<~JS)
+      async () => {
+        try {
+          const response = await fetch('/cart.js', {
+            method: 'GET',
+            headers: { 'Accept': 'application/json' }
+          });
+          if (!response.ok) return { item_count: -1, items: [], error: 'HTTP ' + response.status };
+          const cart = await response.json();
+          return {
+            item_count: cart.item_count || 0,
+            items: (cart.items || []).map(i => ({
+              key: i.key,
+              variant_id: i.variant_id,
+              title: i.title,
+              quantity: i.quantity,
+              price: i.price
+            })),
+            total_price: cart.total_price,
+            error: null
+          };
+        } catch(e) {
+          return { item_count: -1, items: [], error: e.message };
+        }
+      }
+    JS
+
+    result&.symbolize_keys || { item_count: -1, items: [], error: "Script returned nil" }
+  rescue StandardError => e
+    Rails.logger.warn("[BrowserService] read_cart_state failed: #{e.message}")
+    { item_count: -1, items: [], error: e.message }
+  end
+
+  # Removes an item from the cart via Shopify's AJAX API.
+  # Uses /cart/change.js with quantity 0 to remove.
+  # Returns: { success: true/false, error: nil|string }
+  def clear_cart_item(line_item_key)
+    ensure_page_loaded!
+
+    result = evaluate_script(<<~JS)
+      async () => {
+        try {
+          const response = await fetch('/cart/change.js', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json'
+            },
+            body: JSON.stringify({ id: '#{line_item_key}', quantity: 0 })
+          });
+          if (!response.ok) return { success: false, error: 'HTTP ' + response.status };
+          return { success: true, error: null };
+        } catch(e) {
+          return { success: false, error: e.message };
+        }
+      }
+    JS
+
+    result&.symbolize_keys || { success: false, error: "Script returned nil" }
+  rescue StandardError => e
+    Rails.logger.warn("[BrowserService] clear_cart_item failed: #{e.message}")
+    { success: false, error: e.message }
+  end
+
+  # Navigates to /checkout to verify checkout accessibility.
+  # Shopify redirects to checkout.shopify.com — we verify the redirect happens.
+  # Returns: { url: string, redirected: bool, error: nil|string }
+  def navigate_to_checkout
+    ensure_page_loaded!
+
+    begin
+      @page.goto("/checkout", wait_until: "domcontentloaded", timeout: 10_000)
+      current_url = @page.url
+
+      {
+        url: current_url,
+        redirected: current_url.include?("checkout"),
+        is_shopify_checkout: current_url.include?("checkout.shopify.com") || current_url.include?("/checkouts/"),
+        error: nil
+      }
+    rescue Puppeteer::TimeoutError
+      # Timeout might mean slow redirect — still capture where we ended up
+      current_url = @page.url rescue ""
+      {
+        url: current_url,
+        redirected: current_url.include?("checkout"),
+        is_shopify_checkout: current_url.include?("checkout.shopify.com") || current_url.include?("/checkouts/"),
+        error: "Checkout navigation timed out"
+      }
+    end
+  rescue StandardError => e
+    Rails.logger.warn("[BrowserService] navigate_to_checkout failed: #{e.message}")
+    { url: nil, redirected: false, is_shopify_checkout: false, error: e.message }
   end
 
   private

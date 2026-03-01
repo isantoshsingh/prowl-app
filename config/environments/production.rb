@@ -70,4 +70,15 @@ Rails.application.configure do
 
   # Skip DNS rebinding protection for the default health check endpoint.
   config.host_authorization = { exclude: ->(request) { request.path == "/up" } }
+
+  # Email delivery via Resend
+  if ENV["RESEND_API_KEY"].present?
+    config.action_mailer.delivery_method = :resend
+  end
+
+  config.action_mailer.perform_deliveries = true
+  config.action_mailer.raise_delivery_errors = false
+  config.action_mailer.default_url_options = {
+    host: ENV.fetch("HOST", "localhost:3000").then { |h| h.include?("://") ? URI.parse(h).host : h }
+  }
 end

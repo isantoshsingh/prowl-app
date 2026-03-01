@@ -1,17 +1,30 @@
 # frozen_string_literal: true
 
-# ScreenshotsController serves scan screenshots from local storage.
-# In production, screenshots would be served from S3/CDN with signed URLs.
+# ScreenshotsController serves scan screenshots.
+# Downloads from R2 (production) or local tmp/ (development) and streams to browser.
+# Screenshots are private — served through this controller, never publicly accessible.
 #
 class ScreenshotsController < ApplicationController
   def show
-    filename = params[:filename]
-    filepath = Rails.root.join("tmp", "screenshots", filename)
+    scan = Scan.find_by(id: params[:scan_id])
 
-    if File.exist?(filepath)
-      send_file filepath, type: "image/png", disposition: "inline"
-    else
+    unless scan&.screenshot_url.present?
       head :not_found
+      return
+    end
+
+    begin
+      screenshot_data = ScreenshotUploader.new.download(scan.screenshot_url)
+      send_data screenshot_data,
+        type: "image/png",
+        disposition: "inline",
+        filename: "scan_#{scan.id}.png"
+    rescue ScreenshotUploader::UploadError => e
+      Rails.logger.warn("[ScreenshotsController] Screenshot not found: #{e.message}")
+      head :not_found
+    rescue StandardError => e
+      Rails.logger.error("[ScreenshotsController] Error serving screenshot: #{e.message}")
+      head :internal_server_error
     end
   end
 end

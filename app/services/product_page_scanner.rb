@@ -15,6 +15,7 @@
 #
 class ProductPageScanner
   SCAN_TIMEOUT_SECONDS = 45 unless const_defined?(:SCAN_TIMEOUT_SECONDS)
+  DEEP_SCAN_TIMEOUT_SECONDS = 60 unless const_defined?(:DEEP_SCAN_TIMEOUT_SECONDS)
 
   class ScanError < StandardError; end
   class TimeoutError < ScanError; end
@@ -28,12 +29,13 @@ class ProductPageScanner
     Detectors::ProductImageDetector
   ].freeze
 
-  attr_reader :product_page, :scan, :browser_service, :detection_results
+  attr_reader :product_page, :scan, :browser_service, :detection_results, :scan_depth
 
-  def initialize(product_page, browser_service: nil)
+  def initialize(product_page, browser_service: nil, scan_depth: :quick)
     @product_page = product_page
     @browser_service = browser_service
     @owns_browser = browser_service.nil?
+    @scan_depth = scan_depth.to_sym
     @scan = nil
     @detection_results = []
   end
@@ -41,11 +43,13 @@ class ProductPageScanner
   # Performs the complete scan and detection flow
   # Returns: { success: bool, scan: Scan, data: Hash, detection_results: Array, error: String }
   def perform
-    @scan = product_page.scans.create!(status: "pending")
+    @scan = product_page.scans.create!(status: "pending", scan_depth: @scan_depth.to_s)
     @scan.start!
 
+    timeout = @scan_depth == :deep ? DEEP_SCAN_TIMEOUT_SECONDS : SCAN_TIMEOUT_SECONDS
+
     begin
-      Timeout.timeout(SCAN_TIMEOUT_SECONDS, TimeoutError, "Scan exceeded #{SCAN_TIMEOUT_SECONDS}s timeout") do
+      Timeout.timeout(timeout, TimeoutError, "Scan exceeded #{timeout}s timeout") do
         execute_scan
       end
     rescue TimeoutError => e
@@ -143,8 +147,13 @@ class ProductPageScanner
 
     TIER1_DETECTORS.each do |detector_class|
       begin
-        Rails.logger.debug("[ProductPageScanner] Running #{detector_class.name}")
-        detector = detector_class.new(@browser_service)
+        Rails.logger.debug("[ProductPageScanner] Running #{detector_class.name} (depth: #{@scan_depth})")
+        # AddToCartDetector needs scan_depth for funnel testing
+        detector = if detector_class == Detectors::AddToCartDetector
+          detector_class.new(@browser_service, scan_depth: @scan_depth)
+        else
+          detector_class.new(@browser_service)
+        end
         result = detector.perform
         results << result if result
       rescue StandardError => e
@@ -174,13 +183,12 @@ class ProductPageScanner
   end
 
   def store_screenshot(screenshot_data)
-    filename = "scan_#{@scan.id}_#{Time.current.to_i}.png"
-    filepath = Rails.root.join("tmp", "screenshots", filename)
-
-    FileUtils.mkdir_p(File.dirname(filepath))
-    File.binwrite(filepath, screenshot_data)
-
-    "/screenshots/#{filename}"
+    ScreenshotUploader.new.upload(
+      screenshot_data,
+      @scan.id,
+      shop: product_page.shop,
+      product_page: product_page
+    )
   end
 
   def close_browser_if_owned

@@ -50,6 +50,6 @@ Rails.application.routes.draw do
   # Health check
   get "up" => "rails/health#show", as: :rails_health_check
 
-  # Screenshots (for development - in production use S3/CDN)
-  get "/screenshots/:filename", to: "screenshots#show", as: :screenshot
+  # Screenshots (served from R2 in production, local in dev)
+  get "/screenshots/:scan_id", to: "screenshots#show", as: :screenshot
 end

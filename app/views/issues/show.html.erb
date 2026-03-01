@@ -36,6 +36,36 @@
   </s-box>
 </s-section>
 
+<% if @scan&.screenshot_url.present? %>
+<s-box paddingBlockStart="base">
+  <s-section heading="Page screenshot">
+    <s-box>
+      <img
+        src="<%= screenshot_path(@scan.id) %>"
+        alt="Screenshot when issue was detected"
+        style="max-width: 240px; border: 1px solid var(--p-color-border); border-radius: 8px; cursor: pointer;"
+        onclick="document.getElementById('screenshot-modal-issue').showOverlay()"
+      />
+      <s-box paddingBlockStart="tight">
+        <s-paragraph>Captured when this issue was detected on <%= @scan.created_at.strftime("%B %d, %Y at %H:%M") %></s-paragraph>
+      </s-box>
+    </s-box>
+  </s-section>
+</s-box>
+
+<s-modal id="screenshot-modal-issue" heading="Page Screenshot — <%= @product_page.title %>" size="large" padding="none">
+  <s-box padding="none">
+    <img
+      src="<%= screenshot_path(@scan.id) %>"
+      alt="Full screenshot of <%= @product_page.title %>"
+      style="width: 100%; display: block;"
+    />
+  </s-box>
+  <s-button slot="secondary-actions" commandFor="screenshot-modal-issue" command="--hide">
+    Close
+  </s-button>
+</s-modal>
+<% end %>
 <s-box paddingBlockStart="base">
   <s-section heading="Affected product">
     <s-stack direction="block" gap="tight">

@@ -21,7 +21,7 @@
 <%
 =end%>
 
-      <s-email-field label="Alert email address" id="alert_email" name="shop_setting[alert_email]" value="<%= @settings.alert_email %>" placeholder="<%= @shop.email || @shop.shopify_domain %>" details="<%= @shop.email.present? ? "Leave blank to use your shop's email (#{@shop.email})" : "Leave blank to use your store's default email" %>"></s-email-field>
+      <s-email-field label="Alert email address" id="alert_email" name="shop_setting[alert_email]" value="<%= @settings.alert_email %>" placeholder="your email"></s-email-field>
     </s-stack>
   </s-section>
 

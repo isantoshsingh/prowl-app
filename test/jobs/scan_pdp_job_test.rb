@@ -298,7 +298,10 @@ class ScanPdpJobTest < ActiveSupport::TestCase
   # --- Rescan threshold ---
 
   test "schedules a delayed rescan when a new high severity issue is found" do
-    scan = @product_page.scans.create!(status: "completed")
+    scan = @product_page.scans.create!(status: "completed", completed_at: Time.current,
+      page_load_time_ms: 2000,
+      html_snapshot: '<html><body><h1>No ATC</h1></body></html>',
+      js_errors: [], network_errors: [], console_logs: [])
     scan_result = {
       success: true,
       scan: scan,
@@ -307,28 +310,15 @@ class ScanPdpJobTest < ActiveSupport::TestCase
     }
 
     orig_scanner_new = ProductPageScanner.method(:new)
-    orig_detector_new = DetectionService.method(:new)
     orig_adapter = ActiveJob::Base.queue_adapter
 
     begin
       ActiveJob::Base.queue_adapter = :test
 
-      ProductPageScanner.define_singleton_method(:new) do |*args|
+      ProductPageScanner.define_singleton_method(:new) do |*args, **kwargs|
         scanner = Object.new
         scanner.define_singleton_method(:perform) { scan_result }
         scanner
-      end
-
-      DetectionService.define_singleton_method(:new) do |*args|
-        detector = Object.new
-        mock_issue = Issue.new(
-          issue_type: "missing_add_to_cart",
-          severity: "high",
-          status: "open",
-          occurrence_count: 1
-        )
-        detector.define_singleton_method(:perform) { [mock_issue] }
-        detector
       end
 
       assert_enqueued_with(job: ScanPdpJob, args: [@product_page.id]) do
@@ -337,7 +327,6 @@ class ScanPdpJobTest < ActiveSupport::TestCase
     ensure
       ActiveJob::Base.queue_adapter = orig_adapter
       ProductPageScanner.define_singleton_method(:new, &orig_scanner_new)
-      DetectionService.define_singleton_method(:new, &orig_detector_new)
     end
   end
 

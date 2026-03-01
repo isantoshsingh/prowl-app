@@ -4,8 +4,11 @@
 # Issues are created by the detection engine after a scan.
 #
 # Issue types:
-#   - missing_add_to_cart: ATC button not found or not clickable
-#   - variant_selector_error: Variant picker not working
+#   - missing_add_to_cart: ATC button not found, hidden, or permanently disabled
+#   - atc_not_functional: ATC button clicks but cart doesn't update
+#   - checkout_broken: Checkout page fails to load after adding to cart
+#   - variant_selection_broken: Cannot select product variants
+#   - variant_selector_error: Variant picker JS errors
 #   - js_error: JavaScript error on page load
 #   - liquid_error: Liquid template error
 #   - missing_images: Product images not loading
@@ -50,14 +53,29 @@ class Issue < ApplicationRecord
   scope :low_severity, -> { where(severity: "low") }
   scope :recent, -> { order(last_detected_at: :desc) }
   scope :by_type, ->(type) { where(issue_type: type) }
-  scope :alertable, -> { open.high_severity.where("occurrence_count >= ?", 2) }
+  scope :alertable, -> { open.high_severity.where("occurrence_count >= ? OR ai_confirmed = ?", 2, true) }
 
-  # Issue type configuration
+# Issue type configuration
   ISSUE_TYPES = {
     "missing_add_to_cart" => {
       severity: "high",
-      title: "Add to Cart button may not be working",
-      description: "We couldn't find a working Add to Cart button on this page. Customers may not be able to purchase this product."
+      title: "Add to Cart button is not working",
+      description: "The Add to Cart button is missing, hidden, or permanently disabled. Customers cannot purchase this product."
+    },
+    "atc_not_functional" => {
+      severity: "high",
+      title: "Add to Cart is not adding items",
+      description: "The Add to Cart button exists and can be clicked, but items are not being added to the cart. Customers cannot complete purchases."
+    },
+    "checkout_broken" => {
+      severity: "high",
+      title: "Checkout page is not loading",
+      description: "After adding a product to cart, the checkout page failed to load correctly. Customers cannot complete their purchase."
+    },
+    "variant_selection_broken" => {
+      severity: "high",
+      title: "Product variant selection is not working",
+      description: "Customers cannot select product options (size, color, etc.). This may prevent them from adding the product to cart."
     },
     "variant_selector_error" => {
       severity: "high",
@@ -110,6 +128,8 @@ class Issue < ApplicationRecord
     update!(status: "open")
   end
 
+  SEVERITY_WEIGHTS = { "high" => 3, "medium" => 2, "low" => 1 }.freeze
+
   # Increments occurrence count and updates last detected time
   def record_occurrence!(scan)
     update!(
@@ -119,10 +139,61 @@ class Issue < ApplicationRecord
     )
   end
 
-  # Checks if this issue should trigger an alert
-  # Only alerts after 2 occurrences to avoid false positives
+  # Smart merge that evaluates the severity trend to escalate, de-escalate, or persist context.
+  def merge_new_detection!(scan:, new_severity:, new_title:, new_description:, new_evidence:)
+    old_weight = SEVERITY_WEIGHTS[severity] || 0
+    new_weight = SEVERITY_WEIGHTS[new_severity] || 0
+
+    if new_weight > old_weight
+      # Escalation: override everything and clear AI cache to force re-evaluation
+      update!(
+        severity: new_severity,
+        title: new_title,
+        description: new_description,
+        evidence: new_evidence,
+        occurrence_count: occurrence_count + 1,
+        last_detected_at: Time.current,
+        scan: scan,
+        ai_confirmed: nil,
+        ai_explanation: nil,
+        ai_reasoning: nil,
+        ai_suggested_fix: nil
+      )
+      self
+    elsif new_weight < old_weight
+      # De-escalation: resolve the higher severity issue and return nil to signal caller to create a new one
+      resolve!
+      nil
+    else
+      # Persistent Context Refresh (Same severity): always use latest data to avoid ghostly stale UI
+      update!(
+        title: new_title,
+        description: new_description,
+        evidence: new_evidence,
+        occurrence_count: occurrence_count + 1,
+        last_detected_at: Time.current,
+        scan: scan
+      )
+      self
+    end
+  end
+
+  # Checks if this issue should trigger an alert.
+  # Two paths to alerting:
+  #   1. AI-confirmed: alert immediately on first occurrence (high confidence)
+  #   2. No AI confirmation: wait for 2 occurrences to avoid false positives
   def should_alert?
-    open? && high_severity? && occurrence_count >= 2 && alerts.none?
+    return false unless open? && high_severity? && alerts.none?
+
+    # If AI confirmed the issue, trust it on first scan
+    return true if ai_confirmed?
+
+    # Otherwise require 2 occurrences (rescan confirmation)
+    occurrence_count >= 2
+  end
+
+  def ai_confirmed?
+    ai_confirmed == true
   end
 
   def open?
@@ -141,5 +212,16 @@ class Issue < ApplicationRecord
     when "low" then "Low Priority"
     else severity.humanize
     end
+  end
+
+  # Returns the best available explanation for the merchant.
+  # Prefers AI-generated explanation, falls back to hardcoded description.
+  def merchant_explanation
+    ai_explanation.presence || Issue::ISSUE_TYPES.dig(issue_type, :description) || description
+  end
+
+  # Returns the AI-suggested fix if available.
+  def merchant_suggested_fix
+    ai_suggested_fix
   end
 end

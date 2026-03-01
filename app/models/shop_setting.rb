@@ -16,7 +16,7 @@ class ShopSetting < ApplicationRecord
 
   # Validations
   validates :scan_frequency, inclusion: { in: %w[daily weekly] }
-  validates :max_monitored_pages, numericality: { greater_than: 0, less_than_or_equal_to: 5 }
+  validates :max_monitored_pages, numericality: { greater_than: 0, less_than_or_equal_to: Shop::MAX_MONITORED_PAGES }
   validates :shop_id, uniqueness: true
 
   # Default values set in migration, but ensure they're set
@@ -33,6 +33,6 @@ class ShopSetting < ApplicationRecord
     self.email_alerts_enabled = true if email_alerts_enabled.nil?
     self.admin_alerts_enabled = true if admin_alerts_enabled.nil?
     self.scan_frequency ||= "daily"
-    self.max_monitored_pages ||= 5
+    self.max_monitored_pages ||= Shop::MAX_MONITORED_PAGES
   end
 end
