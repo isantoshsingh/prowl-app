@@ -72,3 +72,5 @@ group :development do
   # Email sending
   gem "letter_opener"
 end
+
+gem "resend", "~> 1.0"

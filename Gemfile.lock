@@ -362,6 +362,8 @@ GEM
     regexp_parser (2.11.3)
     reline (0.6.3)
       io-console (~> 0.5)
+    resend (1.0.1)
+      httparty (>= 0.21.0)
     rubocop (1.84.0)
       json (~> 2.3)
       language_server-protocol (~> 3.17.0.2)
@@ -496,6 +498,7 @@ DEPENDENCIES
   puma (>= 7.0)
   puppeteer-ruby (~> 0.45)
   rails (~> 8.1.2)
+  resend (~> 1.0)
   rubocop-rails-omakase
   shopify_app (~> 23.0)
   solid_cache
