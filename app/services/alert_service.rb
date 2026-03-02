@@ -48,6 +48,7 @@ class AlertService
     return if existing_alert?("email")
 
     alert = create_alert("email")
+    return unless alert # Race condition: another process already created it
 
     begin
       AlertMailer.issue_detected(shop, issue).deliver_later
@@ -66,12 +67,13 @@ class AlertService
     return if existing_alert?("admin")
 
     alert = create_alert("admin")
+    return unless alert # Race condition: another process already created it
 
     begin
       # Use Shopify Admin API to send notification
       # In Phase 1, we'll log it - full implementation requires App Bridge
       Rails.logger.info("[AlertService] Admin notification for issue #{issue.id} would be sent to shop #{shop.id}")
-      
+
       # Mark as sent - in production, this would happen after API confirmation
       alert.mark_sent!
     rescue StandardError => e
@@ -93,5 +95,9 @@ class AlertService
       alert_type: alert_type,
       delivery_status: "pending"
     )
+  rescue ActiveRecord::RecordNotUnique
+    # Race condition: another process already created this alert
+    Rails.logger.info("[AlertService] Alert already exists for issue #{issue.id} (#{alert_type}), skipping")
+    nil
   end
 end
