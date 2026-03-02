@@ -12,7 +12,7 @@ Prowl is a Shopify embedded app that monitors product detail pages (PDPs) for br
 
 **Core value proposition:** Silent revenue loss detection. PDPs break due to app conflicts, theme changes, or frontend regressions. Merchants often don't notice until revenue drops. Prowl catches these breaks early by scanning pages with a headless browser and alerting merchants before customers are affected.
 
-**Phase 1 (MVP):** Rule-based and confidence-scored detection, daily scanning, email + admin alerts, Polaris UI dashboard. Paid-only at $10/month with a 14-day free trial via the Shopify Billing API.
+**Phase 1 (MVP):** Confidence-scored detection with AI visual confirmation (Gemini Flash), purchase funnel testing (deep scans: variant selection → ATC → cart verification → cleanup), daily scanning, email + admin alerts, Polaris UI dashboard. Paid-only at $10/month with a 14-day free trial via the Shopify Billing API.
 
 ---
 
@@ -40,14 +40,19 @@ Prowl is a Shopify embedded app that monitors product detail pages (PDPs) for br
 
 1. Merchant installs app via Shopify OAuth (`shopify_app` gem handles the flow).
 2. `AfterAuthenticateJob` runs inline after install to bootstrap shop data.
-3. Merchant selects up to 5 product pages to monitor.
+3. Merchant selects up to 3 product pages to monitor (`MAX_MONITORED_PAGES = 3`).
 4. `ScheduledScanJob` runs daily at 6am UTC (configured in `config/recurring.yml`).
 5. It queues one `ScanPdpJob` per monitored `ProductPage`.
-6. `ScanPdpJob` uses `ProductPageScanner` which connects to `BrowserService` (Puppeteer via Browserless in production, local Chrome in dev), navigates to the page, captures data, runs all Tier 1 detectors, then hands results to `DetectionService`.
-7. Screenshots are uploaded to Cloudflare R2 via `ScreenshotUploader` and the public URL is stored in `scans.screenshot_url`. Files are organized as `{shop-slug}/{product-handle}/scan_{id}_{timestamp}.png`.
-8. `DetectionService` creates or updates `Issue` records based on confidence-scored detection results.
-9. `AiIssueAnalyzer` sends each issue (with screenshot for high-severity) to Gemini Flash for merchant-friendly explanations and suggested fixes. High-severity issues also get visual confirmation. AI is fail-open — if it fails, hardcoded descriptions are used.
-10. `AlertService` sends email/admin notifications for high-severity issues that persist across 2+ scans. Emails include inline screenshots and AI-generated explanations via Resend SMTP.
+6. `ScanPdpJob` determines scan depth (`:quick` for daily scans, `:deep` for first scan / open critical issues / weekly Monday), then uses `ProductPageScanner` which connects to `BrowserService` (Puppeteer via Browserless in production, local Chrome in dev), navigates to the page, captures data, runs all Tier 1 detectors. Deep scans also run the full purchase funnel test (variant selection → ATC click → cart verification via `/cart.js` → cleanup).
+7. Screenshots are uploaded to Cloudflare R2 via `ScreenshotUploader` and the R2 key is stored in `scans.screenshot_url`. Screenshots are **private** — served through `ScreenshotsController` (which scopes to the current shop), never publicly accessible. Files are organized as `{shop-slug}/{product-handle}/scan_{id}_{timestamp}.png`.
+8. `ScanPdpJob` delegates to `ScanPipelineService` which orchestrates a 5-step pipeline:
+   - **Step 1:** `DetectionService` creates/updates `Issue` records from programmatic detection results. Uses `Issue#merge_new_detection!` for smart escalation/de-escalation.
+   - **Step 2:** AI page-level analysis — sends screenshot + programmatic results to Gemini Flash. AI independently identifies ALL issues. New AI-only findings are created with `ai_confirmed: true`.
+   - **Step 3:** Per-issue AI analysis — generates merchant explanations and suggested fixes for each issue. High-severity issues get visual confirmation.
+   - **Step 4:** `AlertService` sends email/admin notifications for qualifying issues.
+   - **Step 5:** Schedules a rescan in 30 minutes for unconfirmed high-severity issues.
+9. AI is fail-open throughout — if Gemini fails at any step, programmatic detection and hardcoded descriptions are used.
+10. `AlertService` sends alerts for high-severity issues via two paths: (a) AI-confirmed issues alert immediately on first occurrence, (b) non-AI-confirmed issues require 2+ occurrences. Emails include inline screenshots and AI-generated explanations via Resend SMTP.
 
 ---
 
@@ -55,13 +60,15 @@ Prowl is a Shopify embedded app that monitors product detail pages (PDPs) for br
 
 - **Shop** (`app/models/shop.rb`): A Shopify merchant who installed Prowl. Central model that owns all other records. Includes billing state, onboarding progress, and Shopify metadata.
 
-- **ProductPage** (`app/models/product_page.rb`): A PDP URL being monitored. Belongs to a Shop. Has statuses: `pending`, `healthy`, `warning`, `critical`, `error`. Supports soft-delete via `deleted_at`. Each shop can monitor up to 5 pages (Phase 1).
+- **ProductPage** (`app/models/product_page.rb`): A PDP URL being monitored. Belongs to a Shop. Has statuses: `pending`, `healthy`, `warning`, `critical`, `error`. Supports soft-delete via `deleted_at`. Each shop can monitor up to 3 pages (`MAX_MONITORED_PAGES = 3`).
 
-- **Scan** (`app/models/scan.rb`): One headless browser run against a ProductPage. Captures screenshot URL (R2 public URL in production, local path in dev), HTML snapshot, JS errors, network errors, console logs, DOM check data, and page load time. Statuses: `pending`, `running`, `completed`, `failed`.
+- **Scan** (`app/models/scan.rb`): One headless browser run against a ProductPage. Captures screenshot URL (R2 key in production, local path in dev), HTML snapshot, JS errors, network errors, console logs, DOM check data, page load time, `scan_depth` (quick/deep), and `funnel_results` (JSONB). Statuses: `pending`, `running`, `completed`, `failed`. **Important:** `parsed_dom_checks_data` normalizes results to symbol keys via `deep_symbolize_keys` — all downstream consumers (DetectionService, AiIssueAnalyzer) use symbol access.
 
-- **Issue** (`app/models/issue.rb`): A detected problem linked to a ProductPage and the Scan that found it. Has `issue_type`, `severity` (high/medium/low), `status` (open/acknowledged/resolved), `occurrence_count`, and serialized `evidence` JSON. Includes AI analysis columns: `ai_confirmed`, `ai_confidence`, `ai_reasoning`, `ai_explanation`, `ai_suggested_fix`, `ai_verified_at`. The `merchant_explanation` method returns AI-generated text with fallback to hardcoded descriptions. Only alerts after 2+ occurrences to avoid false positives.
+- **Issue** (`app/models/issue.rb`): A detected problem linked to a ProductPage and the Scan that found it. Has `issue_type`, `severity` (high/medium/low), `status` (open/acknowledged/resolved), `occurrence_count`, and serialized `evidence` JSON. Includes AI analysis columns: `ai_confirmed`, `ai_confidence`, `ai_reasoning`, `ai_explanation`, `ai_suggested_fix`, `ai_verified_at`. The `merchant_explanation` and `merchant_suggested_fix` methods return AI-generated text sanitized via `strip_tags` (with fallback to hardcoded descriptions). `merge_new_detection!` handles escalation/de-escalation/same-severity — returns `self` on escalation/same, `:de_escalated` on de-escalation (caller creates new issue). Two paths to alerting: AI-confirmed issues alert immediately; others require 2+ occurrences. The `alertable` scope includes the `alerts.none?` check to prevent re-alerting.
 
-- **Alert** (`app/models/alert.rb`): A notification sent to a merchant about an Issue. Types: `email`, `admin`. Delivery statuses: `pending`, `sent`, `failed`. Unique constraint: one alert per shop+issue+type.
+- **Alert** (`app/models/alert.rb`): A notification sent to a merchant about an Issue. Types: `email`, `admin`. Delivery statuses: `pending`, `sent`, `failed`. Unique DB index on `(shop_id, issue_id, alert_type)` — allows both email and admin alerts per issue. `AlertService` creates the Alert record before sending the email (never the reverse) and handles `RecordNotUnique` for race condition safety.
+
+- **ScanPipelineService** (`app/services/scan_pipeline_service.rb`): Orchestrates the 5-step post-scan pipeline (programmatic detection → AI page analysis → per-issue AI → alerting → conditional rescan). Extracted from `ScanPdpJob` to keep the job thin and each step independently testable. Fail-open: AI failures at any step don't block subsequent steps.
 
 - **Detector** (`app/services/detectors/base_detector.rb`): A module in the detection engine that checks for one class of issue. Returns a standardized result hash: `{ check:, status:, confidence:, details: { message:, technical_details:, suggestions:, evidence: } }`. Status is one of `pass`, `fail`, `warning`, `inconclusive`. Confidence is a float 0.0–1.0.
 
@@ -89,12 +96,13 @@ app/models/
 ```
 app/services/
   product_page_scanner.rb  # Top-level scan orchestrator — connects browser, runs detectors, saves results
+  scan_pipeline_service.rb # 5-step post-scan pipeline (detection → AI → alerts → rescan)
   browser_service.rb       # Puppeteer lifecycle — Browserless (remote) in production, local Chrome in dev
   screenshot_uploader.rb   # Upload/download screenshots to Cloudflare R2 (local tmp/ fallback in dev)
-  ai_issue_analyzer.rb     # Gemini Flash AI — issue confirmation, merchant explanations, suggested fixes
+  ai_issue_analyzer.rb     # Gemini Flash AI — page analysis, issue confirmation, merchant explanations
   pdp_scanner_service.rb   # Legacy scanner (kept for reference, replaced by ProductPageScanner)
-  detection_service.rb     # Processes detector results into Issue records
-  alert_service.rb         # Sends email/admin alerts for qualifying Issues
+  detection_service.rb     # Processes detector results into Issue records (symbol keys from parsed_dom_checks_data)
+  alert_service.rb         # Sends email/admin alerts for qualifying Issues (create record before sending)
   subscription_sync_service.rb  # Syncs billing state from Shopify API
 ```
 
@@ -113,7 +121,7 @@ app/services/detectors/
 ```
 app/jobs/
   scheduled_scan_job.rb     # Runs daily at 6am UTC, queues ScanPdpJob for each monitored page
-  scan_pdp_job.rb           # Performs a single page scan — queue: :scans, retries: 3
+  scan_pdp_job.rb           # Performs a single page scan — delegates to ScanPipelineService. queue: :scans, retries: 3
   after_authenticate_job.rb # Runs inline after Shopify OAuth install
   shop_redact_job.rb        # GDPR shop data redaction
 ```
@@ -137,7 +145,7 @@ app/controllers/
   scans_controller.rb          # Scan history views
   settings_controller.rb       # Shop settings (alerts, frequency)
   billing_controller.rb        # Pricing page
-  screenshots_controller.rb    # Serves screenshots in development
+  screenshots_controller.rb    # Serves private screenshots (R2 in prod, local in dev). Inherits AuthenticatedController, scoped to current shop.
   privacy_controller.rb        # Public privacy policy page
 ```
 
@@ -182,17 +190,10 @@ lib/tasks/
 
 ### Documentation
 ```
-docs/
-  getting-started.md
-  how-detection-works.md
-  common-issues-and-fixes.md
-  troubleshooting.md
-  understanding-results.md
-  faq.md
-  app-store-listing.md
-PRD.md       # Product requirements document
-ROADMAP.md   # Phase roadmap
-SECURITY.md  # Security policy
+PRD.md           # Product requirements document
+ROADMAP.md       # Phase roadmap
+SECURITY.md      # Security policy
+CHANGELOG.md     # Release changelog
 ```
 
 ---
@@ -220,7 +221,7 @@ SECURITY.md  # Security policy
 
 3. **Confidence threshold.** `DetectionService` only creates `Issue` records when `confidence >= 0.7`. Below that threshold, results are logged but ignored. This is defined as `CONFIDENCE_THRESHOLD = 0.7` in both `Detectors::BaseDetector` and `DetectionService`.
 
-4. **Two-scan confirmation for alerts.** `AlertService` only sends notifications when `issue.occurrence_count >= 2` and severity is `high`. This prevents false-positive noise.
+4. **Two-path alerting.** `AlertService` only sends notifications for `high` severity issues, via two paths: (a) AI-confirmed issues (`ai_confirmed = true`) alert immediately on first occurrence — high-confidence AI visual confirmation reduces false positives enough to skip the wait; (b) non-AI-confirmed issues require `occurrence_count >= 2` (rescan confirmation). See `Issue#should_alert?`. The `alertable` scope mirrors this logic and includes `alerts.none?` to prevent re-alerting.
 
 5. **Shopify Polaris only.** The UI uses Shopify Polaris Web Components. Do not add Tailwind, Bootstrap, custom CSS frameworks, or React component libraries.
 
@@ -228,7 +229,7 @@ SECURITY.md  # Security policy
 
 7. **Backward compatibility on data models.** Do not rename or remove columns on `issues`, `scans`, `product_pages`, or `shops` without a migration plan. Existing scans and issues must remain queryable.
 
-8. **30-second scan budget.** `ProductPageScanner::SCAN_TIMEOUT_SECONDS` is 45s (with Puppeteer navigation timeout at 15s). Individual detector execution must stay fast — they run in-process, sequentially, after page load.
+8. **Scan timeout budget.** `ProductPageScanner::SCAN_TIMEOUT_SECONDS` is 45s for quick scans, extended to 60s for deep scans (funnel testing). Puppeteer navigation timeout is 15s. Individual detector execution must stay fast — they run in-process, sequentially, after page load.
 
 ---
 
@@ -253,6 +254,7 @@ test/
     detection_service_test.rb
   scripts/
     live_pdp_scan_test.rb     # Integration test against real URLs (not for CI)
+    funnel_detection_test.rb  # Manual purchase funnel detection test (not for CI)
   fixtures/
     shops.yml
     product_pages.yml
@@ -274,7 +276,7 @@ bin/rails test test/models/issue_test.rb  # Single file
 - Use fixtures (not factories) — there is no FactoryBot in this project.
 - When adding a detector, add a corresponding test in `test/services/`.
 - For scan-related tests, mock `BrowserService` rather than launching a real browser.
-- `test/scripts/live_pdp_scan_test.rb` runs against real Shopify stores — do not include it in CI.
+- `test/scripts/live_pdp_scan_test.rb` and `test/scripts/funnel_detection_test.rb` run against real Shopify stores — do not include in CI.
 
 ---
 
@@ -284,11 +286,13 @@ bin/rails test test/models/issue_test.rb  # Single file
 
 1. Create `app/services/detectors/your_detector.rb` subclassing `Detectors::BaseDetector`.
 2. Implement `#check_name` (returns a string identifier) and `#run_detection` (performs the check using `browser_service`).
-3. Use `pass_result`, `fail_result`, `warning_result`, or `inconclusive_result` to build the return hash.
-4. Register the detector in `ProductPageScanner::TIER1_DETECTORS`.
-5. Add the check name mapping in `DetectionService::CHECK_TO_ISSUE_TYPE` and `DetectionService::CHECK_SEVERITY`.
-6. Add the issue type to `Issue::ISSUE_TYPES` with a title and description.
-7. Write a test in `test/services/`.
+3. Accept `scan_depth:` in `initialize` if the detector behaves differently for quick vs deep scans.
+4. Use `pass_result`, `fail_result`, `warning_result`, or `inconclusive_result` to build the return hash.
+5. Register the detector in `ProductPageScanner::TIER1_DETECTORS`.
+6. Add the check name mapping in `DetectionService::CHECK_TO_ISSUE_TYPE` and `DetectionService::CHECK_SEVERITY`.
+7. Add the issue type to `Issue::ISSUE_TYPES` with a title and description.
+8. Also add the mapping in `AiIssueAnalyzer::AI_ISSUE_TYPE_MAP` so AI page analysis can confirm/create these issues.
+9. Write a test in `test/services/`.
 
 ### Adding a new background job
 
@@ -313,6 +317,14 @@ bin/rails test test/models/issue_test.rb  # Single file
 3. Use `@issue.merchant_explanation` (AI-generated with hardcoded fallback) instead of `@issue.description` in templates.
 4. In development, emails render in the browser via `letter_opener`.
 5. Production uses Resend SMTP — configuration is in `config/environments/production.rb`.
+
+### Modifying the scan pipeline
+
+1. The post-scan pipeline lives in `app/services/scan_pipeline_service.rb` (not in the job).
+2. `ScanPdpJob` is intentionally thin — it handles billing/monitoring checks, depth selection, and scanner invocation, then delegates to `ScanPipelineService`.
+3. Each pipeline step is a separate private method. To add a step, add a method and call it from `#perform` in the correct order.
+4. All steps are fail-open by design — wrap AI-dependent code in `rescue StandardError` to avoid blocking programmatic detection.
+5. `send_alerts` iterates issues and calls `issue.reload` before `should_alert?` to pick up AI updates from earlier steps.
 
 ### Changing scan scheduling logic
 
@@ -379,10 +391,12 @@ prowl-screenshots/
 
 - **Do not create Issues with confidence below 0.7.** Low-confidence detections are logged but must not generate Issue records or alerts.
 
-- **Do not send alerts for issues with fewer than 2 occurrences.** The two-scan confirmation rule exists to minimize false positives. See `Issue#should_alert?`.
+- **Do not send alerts without checking `should_alert?`.** Two paths to alerting: (a) AI-confirmed issues alert immediately on first occurrence, (b) non-AI-confirmed issues require 2+ occurrences. Always use `Issue#should_alert?` — do not hardcode occurrence checks.
 
 - **Do not bypass billing checks.** All authenticated controllers inherit from `AuthenticatedController`, which checks `has_active_payment?`. Scans also verify `shop.billing_active?` before executing.
 
-- **Do not let AI gate alerts.** AI analysis is informational in Phase 1. `AiIssueAnalyzer` results are stored on Issue records but `Issue#should_alert?` does NOT check AI confirmation. If AI fails, alerts still send with hardcoded descriptions (fail-open).
+- **Do not let AI block alerts.** AI is fail-open throughout the pipeline. If Gemini fails, programmatic detection continues, hardcoded descriptions are used, and non-AI-confirmed issues still alert after 2 occurrences. Never make AI availability a prerequisite for alerting.
+
+- **Do not send email before creating the Alert record.** `AlertService` must create the `Alert` record first to prevent duplicate emails if subsequent steps fail. The `create_alert` method handles `RecordNotUnique` for race condition safety.
 
 - **Do not launch local Chrome in production.** `BrowserService` must use `BROWSERLESS_URL` in production to avoid R14 memory errors. Local Chrome is only for development.
