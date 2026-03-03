@@ -56,7 +56,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - **JS injection in `BrowserService#clear_cart_item`**: Sanitized `line_item_key` input and use `to_json` for safe JS interpolation instead of raw string interpolation.
 - **Path traversal in `ScreenshotUploader#download`**: Added `File.expand_path` validation to ensure resolved paths stay within `tmp/screenshots/`.
-- **IDOR protection in `ScreenshotsController`**: Replaced `ApplicationController` with signed URL authorization (`MessageVerifier`). `<img>` tags cannot carry Shopify JWT tokens, so URLs are HMAC-signed at render time (24h expiry) and verified in the controller. Prevents unauthorized screenshot access without requiring Shopify session.
 - **XSS in AI-generated mailer content**: Added `strip_tags` sanitization to `merchant_explanation` and `merchant_suggested_fix` methods on the `Issue` model.
 
 ### Bug Fixes
@@ -68,7 +67,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Hardcoded `sleep()` in funnel methods**: Replaced `sleep(1.5)` and `sleep(2)` with `wait_for_network_idle` polling helper that adapts to actual page responsiveness.
 - **Symbol/string key inconsistency**: Normalized `Scan#parsed_dom_checks_data` to always return symbol keys via `deep_symbolize_keys`. Cleaned up defensive dual-access in `DetectionService` and `AiIssueAnalyzer`.
 - **English-only sold-out detection**: Added language-independent check via Shopify product JSON (`product.available`), plus French/Spanish/German text patterns.
-- **Broken screenshot images in UI**: `ScreenshotsController` inherited from `AuthenticatedController` (Shopify JWT session), but `<img>` tags make plain GET requests without JWT tokens. Switched to signed URL auth via `ScreenshotsHelper#signed_screenshot_path` and `MessageVerifier`.
 
 ### Refactored
 
