@@ -514,17 +514,34 @@ class BrowserService
   private
 
   # Waits for network activity to settle by polling for idle state.
-  # More reliable than fixed sleep — adapts to actual page responsiveness.
+  # Tracks resource count via Performance API to detect when new requests
+  # stop appearing, rather than relying on document.readyState (which is
+  # always 'complete' after initial page load and ignores AJAX requests).
   def wait_for_network_idle(timeout: 2.0)
     return unless @page
 
     deadline = Process.clock_gettime(Process::CLOCK_MONOTONIC) + timeout
+
+    # Initial delay to let async operations start (theme JS needs time to dispatch AJAX)
+    sleep(0.5)
+
+    last_count = @page.evaluate("() => performance.getEntriesByType('resource').length") rescue 0
+    quiet_cycles = 0
+
     loop do
       break if Process.clock_gettime(Process::CLOCK_MONOTONIC) >= deadline
-      sleep(0.25)
-      # Check if there are pending network requests
-      idle = @page.evaluate("() => { return document.readyState === 'complete'; }") rescue true
-      break if idle
+      sleep(0.3)
+
+      # Poll resource entry count — when it stops growing, network is idle
+      current_count = @page.evaluate("() => performance.getEntriesByType('resource').length") rescue last_count
+
+      if current_count == last_count
+        quiet_cycles += 1
+        break if quiet_cycles >= 2 # 2 consecutive quiet cycles (~0.6s of no new requests)
+      else
+        quiet_cycles = 0
+        last_count = current_count
+      end
     end
   rescue StandardError => e
     Rails.logger.debug("[BrowserService] wait_for_network_idle error: #{e.message}")
