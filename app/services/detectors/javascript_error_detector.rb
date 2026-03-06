@@ -11,8 +11,22 @@ module Detectors
   #   4. Higher confidence when errors relate to cart/product/checkout
   #
   class JavascriptErrorDetector < BaseDetector
-    # Patterns to ignore (third-party noise)
+    # Patterns to ignore (third-party noise and Shopify platform internals)
     IGNORE_PATTERNS = [
+      # Shopify platform scripts (analytics, pixels, metrics — fail often in headless browsers)
+      /shop-js/i,
+      /shop_events_listener/i,
+      /\/wpm\//i,                  # Web Pixel Manager
+      /web-pixel/i,
+      /exportMetrics/i,
+      /exportBatches/i,
+      /monorail/i,                 # Shopify internal telemetry
+      # Generic network failures (common in headless browser environments)
+      /net::ERR_FAILED/i,
+      /net::ERR_BLOCKED/i,
+      /net::ERR_CONNECTION/i,
+      /Failed to fetch/i,
+      # Third-party analytics and marketing
       /google[-_]?analytics/i,
       /googletagmanager/i,
       /gtag/i,
