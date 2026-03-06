@@ -23,19 +23,24 @@ class ScanPdpJob < ApplicationJob
   retry_on StandardError, wait: :polynomially_longer, attempts: 3
   discard_on ActiveRecord::RecordNotFound
 
-  def perform(product_page_id, scan_depth: nil)
+  def perform(product_page_id, scan_depth: nil, scan_id: nil)
     product_page = ProductPage.find(product_page_id)
     shop = product_page.shop
+
+    # If a pre-created scan exists but we're skipping, clean it up
+    pre_created_scan = scan_id ? Scan.find_by(id: scan_id) : nil
 
     # Skip if shop doesn't have active billing
     unless shop.billing_active?
       Rails.logger.info("[ScanPdpJob] Skipping scan for shop #{shop.id} - billing not active")
+      pre_created_scan&.fail!("Billing not active")
       return
     end
 
     # Skip if monitoring is disabled for this page
     unless product_page.monitoring_enabled?
       Rails.logger.info("[ScanPdpJob] Skipping scan for page #{product_page.id} - monitoring disabled")
+      pre_created_scan&.fail!("Monitoring disabled")
       return
     end
 
@@ -44,8 +49,8 @@ class ScanPdpJob < ApplicationJob
 
     Rails.logger.info("[ScanPdpJob] Starting #{depth} scan for product page #{product_page.id} (#{product_page.title})")
 
-    # Perform the scan with detection engine
-    scanner = ProductPageScanner.new(product_page, scan_depth: depth)
+    # Perform the scan with detection engine, reusing pre-created scan if available
+    scanner = ProductPageScanner.new(product_page, scan_depth: depth, scan: pre_created_scan)
     result = scanner.perform
 
     if result[:success]

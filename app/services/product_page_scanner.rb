@@ -31,19 +31,21 @@ class ProductPageScanner
 
   attr_reader :product_page, :scan, :browser_service, :detection_results, :scan_depth
 
-  def initialize(product_page, browser_service: nil, scan_depth: :quick)
+  def initialize(product_page, browser_service: nil, scan_depth: :quick, scan: nil)
     @product_page = product_page
     @browser_service = browser_service
     @owns_browser = browser_service.nil?
     @scan_depth = scan_depth.to_sym
-    @scan = nil
+    @scan = scan # Pre-created scan record (from controller), or nil to create one here
     @detection_results = []
   end
 
   # Performs the complete scan and detection flow
   # Returns: { success: bool, scan: Scan, data: Hash, detection_results: Array, error: String }
   def perform
-    @scan = product_page.scans.create!(status: "pending", scan_depth: @scan_depth.to_s)
+    # Use pre-created scan if provided (avoids race condition with UI polling),
+    # otherwise create one now (backward-compatible for scheduled scans).
+    @scan ||= product_page.scans.create!(status: "pending", scan_depth: @scan_depth.to_s)
     @scan.start!
 
     timeout = @scan_depth == :deep ? DEEP_SCAN_TIMEOUT_SECONDS : SCAN_TIMEOUT_SECONDS
