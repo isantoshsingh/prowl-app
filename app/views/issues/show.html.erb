@@ -18,11 +18,11 @@
     <s-grid gridTemplateColumns="repeat(4, 1fr)" gap="base">
       <s-stack direction="block" gap="extra-tight">
         <s-paragraph>First Detected</s-paragraph>
-        <strong><%= @issue.first_detected_at.strftime("%B %d, %Y at %H:%M") %></strong>
+        <strong><%= local_time(@issue.first_detected_at) %></strong>
       </s-stack>
       <s-stack direction="block" gap="extra-tight">
         <s-paragraph>Last Detected</s-paragraph>
-        <strong><%= @issue.last_detected_at.strftime("%B %d, %Y at %H:%M") %></strong>
+        <strong><%= local_time(@issue.last_detected_at) %></strong>
       </s-stack>
       <s-stack direction="block" gap="extra-tight">
         <s-paragraph>Occurrence Count</s-paragraph>
@@ -47,7 +47,7 @@
         onclick="document.getElementById('screenshot-modal-issue').showOverlay()"
       />
       <s-box paddingBlockStart="tight">
-        <s-paragraph>Captured when this issue was detected on <%= @scan.created_at.strftime("%B %d, %Y at %H:%M") %></s-paragraph>
+        <s-paragraph>Captured when this issue was detected on <%= local_time(@scan.created_at) %></s-paragraph>
       </s-box>
     </s-box>
   </s-section>
@@ -233,6 +233,6 @@
   <s-stack direction="inline" gap="tight" align="center">
     <s-paragraph>Detected in</s-paragraph>
     <s-link href="<%= scan_path(@scan, host: @host) %>">Scan #<%= @scan.id %></s-link>
-    <s-paragraph>on <%= @scan.created_at.strftime("%B %d, %Y at %H:%M") %></s-paragraph>
+    <s-paragraph>on <%= local_time(@scan.created_at) %></s-paragraph>
   </s-stack>
 </s-box>

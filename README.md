@@ -9,19 +9,21 @@ Instead of guessing why conversions dropped, merchants get **clear alerts, diagn
 ## 🚀 Phase 1 (MVP) Features
 
 ### Automated PDP Scanning
-- Daily scan of 3–5 product pages
-- Headless browser (Puppeteer) checks for:
-  - Add-to-cart functionality
+- Daily scan of up to 3 monitored product pages
+- Headless browser (Puppeteer via Browserless.io in production) checks for:
+  - Add-to-cart functionality (3-layer: structural DOM → funnel test → AI visual)
   - Variant selector errors
   - Missing price or images
-  - JS errors
+  - JS errors (with Shopify platform noise filtering)
   - Liquid errors
   - Page load performance
+- Deep scans run a full purchase funnel test (variant selection → ATC click → cart verification via `/cart.js` → cleanup)
 
 ### Issue Detection Engine
-- Rule-based detection for common breakages
+- Three-layer detection: programmatic detectors → AI page analysis (Gemini Flash) → per-issue AI confirmation
 - Severity scoring (High / Medium / Low)
-- 2-scan confirmation to avoid false positives
+- AI-confirmed issues alert immediately; others require 2-scan confirmation
+- Related issue deduplication prevents AI from creating escalated duplicates
 
 ### Alerts
 - Email alerts for critical issues
@@ -49,17 +51,18 @@ Instead of guessing why conversions dropped, merchants get **clear alerts, diagn
 - Ruby on Rails 8.1
 - shopify_app gem 23.0+
 - PostgreSQL
-- Solid Queue (background jobs)
-- Puppeteer Ruby gem
+- Solid Queue (background jobs, in-process via Puma plugin — no Redis)
+- puppeteer-ruby gem (~0.45)
 
 ### Frontend
 - Shopify Polaris Web Components
-- App Bridge
-- ERB templates
+- Shopify App Bridge
+- ERB templates + Hotwire (Turbo + Stimulus)
 
-### Scanning
-- Headless Chromium
-- Screenshot capture
+### Scanning & AI
+- Browserless.io (cloud headless browser in production)
+- Google Gemini 2.5 Flash (AI issue analysis and visual confirmation)
+- Screenshot storage via Cloudflare R2
 - JS / network error logging
 
 ---
@@ -101,7 +104,7 @@ bin/rails db:create db:migrate
 bin/rails server
 ```
 
-6. Start Solid Queue worker (in another terminal):
+6. Solid Queue runs in-process via Puma plugin in production. For development, start it in another terminal:
 ```bash
 bin/rails solid_queue:start
 ```
@@ -114,6 +117,13 @@ bin/rails solid_queue:start
 | `SHOPIFY_API_SECRET` | Your Shopify app API secret | Yes |
 | `HOST` | Your app's public URL (e.g., ngrok) | Yes |
 | `SHOPIFY_TEST_CHARGES` | Set to "true" for test billing | No |
+| `BROWSERLESS_URL` | Browserless.io WebSocket URL (production) | Prod |
+| `GEMINI_API_KEY` | Google Gemini API key for AI analysis | Prod |
+| `CLOUDFLARE_R2_ACCESS_KEY_ID` | Cloudflare R2 access key | Prod |
+| `CLOUDFLARE_R2_SECRET_ACCESS_KEY` | Cloudflare R2 secret key | Prod |
+| `CLOUDFLARE_R2_BUCKET` | R2 bucket name (e.g., prowl-screenshots) | Prod |
+| `CLOUDFLARE_R2_ENDPOINT` | R2 endpoint URL | Prod |
+| `RESEND_API_KEY` | Resend API key for production email | Prod |
 
 ---
 
@@ -136,10 +146,14 @@ app/
 │   ├── alert.rb          # Notification record
 │   └── shop_setting.rb   # Configuration
 ├── services/        # Business logic
-│   ├── pdp_scanner_service.rb  # Puppeteer scanning
-│   ├── detection_service.rb    # Issue detection
-│   ├── alert_service.rb        # Notifications
-│   └── billing_service.rb      # Subscription management
+│   ├── product_page_scanner.rb       # Top-level scan orchestrator
+│   ├── scan_pipeline_service.rb      # 5-step post-scan pipeline
+│   ├── browser_service.rb            # Puppeteer lifecycle (Browserless in prod)
+│   ├── detection_service.rb          # Processes detector results into Issues
+│   ├── ai_issue_analyzer.rb          # Gemini Flash AI analysis
+│   ├── alert_service.rb              # Email/admin notifications
+│   ├── screenshot_uploader.rb        # Cloudflare R2 screenshot storage
+│   └── subscription_sync_service.rb  # Billing state sync
 ├── jobs/            # Background jobs
 │   ├── scan_pdp_job.rb       # Single page scan
 │   └── scheduled_scan_job.rb # Daily scheduler
@@ -182,7 +196,7 @@ Daily scans are scheduled via `config/recurring.yml`:
 The merchant store. Created during OAuth install.
 - Has many product_pages
 - Has one shop_setting
-- Tracks billing status via shop_setting
+- Tracks billing status via subscription fields
 
 ### ProductPage
 A product page being monitored.
@@ -198,9 +212,10 @@ A single PDP scan run.
 ### Issue
 A detected problem.
 - Linked to product_page and scan
-- Types: missing_add_to_cart, js_error, liquid_error, etc.
+- Types: missing_add_to_cart, atc_not_functional, js_error, liquid_error, missing_price, missing_images, variant_selection_broken
 - Severity: high, medium, low
-- Only alerts after 2+ occurrences
+- AI-confirmed issues alert immediately; others alert after 2+ occurrences
+- Includes AI analysis: explanation, suggested fix, confidence score
 
 ### Alert
 A notification sent to the merchant.

@@ -45,7 +45,6 @@ class AiIssueAnalyzer
     "wrong_price" => "missing_price",
     "broken_images" => "missing_images",
     "missing_images" => "missing_images",
-    "checkout_broken" => "checkout_broken",
     "variant_broken" => "variant_selection_broken",
     "layout_broken" => "js_error",
     "error_message" => "js_error"
@@ -114,16 +113,19 @@ class AiIssueAnalyzer
       3. Are product images loading correctly?
       4. Are there any error messages visible on the page?
       5. Is the layout broken or elements overlapping?
-      6. Are there any OTHER critical technical errors that would prevent buying?
 
-      IMPORTANT: Be precise. Only report issues you can actually see in the screenshot.
-      If everything looks fine, return an empty issues array.
+      IMPORTANT RULES:
+      - Be precise. Only report issues you can ACTUALLY SEE in the screenshot.
+      - If everything looks fine, return an empty issues array.
+      - Do NOT infer issues that aren't visible. A JavaScript error in the automated checks does NOT mean the page is broken.
+      - "atc_not_functional" should ONLY be used if the Add to Cart button is visually broken, greyed out, or you can see it clearly won't work. Do NOT use it just because automated checks mention JS errors.
+      - If automated checks already flagged an issue (e.g., JavaScript errors), do NOT re-report the same problem under a different, more severe type.
 
       Respond in JSON format only:
       {
         "issues": [
           {
-            "type": "missing_atc|atc_not_functional|missing_price|wrong_price|broken_images|missing_images|checkout_broken|variant_broken|layout_broken|error_message",
+            "type": "missing_atc|atc_not_functional|missing_price|wrong_price|broken_images|missing_images|variant_broken|layout_broken|error_message",
             "severity": "high|medium|low",
             "confidence": 0.0-1.0,
             "description": "what you see in the screenshot",

@@ -78,6 +78,24 @@
           console.log('Prowl: App Bridge initialized');
         }
       }
+
+      // Convert UTC timestamps to browser local time
+      document.querySelectorAll('time.local-time').forEach(function(el) {
+        var dt = new Date(el.getAttribute('datetime'));
+        if (isNaN(dt)) return;
+
+        if (el.classList.contains('local-time-date')) {
+          el.textContent = dt.toLocaleDateString(undefined, {
+            year: 'numeric', month: 'short', day: 'numeric'
+          });
+        } else {
+          el.textContent = dt.toLocaleDateString(undefined, {
+            year: 'numeric', month: 'long', day: 'numeric'
+          }) + ' at ' + dt.toLocaleTimeString(undefined, {
+            hour: '2-digit', minute: '2-digit'
+          });
+        }
+      });
     });
   </script>
 

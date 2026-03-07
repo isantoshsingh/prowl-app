@@ -21,6 +21,13 @@ class DetectionService
   SLOW_PAGE_THRESHOLD_MS = 5000 # 5 seconds
   CONFIDENCE_THRESHOLD = 0.7
 
+  # When a detector passes, also resolve related issue types that share the
+  # same root cause. Without this, funnel test types (e.g., atc_not_functional)
+  # stay open forever because no detector directly maps to them.
+  RELATED_RESOLUTION_MAP = {
+    "missing_add_to_cart" => %w[atc_not_functional]
+  }.freeze
+
   # Maps detector check names to issue types
   CHECK_TO_ISSUE_TYPE = {
     "add_to_cart" => "missing_add_to_cart",
@@ -121,6 +128,8 @@ class DetectionService
         end
       when "pass"
         resolve_existing_issue(issue_type)
+        # Also resolve related issue types (e.g., passing add_to_cart resolves atc_not_functional)
+        RELATED_RESOLUTION_MAP.fetch(issue_type, []).each { |related| resolve_existing_issue(related) }
       when "inconclusive"
         # Don't resolve or create - leave existing state unchanged
         Rails.logger.info("[DetectionService] Inconclusive result for #{check}, skipping")

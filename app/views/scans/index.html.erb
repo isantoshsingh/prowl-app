@@ -17,10 +17,9 @@
         <s-stack direction="block" gap="extra-tight">
           <strong><%= scan.product_page.title %></strong>
           <s-paragraph>
-            <% parts = ["Scan \##{scan.id}", scan.created_at.strftime("%B %d, %Y at %H:%M")] %>
-            <% parts << "#{(scan.page_load_time_ms / 1000.0).round(1)}s load time" if scan.page_load_time_ms %>
-            <% parts << "#{scan.issues.count} issue#{scan.issues.count == 1 ? '' : 's'} detected" if scan.issues.any? %>
-            <%= parts.join(' · ') %>
+            Scan #<%= scan.id %> &middot; <%= local_time(scan.created_at) %>
+            <% if scan.page_load_time_ms %> &middot; <%= (scan.page_load_time_ms / 1000.0).round(1) %>s load time<% end %>
+            <% if scan.issues.any? %> &middot; <%= scan.issues.count %> issue<%= scan.issues.count == 1 ? '' : 's' %> detected<% end %>
           </s-paragraph>
         </s-stack>
         <s-badge tone="<%= scan.status == 'completed' ? 'success' : (scan.status == 'failed' ? 'critical' : 'info') %>"><%= scan.status.capitalize %></s-badge>

@@ -39,7 +39,7 @@
 
       <s-stack direction="block" gap="extra-tight">
         <s-paragraph>Trial Expiration</s-paragraph>
-        <strong><%= @subscription.trial_ends_at.strftime("%b %d, %Y") %></strong>
+        <strong><%= local_time(@subscription.trial_ends_at, format: "%b %d, %Y", date_only: true) %></strong>
       </s-stack>
       <% end %>
 

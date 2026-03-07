@@ -66,9 +66,12 @@ No scan can:
 
 ## 🧠 AI Security (Phase 1)
 
-- Only public page data is sent to AI models
-- No merchant secrets or credentials
-- AI outputs are advisory only
+- Google Gemini 2.5 Flash used for issue analysis and visual confirmation
+- Only public page screenshots and programmatic detection results are sent to AI
+- No merchant secrets, credentials, or PII sent to AI
+- AI outputs are advisory only — used for issue confirmation and merchant explanations
+- AI is fail-open: if Gemini is unavailable, programmatic detection continues unaffected
+- AI-generated text (explanations, suggested fixes) is sanitized via `strip_tags` before display
 - No auto-fix or code writes in Phase 1
 
 ---

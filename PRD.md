@@ -53,12 +53,15 @@ Detect and alert merchants when their Shopify product pages (PDPs) break due to 
 ---
 
 ### 5.2 Scan Flow
-1. Solid Queue triggers scan
-2. Puppeteer loads PDP
-3. Capture errors, HTML, screenshot
-4. Detection engine runs
-5. Issues created
-6. Alert if severity = high
+1. Solid Queue triggers `ScanPdpJob`
+2. Headless browser (Browserless.io in production) loads PDP
+3. Capture errors, HTML, screenshot (uploaded to Cloudflare R2)
+4. Programmatic detectors run (ATC, JS errors, Liquid, price, images)
+5. Deep scans run purchase funnel test (variant → ATC → cart verify)
+6. AI page analysis via Gemini Flash (visual confirmation)
+7. Per-issue AI generates merchant explanations and suggested fixes
+8. Issues created/updated via smart merge (escalation/de-escalation)
+9. Alert if severity = high (immediately for AI-confirmed, after 2 scans otherwise)
 
 ---
 
@@ -108,12 +111,13 @@ Detect and alert merchants when their Shopify product pages (PDPs) break due to 
 
 ## 7. Technical Constraints
 
-- Must use Puppeteer Ruby gem
-- Must use Solid Queue
+- Must use puppeteer-ruby gem with Browserless.io in production
+- Must use Solid Queue (no Redis)
 - Must use Shopify Polaris Web Components
 - Must follow Shopify App Home UX guidelines
 - Must support 100 stores in MVP
-- Must scan under 30s per page
+- Must scan under 45s per page (60s for deep scans with funnel testing)
+- AI (Gemini) must be fail-open — never block detection or alerting
 
 ---
 
@@ -139,11 +143,12 @@ Detect and alert merchants when their Shopify product pages (PDPs) break due to 
 
 | Risk | Mitigation |
 |------|------------|
-| False positives | 2-scan confirmation |
-| Scan flakiness | Retry with backoff |
-| Merchant panic | Calm language |
-| Theme diversity | Rule-based + logs |
+| False positives | 2-scan confirmation + AI visual confirmation + related issue dedup |
+| Scan flakiness | Retry with backoff, network idle detection via Performance API |
+| Merchant panic | Calm language, AI-generated explanations |
+| Theme diversity | DOM-based detection + AI visual analysis + cart state polling |
 | App conflicts | Explain, don’t auto-fix |
+| Shopify platform JS noise | Ignore patterns for Shopify scripts (shop-js, WPM, monorail) |
 
 ---
 

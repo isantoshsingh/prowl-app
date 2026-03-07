@@ -6,6 +6,27 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [Unreleased] — Detection Reliability + Billing Fixes
+
+### Fixed
+
+- **False positive ATC on Horizon theme**: `wait_for_network_idle` was checking `document.readyState` (always 'complete' after page load), so it returned immediately after ATC click. Now tracks actual network activity via Performance API resource count. Also added cart state polling (up to 4 attempts with 1s delays) in the funnel test to handle themes with async cart updates.
+- **False `checkout_broken` from AI over-escalation**: AI was misinterpreting JS errors as checkout failures. Fixed the AI prompt to be explicit about type definitions, added `RELATED_ISSUE_GROUPS` in `ScanPipelineService` to prevent AI from creating duplicate escalated issues when programmatic detection already caught the root cause, and tightened `CRITICAL_PATTERNS` in `JavascriptErrorDetector` (removed overly broad patterns like `/product/i`, `/shopify/i`, `/form/i`).
+- **Rescan loader/polling not showing**: Race condition — the Scan record was created inside the job (in `ProductPageScanner`), but the page reloaded before the job started, so `@scanning` was false. Now creates the Scan record in the controller before enqueuing the job, and passes `scan_id` to the scanner. Also fixed `rescan` action using `scans.running` (only "running") instead of checking for both "pending" and "running".
+- **AI-only issue types never resolved**: When all detectors passed, `checkout_broken` and `atc_not_functional` were never resolved because no detector directly maps to them. Added `RELATED_RESOLUTION_MAP` so passing detectors also resolve related types (e.g., `missing_add_to_cart` pass resolves `atc_not_functional`).
+- **Shopify platform JS errors flagged as critical**: Errors from Shopify's own scripts (shop-js analytics, Web Pixel Manager, shop_events_listener, monorail telemetry) and headless browser noise (`net::ERR_FAILED`, `Failed to fetch`) were not filtered. Added these to `IGNORE_PATTERNS`.
+- **Billing redirect loop after charge approval**: `has_active_payment?` didn't process the `charge_id` callback param. After the merchant approved a charge, the local subscription cache was stale, so `check_billing` kept redirecting. Now immediately syncs the subscription via `SubscriptionSyncService` when `charge_id` is present.
+- **Stale `subscription_status: 'cancelled'` after reinstall**: The uninstall webhook sets `subscription_status` to 'cancelled', but `reinstall!` didn't reset it. New charge approval couldn't update it because the billing check loop prevented the app from loading. `reinstall!` now resets `subscription_status` to 'none'.
+
+### Changed
+
+- **`checkout_broken` disabled for phase 1**: Removed from `AI_ISSUE_TYPE_MAP` and AI prompt. No programmatic detector exists for it — was AI-only and caused false positives. Will be re-enabled in phase 2 with a proper checkout detector.
+- **Timestamps in browser local timezone**: All absolute timestamps (previously server-side UTC via `strftime`) now render as `<time>` elements with ISO 8601 `datetime` attributes, converted to the browser's local timezone via JavaScript. Added `local_time` helper in `ApplicationHelper`.
+- **`ProductPageScanner` accepts pre-created scan**: New `scan:` parameter allows passing an existing Scan record instead of always creating one (backward-compatible — creates one if not provided).
+- **`ScanPdpJob` accepts `scan_id:`**: Forwards pre-created scan to the scanner. Cleans up the scan record if the job skips (billing inactive, monitoring disabled).
+
+---
+
 ## [Unreleased] — Purchase Funnel Detection + AI Visual Confirmation
 
 ### Added

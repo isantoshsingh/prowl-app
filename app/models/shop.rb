@@ -123,12 +123,16 @@ class Shop < ActiveRecord::Base
     shop_owner.presence || shopify_domain
   end
 
-  # Marks shop as reinstalled
+  # Marks shop as reinstalled.
+  # Resets subscription_status so check_billing treats it as a fresh install
+  # (the uninstall webhook sets it to 'cancelled', which would otherwise persist).
   def reinstall!
     update!(
       installed: true,
       installed_at: installed_at || Time.current,
-      uninstalled_at: nil
+      uninstalled_at: nil,
+      subscription_status: "none",
+      subscription_plan: nil
     )
   end
 

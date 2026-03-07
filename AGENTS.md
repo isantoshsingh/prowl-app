@@ -12,7 +12,7 @@ Prowl is a Shopify embedded app that monitors product detail pages (PDPs) for br
 
 **Core value proposition:** Silent revenue loss detection. PDPs break due to app conflicts, theme changes, or frontend regressions. Merchants often don't notice until revenue drops. Prowl catches these breaks early by scanning pages with a headless browser and alerting merchants before customers are affected.
 
-**Phase 1 (MVP):** Confidence-scored detection with AI visual confirmation (Gemini Flash), purchase funnel testing (deep scans: variant selection → ATC → cart verification → cleanup), daily scanning, email + admin alerts, Polaris UI dashboard. Paid-only at $10/month with a 14-day free trial via the Shopify Billing API.
+**Phase 1 (MVP):** Confidence-scored detection with AI visual confirmation (Gemini Flash), daily scanning, email + admin alerts, Polaris UI dashboard. Paid-only at $10/month with a 14-day free trial via the Shopify Billing API. Phase 1 focuses on core structural checks (ATC button presence, price visibility, product images, Liquid errors). `checkout_broken` detection is disabled (AI-only, no programmatic detector — caused false positives). Will be re-enabled in phase 2 with a proper checkout detector.
 
 ---
 
@@ -225,7 +225,7 @@ CHANGELOG.md     # Release changelog
 
 5. **Shopify Polaris only.** The UI uses Shopify Polaris Web Components. Do not add Tailwind, Bootstrap, custom CSS frameworks, or React component libraries.
 
-6. **Do not modify billing logic** without explicit instruction. Billing is configured in `config/initializers/shopify_app.rb` and enforced in `AuthenticatedController#has_active_payment?`. Changes to pricing, trial days, or billing flow require explicit approval.
+6. **Do not modify billing logic** without explicit instruction. Billing is configured in `config/initializers/shopify_app.rb` and enforced in `AuthenticatedController#has_active_payment?`. The billing flow handles: (a) `charge_id` callback from Shopify after charge approval — syncs subscription via `SubscriptionSyncService`, (b) local cache check via `Shop#subscription_active?`, (c) fallback to Shopify API via the gem's `super(session)`. On reinstall, `Shop#reinstall!` resets `subscription_status` to 'none' to avoid stale 'cancelled' state from prior uninstall. Changes to pricing, trial days, or billing flow require explicit approval.
 
 7. **Backward compatibility on data models.** Do not rename or remove columns on `issues`, `scans`, `product_pages`, or `shops` without a migration plan. Existing scans and issues must remain queryable.
 

@@ -118,8 +118,17 @@ class ScanPipelineService
     ))
   end
 
+  # Issue types that share a root cause — if programmatic detection already found
+  # one type in this group, the AI shouldn't create a separate issue for another
+  # type in the same group.
+  RELATED_ISSUE_GROUPS = [
+    %w[js_error variant_selection_broken],
+    %w[missing_add_to_cart atc_not_functional]
+  ].freeze
+
   def process_ai_findings(findings)
     ai_issues = []
+    programmatic_types = issues.map(&:issue_type)
 
     findings.each do |finding|
       existing = issues.find { |i| i.issue_type == finding[:issue_type] }
@@ -127,6 +136,13 @@ class ScanPipelineService
       if existing
         confirm_existing_issue(existing, finding)
       elsif finding[:new_finding]
+        # Skip if programmatic detection already caught a related issue type
+        # (e.g., don't create checkout_broken when js_error already exists)
+        if related_issue_already_detected?(finding[:issue_type], programmatic_types)
+          Rails.logger.info("[ScanPipeline] Skipping AI finding #{finding[:issue_type]} — related issue already detected by programmatic checks")
+          next
+        end
+
         issue = create_ai_detected_issue(finding)
         ai_issues << issue if issue
       end
@@ -134,6 +150,12 @@ class ScanPipelineService
 
     issues.concat(ai_issues)
     product_page.update_status_from_issues! if ai_issues.any?
+  end
+
+  def related_issue_already_detected?(ai_type, programmatic_types)
+    RELATED_ISSUE_GROUPS.any? do |group|
+      group.include?(ai_type) && programmatic_types.any? { |pt| group.include?(pt) }
+    end
   end
 
   def confirm_existing_issue(issue, finding)

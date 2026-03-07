@@ -54,7 +54,7 @@
       </s-stack>
       <s-stack direction="block" gap="extra-tight">
         <s-paragraph>Scanned at</s-paragraph>
-        <strong><%= @scan.created_at.strftime("%B %d, %Y at %H:%M") %></strong>
+        <strong><%= local_time(@scan.created_at) %></strong>
       </s-stack>
     </s-grid>
   </s-section>
@@ -71,7 +71,7 @@
         onclick="document.getElementById('screenshot-modal-scan').showOverlay()"
       />
       <s-box paddingBlockStart="tight">
-        <s-paragraph>Captured during scan on <%= @scan.created_at.strftime("%B %d, %Y at %H:%M") %></s-paragraph>
+        <s-paragraph>Captured during scan on <%= local_time(@scan.created_at) %></s-paragraph>
       </s-box>
     </s-box>
   </s-section>

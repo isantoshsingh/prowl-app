@@ -24,11 +24,13 @@ Goal: Detect broken PDPs & alert merchants reliably.
 - App Home Page per Shopify UX guidelines
 
 ### Engineering
-- Rails Shopify app
-- Solid Queue background jobs
-- Puppeteer (Ruby gem) scanning
-- Rule-based detection engine
-- Screenshot storage
+- Rails Shopify app (single Heroku dyno)
+- Solid Queue background jobs (in-process via Puma plugin, no Redis)
+- puppeteer-ruby + Browserless.io cloud browser scanning
+- Three-layer detection engine (programmatic → AI page analysis → per-issue AI)
+- Google Gemini 2.5 Flash for visual confirmation and merchant explanations
+- Purchase funnel testing (deep scans: variant → ATC → cart verify → cleanup)
+- Cloudflare R2 screenshot storage
 - Scan logs & audit trail
 
 ### Success Criteria
@@ -52,8 +54,9 @@ Goal: Become the default store monitoring app.
 ### Product
 - Real-time monitoring (10–30 min)
 - Theme integrity monitoring
-- AI visual breakage detection
-- AI explanation engine
+- ~~AI visual breakage detection~~ *(shipped in Phase 1)*
+- ~~AI explanation engine~~ *(shipped in Phase 1)*
+- Checkout flow detection (re-enable `checkout_broken` with proper detector)
 - App conflict intelligence
 - Revenue loss estimator
 - Slack & WhatsApp alerts
@@ -64,10 +67,11 @@ Goal: Become the default store monitoring app.
 ### Engineering
 - Scan worker sharding
 - Queue prioritization
-- Vision AI pipeline
+- ~~Vision AI pipeline~~ *(shipped in Phase 1 via Gemini Flash)*
 - Diff engine for theme changes
 - AI fix suggestions
 - Screenshot comparison engine
+- Checkout flow detector (programmatic)
 - Performance optimizations
 
 ### Success Criteria

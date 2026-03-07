@@ -190,10 +190,14 @@ class ProductPagesController < AuthenticatedController
   end
 
   def rescan
-    if @product_page.scans.running.any?
+    if @product_page.scans.where(status: %w[pending running]).any?
       flash[:notice] = "A scan is already in progress for this page."
     else
-      ScanPdpJob.perform_later(@product_page.id, scan_depth: "deep")
+      # Create the scan record NOW so the UI can detect it immediately.
+      # Without this, there's a race condition: the job hasn't started yet when
+      # the page reloads, so @scanning is false and no loader/polling appears.
+      scan = @product_page.scans.create!(status: "pending", scan_depth: "deep")
+      ScanPdpJob.perform_later(@product_page.id, scan_depth: "deep", scan_id: scan.id)
       flash[:success] = "Deep scan started for #{@product_page.title}."
     end
 

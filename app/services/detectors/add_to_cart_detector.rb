@@ -222,9 +222,20 @@ module Detectors
         )
       end
 
-      # Read cart state after ATC
-      cart_after = browser_service.read_cart_state
-      item_added = cart_after[:item_count] > cart_before[:item_count]
+      # Poll cart state — some themes (e.g., Horizon) have an async delay between
+      # ATC click and cart update due to animations or debounced AJAX requests.
+      # Retry up to 4 times (with 1s delays) before concluding the item wasn't added.
+      cart_after = nil
+      item_added = false
+      max_poll_attempts = 4
+
+      max_poll_attempts.times do |attempt|
+        cart_after = browser_service.read_cart_state
+        item_added = cart_after[:item_count] > cart_before[:item_count]
+        break if item_added
+        break if attempt == max_poll_attempts - 1
+        sleep(1.0)
+      end
 
       # Cleanup: remove the item we added
       if item_added && cart_after[:items].present?
