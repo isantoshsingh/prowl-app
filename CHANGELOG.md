@@ -6,6 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [Unreleased] — Merchant & Support Documentation
+
+### Added
+
+- **Merchant guide** (`docs/merchant-guide.md`): End-to-end guide covering onboarding, dashboard usage, detector explanations (Add to Cart, Price Visibility, Product Images, JavaScript Errors, Liquid Errors), issue management (severity levels, confidence scoring, AI confirmation, acknowledging), settings configuration, and scanning behavior (scheduled, manual, deep scans).
+- **Support & troubleshooting guide** (`docs/troubleshooting.md`): Technical support reference covering the scanning pipeline, step-by-step fixes for each issue type, alert and scan troubleshooting, detector-specific false positive guidance, and a merchant FAQ.
+
+---
+
 ## [Unreleased] — Detection Reliability + Billing Fixes
 
 ### Fixed
