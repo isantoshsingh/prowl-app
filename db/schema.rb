@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_03_02_000001) do
+ActiveRecord::Schema[8.1].define(version: 2026_03_08_114200) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -19,13 +19,15 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_02_000001) do
     t.datetime "created_at", null: false
     t.string "delivery_status", default: "pending", null: false
     t.bigint "issue_id", null: false
+    t.bigint "scan_id"
     t.datetime "sent_at"
     t.bigint "shop_id", null: false
     t.datetime "updated_at", null: false
     t.index ["alert_type"], name: "index_alerts_on_alert_type"
     t.index ["delivery_status"], name: "index_alerts_on_delivery_status"
     t.index ["issue_id"], name: "index_alerts_on_issue_id"
-    t.index ["shop_id", "issue_id", "alert_type"], name: "index_alerts_on_shop_issue_and_type", unique: true
+    t.index ["scan_id"], name: "index_alerts_on_scan_id"
+    t.index ["shop_id", "issue_id", "alert_type"], name: "index_alerts_on_shop_issue_type"
     t.index ["shop_id"], name: "index_alerts_on_shop_id"
   end
 
@@ -298,6 +300,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_02_000001) do
   end
 
   add_foreign_key "alerts", "issues"
+  add_foreign_key "alerts", "scans"
   add_foreign_key "alerts", "shops"
   add_foreign_key "issues", "product_pages"
   add_foreign_key "issues", "scans"

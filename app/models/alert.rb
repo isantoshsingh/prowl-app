@@ -1,7 +1,8 @@
 # frozen_string_literal: true
 
 # Alert represents a notification sent to a merchant about an issue.
-# Alerts are only sent for high severity issues that persist across 2+ scans.
+# Alerts are created per-scan: if the same issue persists across multiple scans,
+# the merchant gets a new alert each time (unless they acknowledge the issue).
 #
 # Alert types:
 #   - email: Email sent to shop owner
@@ -16,11 +17,12 @@ class Alert < ApplicationRecord
   # Associations
   belongs_to :shop
   belongs_to :issue
+  belongs_to :scan
 
   # Validations
   validates :alert_type, inclusion: { in: %w[email admin] }
   validates :delivery_status, inclusion: { in: %w[pending sent failed] }
-  validates :issue_id, uniqueness: { scope: [:shop_id, :alert_type], message: "already alerted for this issue" }
+  validates :issue_id, uniqueness: { scope: [:shop_id, :alert_type, :scan_id], message: "already alerted for this issue in this scan" }
 
   # Scopes
   scope :email_alerts, -> { where(alert_type: "email") }

@@ -83,7 +83,7 @@ class ScanPipelineService
     return if alertable.empty?
 
     begin
-      AlertService.new(alertable).perform
+      AlertService.new(alertable, scan: scan).perform
     rescue StandardError => e
       Rails.logger.error("[ScanPipeline] AlertService failed: #{e.message}")
     end

@@ -56,7 +56,6 @@ class Issue < ApplicationRecord
   scope :alertable, -> {
     open.high_severity
       .where("occurrence_count >= ? OR ai_confirmed = ?", 2, true)
-      .left_joins(:alerts).where(alerts: { id: nil })
   }
 
 # Issue type configuration
@@ -184,12 +183,15 @@ class Issue < ApplicationRecord
     end
   end
 
-  # Checks if this issue should trigger an alert.
+  # Checks if this issue should trigger an alert for the current scan.
   # Two paths to alerting:
   #   1. AI-confirmed: alert immediately on first occurrence (high confidence)
   #   2. No AI confirmation: wait for 2 occurrences to avoid false positives
+  #
+  # Acknowledged issues are silenced — the merchant opted out.
+  # Dedup within a single scan is handled by AlertService (scan-scoped Alert records).
   def should_alert?
-    return false unless open? && high_severity? && alerts.none?
+    return false unless open? && high_severity?
 
     # If AI confirmed the issue, trust it on first scan
     return true if ai_confirmed?
