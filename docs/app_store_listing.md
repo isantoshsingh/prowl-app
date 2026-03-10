@@ -245,10 +245,11 @@ Full access to all features during your trial — daily monitoring, AI detection
 
 | Field | Value |
 |---|---|
-| **Support Email** | _(your support email)_ |
-| **Support Website / FAQ** | _(your support/FAQ URL)_ |
-| **Privacy Policy URL** | _(your privacy policy URL — app has /privacy route)_ |
-| **Review Notification Email** | _(your email for Shopify review updates)_ |
+| **Support Email** | prowl@lucyapps.com |
+| **Support Website / FAQ** | https://prowl.lucyapps.com/support |
+| **Privacy Policy URL** | https://prowl.lucyapps.com/privacy |
+| **Review Notification Email** | daasoftwares@gmail.com |
+| **App Submission Contact** | daasoftwares@gmail.com |
 
 ---
 

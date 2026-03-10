@@ -1,0 +1,65 @@
+<% content_for :title, "Contact Support" %>
+<% content_for :meta_description, "Get in touch with the Prowl support team. We respond to all inquiries within 24 hours." %>
+
+<div class="support-hero">
+  <h1>Contact support</h1>
+  <p>Send us a message and we'll get back to you within 24 hours.</p>
+</div>
+
+<div class="support-content">
+  <div class="support-section">
+    <h2>Send us a message</h2>
+
+    <%= form_with url: support_submit_contact_path, method: :post, class: "contact-form", local: true do |f| %>
+      <div class="form-group">
+        <label for="name">Your name *</label>
+        <input type="text" name="name" id="name" required placeholder="Jane Smith" value="<%= params[:name] %>">
+      </div>
+
+      <div class="form-group">
+        <label for="email">Email address *</label>
+        <input type="email" name="email" id="email" required placeholder="you@example.com" value="<%= params[:email] %>">
+        <span class="form-hint">We'll reply to this address.</span>
+      </div>
+
+      <div class="form-group">
+        <label for="store_url">Shopify store URL</label>
+        <input type="text" name="store_url" id="store_url" placeholder="your-store.myshopify.com" value="<%= params[:store_url] %>">
+        <span class="form-hint">Optional — helps us look up your account faster.</span>
+      </div>
+
+      <div class="form-group">
+        <label for="subject">Subject *</label>
+        <select name="subject" id="subject" required>
+          <option value="" disabled <%= 'selected' unless params[:subject].present? %>>Select a topic</option>
+          <option value="Setup help" <%= 'selected' if params[:subject] == 'Setup help' %>>Setup help</option>
+          <option value="Scan issue" <%= 'selected' if params[:subject] == 'Scan issue' %>>Scan not working correctly</option>
+          <option value="False alert" <%= 'selected' if params[:subject] == 'False alert' %>>False alert / incorrect detection</option>
+          <option value="Billing question" <%= 'selected' if params[:subject] == 'Billing question' %>>Billing question</option>
+          <option value="Feature request" <%= 'selected' if params[:subject] == 'Feature request' %>>Feature request</option>
+          <option value="Bug report" <%= 'selected' if params[:subject] == 'Bug report' %>>Bug report</option>
+          <option value="Other" <%= 'selected' if params[:subject] == 'Other' %>>Other</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="message">Message *</label>
+        <textarea name="message" id="message" required placeholder="Describe your issue or question in detail..."><%= params[:message] %></textarea>
+      </div>
+
+      <button type="submit" class="btn-submit">Send message</button>
+    <% end %>
+  </div>
+
+  <div class="support-section">
+    <h2>Other ways to reach us</h2>
+
+    <h3>Email directly</h3>
+    <p>
+      <a href="mailto:prowl@lucyapps.com" style="font-weight: 600;">prowl@lucyapps.com</a>
+    </p>
+
+    <h3>Response time</h3>
+    <p>We respond to all inquiries within 24 hours during business days.</p>
+  </div>
+</div>

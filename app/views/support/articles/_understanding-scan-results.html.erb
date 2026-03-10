@@ -1,0 +1,35 @@
+<h2>Page statuses</h2>
+<p>Each monitored product page has a status based on its most recent scan:</p>
+<ul>
+  <li><strong>Healthy</strong> — No issues found. Everything is working as expected.</li>
+  <li><strong>Warning</strong> — Medium or low severity issues found. These may not block purchases but are worth reviewing.</li>
+  <li><strong>Critical</strong> — High severity issues found. These likely prevent customers from completing a purchase.</li>
+  <li><strong>Pending</strong> — The page hasn't been scanned yet.</li>
+  <li><strong>Error</strong> — The scan couldn't complete (e.g., the page didn't load).</li>
+</ul>
+
+<h2>Scan types</h2>
+<p>Prowl runs two types of scans:</p>
+<ul>
+  <li><strong>Quick scans</strong> — Run daily. Check for structural issues like missing buttons, broken images, and JavaScript errors (~45 seconds).</li>
+  <li><strong>Deep scans</strong> — Include full purchase flow testing (variant selection, Add to Cart click, cart verification). Run on first scan, when critical issues are open, and weekly on Mondays (~60 seconds).</li>
+</ul>
+
+<h2>Reading an issue</h2>
+<p>Click on any issue to see its full details:</p>
+<ul>
+  <li><strong>Screenshot</strong> — A capture of your product page at the time the issue was detected.</li>
+  <li><strong>Explanation</strong> — A plain-language description of what went wrong.</li>
+  <li><strong>Suggested fix</strong> — A recommended action to resolve the issue.</li>
+  <li><strong>Severity</strong> — High, Medium, or Low, based on the issue's impact on purchases.</li>
+  <li><strong>Confidence</strong> — How certain Prowl is that this is a real issue (higher = more certain).</li>
+  <li><strong>Occurrences</strong> — How many scans have detected this issue.</li>
+</ul>
+
+<h2>Issue resolution</h2>
+<p>
+  Issues are automatically resolved when a subsequent scan no longer detects the problem. You don't need to manually close issues — fix the problem on your store, and Prowl will confirm it's resolved on the next scan.
+</p>
+<p>
+  You can also <strong>acknowledge</strong> an issue to stop receiving alert emails about it while you work on a fix.
+</p>
