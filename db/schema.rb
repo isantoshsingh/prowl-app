@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_03_08_114200) do
+ActiveRecord::Schema[8.1].define(version: 2026_03_08_113938) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -27,7 +27,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_03_08_114200) do
     t.index ["delivery_status"], name: "index_alerts_on_delivery_status"
     t.index ["issue_id"], name: "index_alerts_on_issue_id"
     t.index ["scan_id"], name: "index_alerts_on_scan_id"
-    t.index ["shop_id", "issue_id", "alert_type"], name: "index_alerts_on_shop_issue_type"
+    t.index ["shop_id", "issue_id", "alert_type", "scan_id"], name: "index_alerts_on_shop_issue_type_scan", unique: true
     t.index ["shop_id"], name: "index_alerts_on_shop_id"
   end
 
