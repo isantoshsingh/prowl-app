@@ -1,0 +1,16 @@
+<% content_for :title, @article[:title] %>
+
+<div class="support-hero" style="padding-bottom: 40px;">
+  <p style="margin-bottom: 8px;"><a href="/support" style="color: #cbd5e0;">&larr; Back to Support</a></p>
+  <h1><%= @article[:title] %></h1>
+</div>
+
+<div class="support-content">
+  <div class="support-section">
+    <%= render "support/articles/#{@slug}" %>
+  </div>
+
+  <div class="support-section" style="text-align: center;">
+    <p style="color: #6d7175;">Need more help? <a href="/support/contact">Contact support</a></p>
+  </div>
+</div>

@@ -1,0 +1,27 @@
+<h2>New Support Request</h2>
+
+<table style="border-collapse: collapse; width: 100%;">
+  <tr>
+    <td style="padding: 8px 12px; font-weight: bold; vertical-align: top; width: 120px;">Name:</td>
+    <td style="padding: 8px 12px;"><%= @name %></td>
+  </tr>
+  <tr>
+    <td style="padding: 8px 12px; font-weight: bold; vertical-align: top;">Email:</td>
+    <td style="padding: 8px 12px;"><%= @email %></td>
+  </tr>
+  <% if @store_url.present? %>
+  <tr>
+    <td style="padding: 8px 12px; font-weight: bold; vertical-align: top;">Store URL:</td>
+    <td style="padding: 8px 12px;"><%= @store_url %></td>
+  </tr>
+  <% end %>
+  <tr>
+    <td style="padding: 8px 12px; font-weight: bold; vertical-align: top;">Subject:</td>
+    <td style="padding: 8px 12px;"><%= @subject %></td>
+  </tr>
+</table>
+
+<hr style="margin: 16px 0; border: none; border-top: 1px solid #e1e3e5;">
+
+<h3>Message</h3>
+<p style="white-space: pre-wrap;"><%= @message %></p>

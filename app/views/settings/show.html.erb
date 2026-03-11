@@ -35,6 +35,20 @@
   </s-box>
 </form>
 
+<s-box paddingBlockStart="base">
+  <s-section heading="Help and support">
+    <s-stack direction="block" gap="base">
+      <p>Need help with Prowl? Visit our support center for FAQs, guides, and troubleshooting.</p>
+      <s-stack direction="inline" gap="base">
+        <s-link href="/support" target="_blank">Support center</s-link>
+        <s-link href="/support/faq" target="_blank">FAQ</s-link>
+        <s-link href="/support/contact" target="_blank">Contact us</s-link>
+        <s-link href="/privacy" target="_blank">Privacy policy</s-link>
+      </s-stack>
+    </s-stack>
+  </s-section>
+</s-box>
+
 <% content_for :javascript do %>
 <script>
   document.getElementById('settings-form').addEventListener('submit', async function(e) {
