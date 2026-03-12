@@ -150,10 +150,12 @@ class BrowserService
         response = @page.goto(url, wait_until: "networkidle2", timeout: @options[:page_timeout_ms])
 
         end_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-        @page_load_time_ms = ((end_time - start_time) * 1000).to_i
+        wall_clock_time_ms = ((end_time - start_time) * 1000).to_i
 
         # Wait for additional JS execution after network idle
         sleep(1)
+
+        capture_browser_load_time(wall_clock_time_ms)
 
         status_code = response&.status || 0
 
@@ -174,7 +176,9 @@ class BrowserService
         }
       rescue Puppeteer::TimeoutError
         end_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-        @page_load_time_ms = ((end_time - start_time) * 1000).to_i
+        wall_clock_time_ms = ((end_time - start_time) * 1000).to_i
+
+        capture_browser_load_time(wall_clock_time_ms)
 
         # Page didn't fully settle but may still be usable - check if content loaded
         if page_has_content?
@@ -512,6 +516,31 @@ class BrowserService
   end
 
   private
+
+  # Captures the actual browser load time from the Navigation Timing API
+  def capture_browser_load_time(wall_clock_time_ms)
+    metrics = evaluate_script(<<~JS)
+      () => {
+        const nav = performance.getEntriesByType('navigation')[0];
+        if (!nav) return { domContentLoadedEventEnd: 0, loadEventEnd: 0 };
+        return {
+          domContentLoadedEventEnd: Math.round(nav.domContentLoadedEventEnd),
+          loadEventEnd: Math.round(nav.loadEventEnd)
+        };
+      }
+    JS
+
+    if metrics && metrics["domContentLoadedEventEnd"].to_i > 0
+      @page_load_time_ms = metrics["domContentLoadedEventEnd"].to_i
+      Rails.logger.info("[BrowserService] Load time: Browser=#{@page_load_time_ms}ms, Wall clock=#{wall_clock_time_ms}ms (Diff: #{wall_clock_time_ms - @page_load_time_ms}ms)")
+    else
+      @page_load_time_ms = wall_clock_time_ms
+      Rails.logger.info("[BrowserService] Load time: Wall clock=#{wall_clock_time_ms}ms (Browser metrics unavailable)")
+    end
+  rescue StandardError => e
+    @page_load_time_ms = wall_clock_time_ms
+    Rails.logger.warn("[BrowserService] Error capturing browser metrics, using wall clock: #{e.message}")
+  end
 
   # Waits for network activity to settle by polling for idle state.
   # Tracks resource count via Performance API to detect when new requests
