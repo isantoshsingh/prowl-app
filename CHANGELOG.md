@@ -27,7 +27,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - **Shopify platform JS errors flagged as critical**: Errors from Shopify's own scripts (shop-js analytics, Web Pixel Manager, shop_events_listener, monorail telemetry) and headless browser noise (`net::ERR_FAILED`, `Failed to fetch`) were not filtered. Added these to `IGNORE_PATTERNS`.
 - **Billing redirect loop after charge approval**: `has_active_payment?` didn't process the `charge_id` callback param. After the merchant approved a charge, the local subscription cache was stale, so `check_billing` kept redirecting. Now immediately syncs the subscription via `SubscriptionSyncService` when `charge_id` is present.
 - **Stale `subscription_status: 'cancelled'` after reinstall**: The uninstall webhook sets `subscription_status` to 'cancelled', but `reinstall!` didn't reset it. New charge approval couldn't update it because the billing check loop prevented the app from loading. `reinstall!` now resets `subscription_status` to 'none'.
-- **Scanner seeing stale theme data**: Added cache-busting query parameters (`_nocache`) and explicit `Cache-Control` network interception headers to `BrowserService` to bypass Shopify Edge CDN and Chrome internal caching. This ensures Prowl always scans the freshest published theme version.
+
 ### Changed
 
 - **`checkout_broken` disabled for phase 1**: Removed from `AI_ISSUE_TYPE_MAP` and AI prompt. No programmatic detector exists for it — was AI-only and caused false positives. Will be re-enabled in phase 2 with a proper checkout detector.

@@ -143,16 +143,11 @@ class BrowserService
     retries = 0
     last_error = nil
 
-    # Append a cache-busting query parameter to bypass Shopify Edge CDN cache
-    # e.g., ?_nocache=1700000000 or &_nocache=1700000000
-    cache_buster = "_nocache=#{Time.current.to_i}"
-    busted_url = url.include?("?") ? "#{url}&#{cache_buster}" : "#{url}?#{cache_buster}"
-
     while retries <= MAX_NAVIGATION_RETRIES
       begin
         start_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
 
-        response = @page.goto(busted_url, wait_until: "networkidle2", timeout: @options[:page_timeout_ms])
+        response = @page.goto(url, wait_until: "networkidle2", timeout: @options[:page_timeout_ms])
 
         end_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
         wall_clock_time_ms = ((end_time - start_time) * 1000).to_i
@@ -613,7 +608,6 @@ class BrowserService
   def setup_new_page
     @page&.close rescue nil
     @page = @browser.new_page
-
     configure_page
     setup_event_listeners
     setup_request_interception if @options[:block_unnecessary_resources]
@@ -692,13 +686,7 @@ class BrowserService
       if should_block_request?(request.resource_type, url)
         request.abort
       else
-        # Append cache-busting headers to every request
-        headers = request.headers.merge({
-          "Cache-Control" => "no-cache, no-store, must-revalidate",
-          "Pragma" => "no-cache",
-          "Expires" => "0"
-        })
-        request.continue(headers: headers)
+        request.continue
       end
     end
   rescue StandardError => e
