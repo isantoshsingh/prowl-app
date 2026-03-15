@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [Unreleased] — Scan UX Improvements
+
+### Fixed
+
+- **No loading indicators after adding products**: Adding products via the Resource Picker queued background scans but the index page showed no spinners, banners, or polling — the page just displayed stale "Pending" badges. Now pre-creates a `pending` scan record in the `create` action (same pattern as the Rescan button), renders a global "Scans in progress" info banner with spinner, replaces per-row status badges with "Scanning…" indicators and disables the Rescan button, and polls each page's status endpoint every 3 seconds to auto-reload once all scans complete.
+
+---
+
 ## [Unreleased] — Merchant & Support Documentation
 
 ### Added

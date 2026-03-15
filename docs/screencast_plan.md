@@ -65,9 +65,13 @@ Before recording, make sure your demo store has:
 
 **Action**: Select 2–3 products → click "Add"
 
-**Screen**: Product Pages list appears with products showing "Pending" status
+**Screen**: Product Pages list appears with scanning indicators — spinner + "Scanning…" badge on each row, global "Scans in progress" banner at top
 
-> "Your pages are now being tracked. You can monitor up to 3 products."
+> "Your pages are now being scanned. You'll see a live scanning indicator while Prowl checks each page. You can monitor up to 3 products."
+
+**Screen**: After ~30–60 seconds, page auto-refreshes → status updates to "Healthy" or shows detected issues
+
+> "Once the scan completes, the page refreshes automatically and you'll see the results."
 
 ---
 

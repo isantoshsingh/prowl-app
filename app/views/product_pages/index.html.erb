@@ -8,12 +8,28 @@
   <s-badge slot="accessory" tone="info"><%= @product_pages_count %>/<%= @shop_setting&.max_monitored_pages || Shop::MAX_MONITORED_PAGES %></s-badge>
 </s-page>
 
+<% if @any_scanning %>
+<%# Scanning banner — shown when any product has a scan in-progress %>
+<s-box paddingBlockEnd="base">
+  <s-banner tone="info" id="scanning-banner">
+    <s-stack direction="inline" alignItems="center" gap="base">
+      <s-spinner accessibilityLabel="Scans in progress"></s-spinner>
+      <s-stack direction="block" gap="extra-tight">
+        <strong>Scans in progress</strong>
+        <s-paragraph>Your pages are being scanned. Results will appear automatically when complete.</s-paragraph>
+      </s-stack>
+    </s-stack>
+  </s-banner>
+</s-box>
+<% end %>
+
 <% if @product_pages_count > 0 %>
 <%# Product list - Thumbnail | Title | Status | Actions %>
 <s-section>
   <s-stack gap="none">
     <% @product_pages.each do |page| %>
-    <s-box border="base" padding="base">
+    <% page_scanning = @scanning_page_ids.include?(page.id) %>
+    <s-box border="base" padding="base" data-page-id="<%= page.id %>" data-status-url="<%= status_product_page_path(page, host: @host) %>">
       <s-grid gridTemplateColumns="auto 1fr auto auto" gap="base" alignItems="center">
         <%# Thumbnail + Title (clickable) %>
         <s-link href="<%= product_page_path(page, host: @host) %>">
@@ -24,15 +40,22 @@
           <%= page.title %>
         </s-link>
 
-        <%# Status badge %>
+        <%# Status badge or scanning indicator %>
+        <% if page_scanning %>
+        <s-stack direction="inline" gap="tight" alignItems="center">
+          <s-spinner size="small" accessibilityLabel="Scanning"></s-spinner>
+          <s-badge tone="info">Scanning…</s-badge>
+        </s-stack>
+        <% else %>
         <s-badge tone="<%= page.status == 'healthy' ? 'success' : (page.status == 'critical' ? 'critical' : (page.status == 'warning' ? 'attention' : 'info')) %>">
           <%= page.status.capitalize %>
         </s-badge>
+        <% end %>
 
         <%# Action buttons %>
         <s-stack direction="inline" gap="tight">
           <s-button href="<%= product_page_path(page, host: @host) %>">View</s-button>
-          <s-button onclick="rescanProduct(this, '<%= rescan_product_page_path(page, host: @host) %>', '<%= product_page_path(page, host: @host) %>')">Rescan</s-button>
+          <s-button <%= 'disabled loading' if page_scanning %> onclick="rescanProduct(this, '<%= rescan_product_page_path(page, host: @host) %>', '<%= product_page_path(page, host: @host) %>')">Rescan</s-button>
           <s-button tone="critical" onclick="deleteProduct('<%= product_page_path(page, host: @host) %>', '<%= page.title %>')">Remove</s-button>
         </s-stack>
       </s-grid>
@@ -77,8 +100,8 @@
 <% end %>
 
 
-<!-- Store data for JavaScript (Resource Picker) -->
-<div id="picker-config" data-create-url="<%= product_pages_path %>" data-redirect-url="<%= product_pages_path(host: @host) %>" data-monitored-gids="<%= @monitored_product_gids.to_json %>" data-max-selections="<%= @remaining_slots %>" data-csrf-token="<%= form_authenticity_token %>" style="display: none;">
+<!-- Store data for JavaScript (Resource Picker + Scan Polling) -->
+<div id="picker-config" data-create-url="<%= product_pages_path %>" data-redirect-url="<%= product_pages_path(host: @host) %>" data-monitored-gids="<%= @monitored_product_gids.to_json %>" data-max-selections="<%= @remaining_slots %>" data-csrf-token="<%= form_authenticity_token %>" data-any-scanning="<%= @any_scanning %>" data-scanning-page-ids="<%= @scanning_page_ids.to_json %>" style="display: none;">
 </div>
 
 <% content_for :javascript do %>
@@ -291,5 +314,78 @@
       });
     });
   });
+
+  // ── Scan progress polling (for pages with active scans) ─────────────────
+  (function() {
+    const config = document.getElementById('picker-config');
+    const anyScanning = config.dataset.anyScanning === 'true';
+    if (!anyScanning) return;
+
+    const scanningPageIds = JSON.parse(config.dataset.scanningPageIds || '[]');
+    if (scanningPageIds.length === 0) return;
+
+    const POLL_INTERVAL_MS = 3000;
+    const MAX_POLL_MS = 120000;
+    let elapsed = 0;
+    let pollTimer;
+
+    // Build status URLs from the per-row data attributes
+    const statusUrls = {};
+    scanningPageIds.forEach(function(pageId) {
+      const row = document.querySelector(`[data-page-id="${pageId}"]`);
+      if (row) statusUrls[pageId] = row.dataset.statusUrl;
+    });
+
+    const stillScanning = new Set(scanningPageIds);
+
+    async function pollScanStatus() {
+      try {
+        const headers = { 'Accept': 'application/json' };
+        try {
+          const token = await shopify.idToken();
+          if (token) headers['Authorization'] = `Bearer ${token}`;
+        } catch (e) {
+          console.warn('idToken failed for scan poll:', e);
+        }
+
+        const checks = Array.from(stillScanning).map(async function(pageId) {
+          const url = statusUrls[pageId];
+          if (!url) return;
+
+          try {
+            const resp = await fetch(url, { headers, credentials: 'same-origin' });
+            if (!resp.ok) return;
+            const data = await resp.json();
+            if (!data.scanning) stillScanning.delete(pageId);
+          } catch (e) {
+            console.warn(`Poll error for page ${pageId}:`, e);
+          }
+        });
+
+        await Promise.all(checks);
+
+        if (stillScanning.size === 0) {
+          clearInterval(pollTimer);
+          shopify.toast.show('Scans complete! Refreshing…', { duration: 2000 });
+          setTimeout(function() { window.location.reload(); }, 800);
+          return;
+        }
+      } catch (e) {
+        console.warn('Scan poll error:', e);
+      }
+
+      elapsed += POLL_INTERVAL_MS;
+      if (elapsed >= MAX_POLL_MS) {
+        clearInterval(pollTimer);
+        shopify.toast.show(
+          'Scans are taking longer than expected. Refresh to check results.',
+          { duration: 6000 }
+        );
+      }
+    }
+
+    pollScanStatus();
+    pollTimer = setInterval(pollScanStatus, POLL_INTERVAL_MS);
+  })();
 </script>
 <% end %>

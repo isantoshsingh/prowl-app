@@ -38,6 +38,11 @@ class ProductPagesController < AuthenticatedController
                                   .group(:product_page_id)
                                   .count
 
+    # Detect which pages have scans in-progress (for scanning indicators)
+    @scanning_page_ids = Scan.where(product_page_id: product_page_ids, status: %w[pending running])
+                             .pluck(:product_page_id).uniq
+    @any_scanning = @scanning_page_ids.any?
+
     @host = params[:host]
   end
 
@@ -108,7 +113,8 @@ class ProductPagesController < AuthenticatedController
       if existing_deleted
         Rails.logger.info("[ProductPagesController#create] Restoring soft-deleted product page #{existing_deleted.id} for #{title}")
         existing_deleted.update!(deleted_at: nil, monitoring_enabled: true, status: "pending", title: title, image_url: image_url)
-        ScanPdpJob.perform_later(existing_deleted.id)
+        scan = existing_deleted.scans.create!(status: "pending", scan_depth: "deep")
+        ScanPdpJob.perform_later(existing_deleted.id, scan_depth: "deep", scan_id: scan.id)
         created_count += 1
         created_products << { id: existing_deleted.id, title: title }
         next
@@ -126,8 +132,9 @@ class ProductPagesController < AuthenticatedController
 
       if product_page.save
         Rails.logger.info("[ProductPagesController#create] Created product page #{product_page.id} for #{title}")
-        # Queue initial scan
-        ScanPdpJob.perform_later(product_page.id)
+        # Queue initial scan — pre-create the scan record so the UI can detect it immediately
+        scan = product_page.scans.create!(status: "pending", scan_depth: "deep")
+        ScanPdpJob.perform_later(product_page.id, scan_depth: "deep", scan_id: scan.id)
         created_count += 1
         created_products << { id: product_page.id, title: title }
       else
