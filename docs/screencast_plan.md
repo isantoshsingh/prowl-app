@@ -1,7 +1,8 @@
-# Prowl — Screencast Plan (YouTube / App Store Submission)
+# Prowl — Screencast Plan (Shopify App Review Submission)
 
 **Target length**: 4–5 minutes
 **Format**: Screen recording of the Shopify admin with Prowl installed
+**Audience**: Shopify App Review Team
 **Audio**: Voiceover narration (calm, clear, conversational tone)
 **Resolution**: 1920×1080 (16:9), 60fps
 **Background music**: Light, unobtrusive ambient track (low volume under voiceover)
@@ -31,9 +32,9 @@ Before recording, make sure your demo store has:
 **Screen**: Static split-screen or text card before the app
 
 > **Voiceover**:
-> "Your product pages can break without anyone noticing — a missing Add to Cart button, a broken variant selector, images that won't load. Your site looks fine from the outside, but customers can't buy. Prowl catches these problems before your customers leave."
+> "Hi, thanks for reviewing Prowl. Prowl is a product page monitoring app that detects silent failures on Shopify storefronts — things like a missing Add to Cart button, broken variant selectors, or images that won't load. In this video, we'll walk you through every feature of the app."
 
-**Visual**: Brief text overlay: *"Silent breaks cost you sales every day."*
+**Visual**: Brief text overlay: *"Product Page Monitoring for Shopify"*
 
 ---
 
@@ -42,15 +43,15 @@ Before recording, make sure your demo store has:
 **Screen**: Shopify App Store → Prowl listing → "Add app" → Approve permissions
 
 > **Voiceover**:
-> "Installing Prowl takes about 30 seconds. It only requests read-only access to your product catalog — it never modifies your store."
+> "Installation takes about 30 seconds. The app only requests read-only access to the product catalog — it never modifies the store."
 
 **Screen**: Prowl opens → Billing approval screen ($10/month, 14-day free trial) → Approve
 
-> "You get a full 14-day free trial with no limitations. Every feature is available from day one."
+> "Merchants get a full 14-day free trial with no limitations. Every feature is available from day one."
 
 **Screen**: Onboarding setup guide appears (3-step checklist)
 
-> "Once installed, the setup guide walks you through three steps: add your products, run your first scan, and configure your alerts."
+> "After installation, a setup guide walks the merchant through three steps: add products, run the first scan, and configure alerts."
 
 **Action**: Click to expand Step 1 ("Add products"), then click the "Add products" button.
 
@@ -61,17 +62,17 @@ Before recording, make sure your demo store has:
 **Screen**: Shopify resource picker opens → browse/search products
 
 > **Voiceover**:
-> "The product picker lets you choose which pages to monitor. We recommend your highest-traffic or highest-revenue products — the ones where a broken page costs you the most."
+> "The product picker uses the standard Shopify resource picker to select which pages to monitor. Merchants would typically choose their highest-traffic products."
 
 **Action**: Select 2–3 products → click "Add"
 
 **Screen**: Product Pages list appears with scanning indicators — spinner + "Scanning…" badge on each row, global "Scans in progress" banner at top
 
-> "Your pages are now being scanned. You'll see a live scanning indicator while Prowl checks each page. You can monitor up to 3 products."
+> "As you can see, the selected pages are now being scanned. The UI shows a live scanning indicator while Prowl checks each page. The plan allows monitoring up to 3 products."
 
 **Screen**: After ~30–60 seconds, page auto-refreshes → status updates to "Healthy" or shows detected issues
 
-> "Once the scan completes, the page refreshes automatically and you'll see the results."
+> "Once the scan completes, the page refreshes automatically and displays the results."
 
 ---
 
@@ -80,7 +81,7 @@ Before recording, make sure your demo store has:
 **Screen**: Click "Scan now" on a product page
 
 > **Voiceover**:
-> "You can trigger a scan at any time. Prowl loads your product page in a real browser — just like a customer would — and checks every critical element."
+> "Merchants can trigger a scan at any time. Prowl loads the product page in a real headless browser — just like a customer would — and checks every critical element."
 
 **Screen**: Scan progress banner appears ("Scan in progress" with spinner)
 
@@ -88,11 +89,11 @@ Before recording, make sure your demo store has:
 
 **Screen**: Scan completes → page refreshes → status updates to "Healthy" or "Critical"
 
-> "Scans take about 45 to 60 seconds. When it's done, you'll see the result immediately."
+> "Scans take about 45 to 60 seconds. When complete, the result is displayed immediately."
 
 **Screen**: Show the latest screenshot thumbnail → click to open full-size modal
 
-> "Every scan captures a screenshot of your page, so you can see exactly what Prowl saw."
+> "Every scan captures a screenshot of the page, so the merchant can see exactly what Prowl saw."
 
 ---
 
@@ -101,7 +102,7 @@ Before recording, make sure your demo store has:
 **Screen**: Navigate to Dashboard → show critical alert banner → click through to Issues list
 
 > **Voiceover**:
-> "When Prowl finds a problem, it shows up right on your dashboard. Let's look at a critical issue."
+> "When Prowl detects a problem, it surfaces on the dashboard. Let's walk through a critical issue."
 
 **Action**: Click on an issue (e.g., "Missing Add to Cart button")
 
@@ -111,7 +112,7 @@ Before recording, make sure your demo store has:
 
 **Screen**: Scroll to screenshot section → click thumbnail to open modal
 
-> "...a screenshot showing exactly what the page looked like..."
+> "...a screenshot showing exactly what the page looked like at the time of the scan..."
 
 **Screen**: Scroll to "What you can do" section
 
@@ -119,11 +120,11 @@ Before recording, make sure your demo store has:
 
 **Screen**: Scroll to technical details (JSON evidence)
 
-> "For developers, there's a technical details section with the raw diagnostic data."
+> "For merchants with developers on their team, there's a technical details section with the raw diagnostic data."
 
 **Action**: Click "Acknowledge" button → toast confirmation
 
-> "If you're already aware of the issue and working on a fix, click Acknowledge to stop repeat alerts."
+> "The merchant can acknowledge an issue to stop repeat alerts while they work on a fix."
 
 ---
 
@@ -132,15 +133,15 @@ Before recording, make sure your demo store has:
 **Screen**: Switch to email client (or show a screenshot of the alert email)
 
 > **Voiceover**:
-> "When a critical issue is detected, you get an email alert with the screenshot, the explanation, and a suggested fix — all inline, no login required."
+> "When a critical issue is detected, the merchant receives an email alert with the screenshot, the explanation, and a suggested fix — all inline, no login required."
 
 **Screen**: Highlight the inline screenshot, the explanation text, and the suggested fix box
 
-> "There's also an acknowledge link right in the email, so you can stop alerts without opening the app."
+> "There's also an acknowledge link right in the email, so the merchant can stop alerts without opening the app."
 
 **Screen**: Show the "issues resolved" email
 
-> "And when the issue is fixed, you get a confirmation email so you know your page is healthy again."
+> "When the issue is resolved, a confirmation email is sent so the merchant knows the page is healthy again."
 
 ---
 
@@ -149,13 +150,13 @@ Before recording, make sure your demo store has:
 **Screen**: Navigate to Settings
 
 > **Voiceover**:
-> "In Settings, you can set a custom email for alerts, choose between daily or weekly scans, and toggle notifications on or off."
+> "In Settings, merchants can set a custom email for alerts, choose between daily or weekly scans, and toggle notifications on or off."
 
 **Action**: Change alert email → change scan frequency → save (show toast: "Settings saved")
 
 **Screen**: Scroll to "Help and support" section
 
-> "There's also a direct link to our support center if you ever need help."
+> "There's also a direct link to our support center for merchant assistance."
 
 ---
 
@@ -164,14 +165,14 @@ Before recording, make sure your demo store has:
 **Screen**: Navigate back to Dashboard showing healthy status ("All systems operational")
 
 > **Voiceover**:
-> "Prowl runs every day at 6 AM UTC, so you don't have to think about it. If something breaks, you'll know within hours — not days."
+> "Prowl runs automatically every day at 6 AM UTC, so merchants don't need to think about it. If something breaks, they'll know within hours — not days."
 
-> "Start your free 14-day trial today. No limitations, no credit card surprises. Just peace of mind that your product pages are working."
+> "That covers the full functionality of Prowl. The app offers a 14-day free trial with no limitations, followed by a $10/month subscription. Thank you for reviewing Prowl — we're happy to answer any questions."
 
 **Screen**: Fade to card with:
 - Prowl logo
 - "14-day free trial · $10/month"
-- "Install from the Shopify App Store"
+- "Thank you for reviewing Prowl"
 
 ---
 
@@ -186,7 +187,7 @@ Before recording, make sure your demo store has:
 
 ## YouTube Upload Settings
 
-- **Title**: Prowl — Product Page Monitoring for Shopify | App Demo
-- **Description**: See how Prowl monitors your Shopify product pages for broken Add to Cart buttons, missing images, JavaScript errors, and more. Get alerted with screenshots and suggested fixes before customers notice. 14-day free trial, $10/month.
+- **Title**: Prowl — Product Page Monitoring for Shopify | App Review Demo
+- **Description**: Screencast for the Shopify App Review team. Demonstrates how Prowl monitors Shopify product pages for broken Add to Cart buttons, missing images, JavaScript errors, and more. Shows the full merchant experience: installation, scanning, issue detection, email alerts, and settings.
 - **Tags**: Shopify app, product page monitoring, Shopify QA, ecommerce monitoring, broken Add to Cart, Shopify store monitoring
-- **Visibility**: Public (or Unlisted if only for Shopify review)
+- **Visibility**: Unlisted (for Shopify review only)
