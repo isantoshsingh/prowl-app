@@ -53,10 +53,10 @@
         <% end %>
 
         <%# Action buttons %>
-        <s-stack direction="inline" gap="tight">
+        <s-stack direction="inline" gap="small-500">
           <s-button href="<%= product_page_path(page, host: @host) %>">View</s-button>
           <s-button <%= 'disabled loading' if page_scanning %> onclick="rescanProduct(this, '<%= rescan_product_page_path(page, host: @host) %>', '<%= product_page_path(page, host: @host) %>')">Rescan</s-button>
-          <s-button tone="critical" onclick="deleteProduct('<%= product_page_path(page, host: @host) %>', '<%= page.title %>')">Remove</s-button>
+          <s-button variant="primary" tone="critical" onclick="deleteProduct('<%= product_page_path(page, host: @host) %>', '<%= page.title %>')">Remove</s-button>
         </s-stack>
       </s-grid>
     </s-box>
