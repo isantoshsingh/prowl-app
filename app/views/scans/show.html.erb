@@ -1,6 +1,6 @@
 <%# Scan Detail — Polaris Web Components (Built for Shopify) %>
 
-<s-page heading="Scan #<%= @scan.id %>">
+<s-page heading="Scan #<%= @scan.shop_scan_number %>">
   <s-link slot="primary-action" href="<%= product_page_path(@product_page, host: @host) %>">View product page</s-link>
   <s-link slot="breadcrumb-actions" href="<%= scans_path(host: @host) %>">Scan history</s-link>
   <s-badge slot="accessory" tone="<%= @scan.status == 'completed' ? 'success' : (@scan.status == 'failed' ? 'critical' : 'info') %>"><%= @scan.status.capitalize %></s-badge>

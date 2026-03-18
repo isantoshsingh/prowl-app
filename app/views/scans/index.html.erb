@@ -17,7 +17,7 @@
         <s-stack direction="block" gap="extra-tight">
           <strong><%= scan.product_page.title %></strong>
           <s-paragraph>
-            Scan #<%= scan.id %> &middot; <%= local_time(scan.created_at) %>
+            Scan #<%= scan.shop_scan_number %> &middot; <%= local_time(scan.created_at) %>
             <% if scan.page_load_time_ms %> &middot; <%= (scan.page_load_time_ms / 1000.0).round(1) %>s load time<% end %>
             <% if scan.issues.any? %> &middot; <%= scan.issues.count %> issue<%= scan.issues.count == 1 ? '' : 's' %> detected<% end %>
           </s-paragraph>

@@ -150,7 +150,7 @@
       <s-box border="base" padding="base">
         <s-grid gridTemplateColumns="1fr auto" gap="base" alignItems="center">
           <s-stack direction="block" gap="extra-tight">
-            <strong>Scan #<%= scan.id %></strong>
+            <strong>Scan #<%= scan.shop_scan_number %></strong>
             <s-stack direction="inline" gap="tight" align="center">
               <s-badge tone="<%= scan.status == 'completed' ? 'success' : (scan.status == 'failed' ? 'critical' : 'info') %>"><%= scan.status.capitalize %></s-badge>
               <s-paragraph>

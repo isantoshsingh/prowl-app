@@ -58,6 +58,16 @@ class Scan < ApplicationRecord
     product_page.update!(status: "error", last_scanned_at: Time.current)
   end
 
+  # Returns a shop-scoped sequential scan number (1-based).
+  # E.g. a shop's first scan is #1, second is #2, regardless of global DB id.
+  def shop_scan_number
+    Scan.joins(:product_page)
+        .where(product_pages: { shop_id: product_page.shop_id })
+        .where("scans.created_at <= ?", created_at)
+        .where("scans.id <= ?", id)
+        .count
+  end
+
   # Returns the duration of the scan in seconds
   def duration_seconds
     return nil unless started_at && completed_at

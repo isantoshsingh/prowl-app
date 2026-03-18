@@ -232,7 +232,7 @@
 <s-box paddingBlockStart="base">
   <s-stack direction="inline" gap="tight" align="center">
     <s-paragraph>Detected in</s-paragraph>
-    <s-link href="<%= scan_path(@scan, host: @host) %>">Scan #<%= @scan.id %></s-link>
+    <s-link href="<%= scan_path(@scan, host: @host) %>">Scan #<%= @scan.shop_scan_number %></s-link>
     <s-paragraph>on <%= local_time(@scan.created_at) %></s-paragraph>
   </s-stack>
 </s-box>
