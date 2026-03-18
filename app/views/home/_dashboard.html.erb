@@ -117,34 +117,44 @@
   </s-section>
   <% end %>
 
-  <%# Open Issues %>
+  <%# Open Issues — grouped by issue type %>
   <% if @open_issues_count > 0 %>
   <s-section heading="Issues requiring attention">
-    <s-stack direction="block" gap="none">
-      <% @open_issues.first(5).each do |issue| %>
-      <%= link_to issue_path(issue, host: @host), style: "display: block; text-decoration: none; color: inherit;" do %>
+    <s-stack direction="block" gap="base">
+      <% @open_issues.group_by(&:issue_type).each do |issue_type, issues| %>
+      <% representative = issues.first %>
       <s-box border="base" padding="base">
-        <s-grid gridTemplateColumns="1fr auto" gap="base" alignItems="center">
-          <s-stack direction="block" gap="extra-tight">
+        <s-stack direction="block" gap="tight">
+          <s-grid gridTemplateColumns="1fr auto" gap="base" alignItems="center">
             <s-stack direction="inline" gap="tight" align="center">
-              <s-icon type="<%= issue.severity == 'high' ? 'alert-circle' : 'alert-triangle' %>" tone="<%= issue.severity == 'high' ? 'critical' : 'caution' %>">
+              <s-icon type="<%= representative.severity == 'high' ? 'alert-circle' : 'alert-triangle' %>" tone="<%= representative.severity == 'high' ? 'critical' : 'caution' %>">
               </s-icon>
-              <strong><%= issue.title %></strong>
-            </s-stack>
-            <s-paragraph>
-              <%= issue.product_page.title %> •
-              Detected <%= time_ago_in_words(issue.first_detected_at) %> ago
-              <% if issue.occurrence_count > 1 %>
-              • Seen <%= issue.occurrence_count %> times
+              <strong><%= representative.title %></strong>
+              <% if issues.size > 1 %>
+              <s-badge tone="info"><%= issues.size %> pages</s-badge>
               <% end %>
-            </s-paragraph>
+            </s-stack>
+            <s-badge tone="<%= representative.severity == 'high' ? 'critical' : 'attention' %>">
+              <%= representative.severity_label %>
+            </s-badge>
+          </s-grid>
+          <s-stack direction="block" gap="extra-tight">
+            <% issues.each do |issue| %>
+            <%= link_to issue_path(issue, host: @host), style: "display: block; text-decoration: none; color: inherit;" do %>
+            <s-box padding="tight" paddingInlineStart="large-400">
+              <s-stack direction="inline" gap="tight" align="center">
+                <s-paragraph><%= issue.product_page.title %></s-paragraph>
+                <s-paragraph>• <%= time_ago_in_words(issue.first_detected_at) %> ago</s-paragraph>
+                <% if issue.occurrence_count > 1 %>
+                <s-paragraph>• Seen <%= issue.occurrence_count %> times</s-paragraph>
+                <% end %>
+              </s-stack>
+            </s-box>
+            <% end %>
+            <% end %>
           </s-stack>
-          <s-badge tone="<%= issue.severity == 'high' ? 'critical' : 'attention' %>">
-            <%= issue.severity_label %>
-          </s-badge>
-        </s-grid>
+        </s-stack>
       </s-box>
-      <% end %>
       <% end %>
     </s-stack>
 
