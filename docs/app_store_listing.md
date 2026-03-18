@@ -27,6 +27,32 @@ _(Auto-generated from app name. Contains target keywords in the URL slug.)_
 
 ---
 
+## 2.5. App Card Subtitle
+
+**62 character limit — shown on the app card in search results and category pages**
+
+### Option A (Recommended)
+```
+Find broken product pages before your customers do
+```
+_(52 characters)_
+
+### Option B
+```
+Catch broken product pages before they cost you sales
+```
+_(55 characters)_
+
+### Option C
+```
+Daily product page scans with AI-powered alerts
+```
+_(49 characters)_
+
+**Guidelines**: Summarize the app's value concisely. Don't stuff keywords for SEO. Don't include data, statistics, or unsubstantiated claims.
+
+---
+
 ## 3. App Icon
 
 - **Dimensions**: 1200×1200 px (JPEG or PNG)
@@ -253,16 +279,29 @@ Full access to all features during your trial — daily monitoring, AI detection
 
 ---
 
-## 15. Categories
+## 15. Categories & App Category Details
 
-**Recommended primary category:**
+### Primary Category
 ```
-Store management > Store monitoring
+Store management > Operations > Analytics
 ```
+_Apps that analyze and generate insights or recommendations for a store._
 
-**Alternative categories to consider:**
-- Store management > Quality assurance
-- Store management > Reporting and analytics
+### Secondary Tag (optional)
+```
+Store management > Operations > Staff notifications
+```
+_Prowl's email alerts with screenshots map directly to staff notifications._
+
+### App Category Details (Structured Features)
+
+These are the structured feature selections under **Analytics**:
+
+| Field | Selection | Rationale |
+|---|---|---|
+| **Customer behavior** | _Not applicable_ | Prowl monitors pages, not customer sessions |
+| **Marketing and sales** | `AI insights` | Prowl uses Gemini AI to analyze pages and confirm issues |
+| **Visuals and reports** | `Analytics dashboard`, `Notifications` | Health dashboard + email alerts with screenshots |
 
 ---
 
