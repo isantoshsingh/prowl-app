@@ -15,7 +15,7 @@ _Last updated: 2026-03-23_
 - **Alerting**: `AlertService` → `AlertMailer`; batched email per product page per scan; per-scan dedup via unique index on `(shop_id, issue_id, alert_type, scan_id)`; AI-generated merchant explanation + suggested fix included
 - **Billing**: Single Shopify recurring charge ("Prowl Monthly", $10/month, 14-day trial) configured in `config/initializers/shopify_app.rb`
 - **Page limits**: `Shop::MAX_MONITORED_PAGES = 3` (hardcoded constant in `app/models/shop.rb:14`)
-- **Scan scheduling**: `ScheduledScanJob` queues scans for active shops daily; `ScanPdpJob` determines depth (deep on first scan, open critical issues, or Mondays; quick otherwise)
+- **Scan scheduling**: `ScheduledScanJob` queues scans for shops where `subscription_status: "active"` or `billing_exempt: true` (fixed pre-Phase 2); `ScanPdpJob` determines depth (deep on first scan, open critical issues, or Mondays; quick otherwise)
 - **scan_frequency**: Column exists on `shop_settings` and is now wired to the scheduler — `ProductPage.needs_scan` uses the shop's configured interval. Phase 2 will add `every_4_hours` and `every_6_hours` as valid values for paid tiers.
 - **Infrastructure**: PostgreSQL + Solid Queue (no Redis) + Solid Cache; Browserless.io for production Chrome; Cloudflare R2 for screenshots; Resend for email
 
@@ -152,25 +152,22 @@ This requires `AddToCartDetector` to accept the price detection result as input.
 
 #### 2C.1 — Add Phase 2 scan frequency values
 
-`scan_frequency` is already wired to the scheduler (done pre-Phase 2). Phase 2 only needs to add the new tier-specific values:
-
-- `daily` → 24h (Starter, existing)
-- `every_4_hours` → 4h (Growth tier)
-- `every_6_hours` → 6h (Pro tier)
-
-The scheduler's `scan_interval` helper needs to handle these:
+`scan_frequency` is fully wired (done pre-Phase 2): `ShopSetting#scan_interval` is the single source of truth, used by both `ProductPage#needs_scan?` and `ScheduledScanJob#scan_interval_for`. Phase 2 only needs to add new cases to that method:
 
 ```ruby
-def scan_interval(shop)
-  case shop.shop_setting&.scan_frequency
+# app/models/shop_setting.rb
+def scan_interval
+  case scan_frequency
   when "every_4_hours" then 4.hours
   when "every_6_hours" then 6.hours
-  else                      24.hours
+  else                      24.hours  # Starter / default
   end
 end
 ```
 
-Add `every_4_hours` and `every_6_hours` to `ShopSetting`'s validation inclusion list. Remove `weekly` — it's not a Phase 2 use case and no production shops use it. Run a data migration to convert any `weekly` records to `daily` first.
+Add `every_4_hours` and `every_6_hours` to the `validates :scan_frequency, inclusion:` list. Remove `weekly` — not a Phase 2 use case. Run a data migration to convert any `weekly` records to `daily` first.
+
+`BillingPlanService` sets `shop_setting.scan_frequency` when assigning a plan: `starter` → `daily`, `growth` → `every_4_hours`, `pro` → `every_6_hours`.
 
 When a merchant upgrades their plan, update `shop.shop_setting.scan_frequency` accordingly in `BillingPlanService`.
 
