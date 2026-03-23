@@ -1,6 +1,6 @@
 # Prowl Phase 2 — Implementation Plan
 
-_Last updated: 2026-03-21_
+_Last updated: 2026-03-23_
 
 ---
 
@@ -16,7 +16,7 @@ _Last updated: 2026-03-21_
 - **Billing**: Single Shopify recurring charge ("Prowl Monthly", $10/month, 14-day trial) configured in `config/initializers/shopify_app.rb`
 - **Page limits**: `Shop::MAX_MONITORED_PAGES = 3` (hardcoded constant in `app/models/shop.rb:14`)
 - **Scan scheduling**: `ScheduledScanJob` queues scans for active shops daily; `ScanPdpJob` determines depth (deep on first scan, open critical issues, or Mondays; quick otherwise)
-- **scan_frequency**: Column already exists on `shop_settings` (values: `daily`/`weekly`) but **is not wired to the scheduler** — `ProductPage.needs_scan` hardcodes 24 hours regardless of this setting
+- **scan_frequency**: Column exists on `shop_settings` and is now wired to the scheduler — `ProductPage.needs_scan` uses the shop's configured interval. Phase 2 will add `every_4_hours` and `every_6_hours` as valid values for paid tiers.
 - **Infrastructure**: PostgreSQL + Solid Queue (no Redis) + Solid Cache; Browserless.io for production Chrome; Cloudflare R2 for screenshots; Resend for email
 
 ### Known bugs to fix before Phase 2 features ship
@@ -41,8 +41,8 @@ However, with Phase 2 scan frequencies of every 4–6 hours, this means up to **
 
 | Plan | Price | Pages | Scan Frequency | Deep Scans |
 |------|-------|-------|----------------|------------|
-| Starter | $10/month | 10 | Daily | Yes |
-| Growth | $29/month | 25 | Twice daily | Yes |
+| Starter | $10/month | 10 | Daily (24h) | Yes |
+| Growth | $29/month | 25 | Every 4 hours | Yes |
 | Pro | $79/month | Unlimited | Every 6 hours | Yes |
 
 These names, prices, and limits are a starting point. The constraint is that Shopify only supports one active recurring charge per app installation — plan changes require cancelling the old charge and creating a new one. Shopify's billing API supports this via `appSubscriptionCreate`.
@@ -56,8 +56,8 @@ Add a `plan_name` column to `subscriptions` (already exists: `charge_name`). Whe
 **New service**: `app/services/billing_plan_service.rb`
 ```ruby
 PLANS = {
-  "starter" => { price: 10, pages: 10,        interval_hours: 24,  charge_name: "Prowl Starter" },
-  "growth"  => { price: 29, pages: 25,        interval_hours: 12,  charge_name: "Prowl Growth"  },
+  "starter" => { price: 10, pages: 10,        interval_hours: 24, charge_name: "Prowl Starter" },
+  "growth"  => { price: 29, pages: 25,        interval_hours: 4,  charge_name: "Prowl Growth"  },
   "pro"     => { price: 79, pages: Float::INFINITY, interval_hours: 6, charge_name: "Prowl Pro" }
 }.freeze
 ```
@@ -150,33 +150,27 @@ This requires `AddToCartDetector` to accept the price detection result as input.
 
 **Goal**: Fix the scheduler bug, honor per-shop scan frequency, add scan history log to the dashboard.
 
-#### 2C.1 — Fix `ScheduledScanJob` and wire `scan_frequency`
+#### 2C.1 — Add Phase 2 scan frequency values
 
-Fix the billing filter bug (see Bug 1 above).
+`scan_frequency` is already wired to the scheduler (done pre-Phase 2). Phase 2 only needs to add the new tier-specific values:
 
-Wire `scan_frequency` from `shop_settings`:
-- `daily` → current behavior (24h `needs_scan` window)
-- `twice_daily` → 12h window (Growth tier)
-- `every_6_hours` → 6h window (Pro tier)
+- `daily` → 24h (Starter, existing)
+- `every_4_hours` → 4h (Growth tier)
+- `every_6_hours` → 6h (Pro tier)
 
-Change `ProductPage.needs_scan` from a hardcoded 24h scope to a shop-aware method, or pass the frequency into the scheduler:
+The scheduler's `scan_interval` helper needs to handle these:
 
 ```ruby
-# In ScheduledScanJob, replace needs_scan scope with:
-pages_to_scan = shop.product_pages.monitoring_enabled
-                    .where("last_scanned_at IS NULL OR last_scanned_at < ?",
-                           scan_interval(shop).ago)
-
 def scan_interval(shop)
   case shop.shop_setting&.scan_frequency
-  when "twice_daily"    then 12.hours
-  when "every_6_hours"  then 6.hours
-  else                       24.hours
+  when "every_4_hours" then 4.hours
+  when "every_6_hours" then 6.hours
+  else                      24.hours
   end
 end
 ```
 
-Add `scan_frequency` values `twice_daily` and `every_6_hours` to `ShopSetting`'s validation inclusion list (currently only allows `daily`/`weekly` — change `weekly` to the new values since weekly is not a Phase 2 use case).
+Add `every_4_hours` and `every_6_hours` to `ShopSetting`'s validation inclusion list. Remove `weekly` — it's not a Phase 2 use case and no production shops use it. Run a data migration to convert any `weekly` records to `daily` first.
 
 When a merchant upgrades their plan, update `shop.shop_setting.scan_frequency` accordingly in `BillingPlanService`.
 
@@ -329,8 +323,8 @@ The features have dependencies. Build in this sequence:
 5. Pass `PriceVisibilityDetector` result to `AddToCartDetector` in `ProductPageScanner`
 
 ### Sprint 3 — Scheduler + scan history
-1. Wire `scan_frequency` into `ScheduledScanJob` (replace hardcoded 24h)
-2. Update `ShopSetting` validations to support `twice_daily`/`every_6_hours`
+1. Add `every_4_hours`/`every_6_hours` to `ShopSetting` validations; remove `weekly`; data-migrate any `weekly` → `daily`
+2. Wire new frequency values into `scan_interval` in `ScheduledScanJob`; set `scan_frequency` via `BillingPlanService` on plan assignment
 3. Add scan history timeline to `HomeController` and `ProductPagesController#show`
 4. Add 7-scan sparkline to product page list view
 5. Wire `AlertMailer#issues_resolved` in `ScanPipelineService`
@@ -357,15 +351,12 @@ If a store is password-protected (`shop.password_enabled == true`), the scanner 
 
 ### Risk 3 — Browserless.io cost at higher scan frequencies
 The Growth tier (twice daily) and Pro tier (every 6 hours) will 2× and 4× Browserless.io usage. Deep scans (funnel test + checkout) consume significantly more browser time than quick scans.
-- Estimate: Pro tier at every 6 hours + 25 pages = 100 scans/day vs. current ~3 scans/day per shop
+- Estimate: Growth tier (every 4h, 25 pages) = 150 scans/day; Pro tier (every 6h, unlimited) = 400 scans/day at 100 pages — vs. current ~3 scans/day per shop on Starter
 - **Concurrency limit**: `ScanPdpJob` is currently limited to 1 concurrent scan (`limits_concurrency to: 1`). With multiple Pro shops, scans will queue. Consider raising the concurrency limit to 2-3 for paid production tiers and ensuring Browserless.io plan supports it.
 - **Question**: Should deep scans (funnel + checkout) be gated to the Growth/Pro tiers to control costs?
 
 ### Risk 4 — Slack webhook URL validation
 Webhooks are user-supplied URLs. Do not make the `POST /settings/test_slack` endpoint a CSRF-free action — keep it protected. Validate that the URL is a valid `https://hooks.slack.com/` URL before storing or calling it to prevent SSRF.
-
-### Risk 5 — `scan_frequency` column migration
-`ShopSetting` currently validates `scan_frequency` inclusion in `%w[daily weekly]`. Changing this without a migration first will break existing `weekly` records (if any). Run a migration to update any `weekly` records to `daily` before changing the validation list.
 
 ### Open Question 1 — Unlimited pages for Pro tier
 `ProductPage.needs_scan` and `ScheduledScanJob` iterate over all pages. "Unlimited" for the Pro tier means no upper bound check, but could mean hundreds of pages for large merchants. The current Solid Queue concurrency limit of 1 will create very long queues.
