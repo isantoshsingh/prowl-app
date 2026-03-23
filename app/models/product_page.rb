@@ -32,6 +32,7 @@ class ProductPage < ApplicationRecord
   scope :monitoring_enabled, -> { where(monitoring_enabled: true) }
   scope :monitoring_disabled, -> { where(monitoring_enabled: false) }
   scope :needs_scan, -> { monitoring_enabled.where("last_scanned_at IS NULL OR last_scanned_at < ?", 24.hours.ago) }
+  scope :needs_scan_within, ->(interval) { monitoring_enabled.where("last_scanned_at IS NULL OR last_scanned_at < ?", interval.ago) }
   scope :by_status, ->(status) { where(status: status) }
   scope :healthy, -> { by_status("healthy") }
   scope :warning, -> { by_status("warning") }
@@ -63,10 +64,12 @@ class ProductPage < ApplicationRecord
     open_issues.where(severity: "high").count
   end
 
-  # Checks if this page needs to be scanned
+  # Checks if this page needs to be scanned, honoring the shop's scan frequency
   def needs_scan?
     return true if last_scanned_at.nil?
-    last_scanned_at < 24.hours.ago
+
+    interval = shop.shop_setting&.scan_interval || 24.hours
+    last_scanned_at < interval.ago
   end
 
   # Updates status based on open issues

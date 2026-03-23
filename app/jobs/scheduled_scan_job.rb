@@ -23,8 +23,11 @@ class ScheduledScanJob < ApplicationJob
       # Check if trial is still valid
       next unless shop.billing_active?
 
-      # Get pages that need scanning
-      pages_to_scan = shop.product_pages.needs_scan
+      # Determine scan interval from shop settings
+      scan_interval = scan_interval_for(shop)
+
+      # Get pages that need scanning based on shop's frequency
+      pages_to_scan = shop.product_pages.needs_scan_within(scan_interval)
 
       pages_to_scan.find_each do |page|
         ScanPdpJob.perform_later(page.id)
@@ -33,5 +36,11 @@ class ScheduledScanJob < ApplicationJob
     end
 
     Rails.logger.info("[ScheduledScanJob] Queued #{scans_queued} scans for #{active_shops.count} shops")
+  end
+
+  private
+
+  def scan_interval_for(shop)
+    shop.shop_setting&.scan_interval || 24.hours
   end
 end

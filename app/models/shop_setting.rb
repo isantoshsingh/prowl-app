@@ -28,6 +28,15 @@ class ShopSetting < ApplicationRecord
     alert_email.presence || shop.email.presence
   end
 
+  # Returns the scan interval duration based on scan_frequency.
+  # Single source of truth — used by ProductPage#needs_scan? and ScheduledScanJob.
+  def scan_interval
+    case scan_frequency
+    when "weekly" then 7.days
+    else 24.hours
+    end
+  end
+
   private
 
   def set_defaults
