@@ -25,9 +25,9 @@ _No known bugs — the `ScheduledScanJob` billing filter fix has already been me
 
 ### Intentional alert behaviour (not a bug)
 
-`AlertService` fires an alert on every scan that finds an unacknowledged high-severity issue. This is **by design**: scans run daily (or more frequently on higher tiers), and merchants are expected to receive repeated alerts until they explicitly acknowledge the issue in the dashboard. Acknowledging an issue (`Issue#acknowledge!`) sets `status: "acknowledged"`, which causes `Issue#should_alert?` to return false and stops future alerts for that issue.
+`AlertService` fires an alert on every scan that finds an unacknowledged high-severity issue. This is **by design**: merchants receive repeated alerts until they explicitly acknowledge the issue in the dashboard. Acknowledging an issue (`Issue#acknowledge!`) sets `status: "acknowledged"`, which causes `Issue#should_alert?` to return false and stops future alerts.
 
-This creates a deliberate acknowledgement loop: scan detects issue → alert sent → merchant acknowledges → alerts stop. No 24h suppression is needed or wanted.
+However, with Phase 2 scan frequencies of every 4–6 hours, this means up to **6 emails per day** for a single unacknowledged issue. The `alert_suppression_hours` setting (Feature 2D.2) is the mechanism to prevent this — merchants choose how often they want to be re-notified about the same persisting issue.
 
 ---
 
@@ -224,7 +224,7 @@ No schema changes required. This is already the behavior — just make sure the 
 
 ### Feature D — Alert System Enhancements
 
-**Goal**: Add Slack integration, add alert history to dashboard, wire the all-clear email.
+**Goal**: Add alert suppression to prevent flooding at high scan frequencies, add Slack integration, add alert history to dashboard, wire the all-clear email.
 
 #### 2D.1 — Alert history page
 
@@ -236,7 +236,31 @@ Add `GET /alerts` route and `AlertsController#index`:
 
 The `alerts` table already has all needed columns.
 
-#### 2D.2 — Slack webhook alerts
+#### 2D.2 — Per-issue alert suppression
+
+With scans running every 4–6 hours, an unacknowledged high-severity issue would trigger up to 6 emails/day without suppression. Add `alert_suppression_hours` to let merchants control the re-notification frequency independently of how often scans run.
+
+Add column to `shop_settings`:
+```ruby
+add_column :shop_settings, :alert_suppression_hours, :integer, default: 24, null: false
+```
+
+Update `AlertService#existing_alert?` to check the suppression window:
+```ruby
+def existing_alert?(issue, alert_type)
+  # Per-scan dedup (prevents double-sending within a single scan run)
+  return true if Alert.exists?(shop:, issue:, alert_type:, scan:)
+  # Suppression window — don't re-alert within the configured hours
+  suppression_hours = shop.shop_setting&.alert_suppression_hours || 24
+  Alert.where(shop:, issue:, alert_type:, delivery_status: "sent")
+       .where("sent_at > ?", suppression_hours.hours.ago)
+       .exists?
+end
+```
+
+Expose in `/settings` as a select: **Every scan** (0h, no suppression), **Every 6 hours**, **Every 12 hours**, **Once per day** (24h, default), **Every 48 hours**. The "Every scan" option is appropriate for low-frequency plans; "Once per day" or higher is the sensible default for the 4–6 hour scan tiers.
+
+#### 2D.3 — Slack webhook alerts
 
 Add `slack_webhook_url` string column to `shop_settings`.
 
@@ -312,9 +336,10 @@ The features have dependencies. Build in this sequence:
 5. Wire `AlertMailer#issues_resolved` in `ScanPipelineService`
 
 ### Sprint 4 — Alerts
-1. Add alert history page (`AlertsController#index`)
-2. Add `slack_webhook_url` migration, `SlackAlertService`, settings UI
-3. Add "Send test Slack notification" endpoint
+1. Add `alert_suppression_hours` migration, wire into `AlertService#existing_alert?`, add settings UI
+2. Add alert history page (`AlertsController#index`)
+3. Add `slack_webhook_url` migration, `SlackAlertService`, settings UI
+4. Add "Send test Slack notification" endpoint
 
 ---
 
