@@ -1,7 +1,7 @@
 {
-  "name": "pdp-diagnostics",
+  "name": "prowl",
   "version": "1.0.0",
-  "description": "PDP Diagnostics app built with Rails",
+  "description": "Prowl app built with Rails",
   "scripts": {},
   "dependencies": {},
   "engines": {

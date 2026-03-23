@@ -13,8 +13,9 @@ class ScheduledScanJob < ApplicationJob
     Rails.logger.info("[ScheduledScanJob] Starting daily scan scheduling")
 
     # Find all shops with active billing
-    active_shops = Shop.joins(:shop_setting)
-                       .where(shop_settings: { billing_status: %w[trial active] })
+    active_shops = Shop.installed
+                       .where(subscription_status: "active")
+                       .or(Shop.installed.where(billing_exempt: true))
 
     scans_queued = 0
 
