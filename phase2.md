@@ -21,18 +21,13 @@ _Last updated: 2026-03-21_
 
 ### Known bugs to fix before Phase 2 features ship
 
-**Bug 1 — `ScheduledScanJob` queries non-existent column** (`app/jobs/scheduled_scan_job.rb:16-18`)
-```ruby
-# WRONG — billing_status does not exist on shop_settings
-Shop.joins(:shop_setting).where(shop_settings: { billing_status: %w[trial active] })
+_No known bugs — the `ScheduledScanJob` billing filter fix has already been merged to main._
 
-# CORRECT — subscription_status is on shops, not shop_settings
-Shop.where(installed: true).where(subscription_status: %w[active]).or(Shop.where(billing_exempt: true))
-```
-This query will raise `ActiveRecord::StatementInvalid` at runtime. The correct gate is `shop.billing_active?` which checks `billing_exempt? || subscription_status == 'active'` — mirror that logic in the SQL filter.
+### Intentional alert behaviour (not a bug)
 
-**Bug 2 — Alert re-fires on every scan for persistent issues**
-`AlertService` deduplicates only within a single scan (unique index on `scan_id`). An open, unacknowledged high-severity issue will trigger a fresh email on every daily scan indefinitely. Phase 2 needs a 24-hour suppression window: before sending, check whether an alert for this issue was already sent within the last 24 hours using `alerts.where(issue:, alert_type:).where("sent_at > ?", 24.hours.ago).exists?`.
+`AlertService` fires an alert on every scan that finds an unacknowledged high-severity issue. This is **by design**: scans run daily (or more frequently on higher tiers), and merchants are expected to receive repeated alerts until they explicitly acknowledge the issue in the dashboard. Acknowledging an issue (`Issue#acknowledge!`) sets `status: "acknowledged"`, which causes `Issue#should_alert?` to return false and stops future alerts for that issue.
+
+This creates a deliberate acknowledgement loop: scan detects issue → alert sent → merchant acknowledges → alerts stop. No 24h suppression is needed or wanted.
 
 ---
 
@@ -229,7 +224,7 @@ No schema changes required. This is already the behavior — just make sure the 
 
 ### Feature D — Alert System Enhancements
 
-**Goal**: Prevent alert fatigue, add Slack integration, add alert history to dashboard.
+**Goal**: Add Slack integration, add alert history to dashboard, wire the all-clear email.
 
 #### 2D.1 — Alert history page
 
@@ -241,16 +236,7 @@ Add `GET /alerts` route and `AlertsController#index`:
 
 The `alerts` table already has all needed columns.
 
-#### 2D.2 — Per-issue alert suppression setting
-
-Add an `alert_suppression_hours` integer column to `shop_settings` (default: 24). Let merchants configure this in `/settings` between 6h, 24h, 48h, and 72h options. Use this value in `AlertService#existing_alert?` instead of the hardcoded `24.hours`.
-
-**Migration**:
-```ruby
-add_column :shop_settings, :alert_suppression_hours, :integer, default: 24, null: false
-```
-
-#### 2D.3 — Slack webhook alerts
+#### 2D.2 — Slack webhook alerts
 
 Add `slack_webhook_url` string column to `shop_settings`.
 
@@ -305,13 +291,11 @@ end
 
 The features have dependencies. Build in this sequence:
 
-### Sprint 1 — Bug fixes + billing foundation (do first, everything else depends on it)
-1. Fix `ScheduledScanJob` billing filter bug (`app/jobs/scheduled_scan_job.rb:16`)
-2. Fix alert 24h suppression in `AlertService` (`app/services/alert_service.rb:89`)
-3. Implement `BillingPlanService` with three plan definitions
-4. Add plan selection UI (`BillingController#plans`, `BillingController#select_plan`)
-5. Wire `subscription_plan` from `SubscriptionSyncService` back to `Shop#subscription_plan`
-6. Update `Shop#max_monitored_pages` to read from plan definition
+### Sprint 1 — Billing foundation (do first, everything else depends on it)
+1. Implement `BillingPlanService` with three plan definitions
+2. Add plan selection UI (`BillingController#plans`, `BillingController#select_plan`)
+3. Wire `subscription_plan` from `SubscriptionSyncService` back to `Shop#subscription_plan`
+4. Update `Shop#max_monitored_pages` to read from plan definition
 
 ### Sprint 2 — Cart scanning improvements
 1. Add `BrowserService#verify_cart_item` and `BrowserService#cart_feedback_visible?`
@@ -328,10 +312,9 @@ The features have dependencies. Build in this sequence:
 5. Wire `AlertMailer#issues_resolved` in `ScanPipelineService`
 
 ### Sprint 4 — Alerts
-1. Add `alert_suppression_hours` migration and settings UI
-2. Add alert history page (`AlertsController#index`)
-3. Add `slack_webhook_url` migration, `SlackAlertService`, settings UI
-4. Add "Send test Slack notification" endpoint
+1. Add alert history page (`AlertsController#index`)
+2. Add `slack_webhook_url` migration, `SlackAlertService`, settings UI
+3. Add "Send test Slack notification" endpoint
 
 ---
 
