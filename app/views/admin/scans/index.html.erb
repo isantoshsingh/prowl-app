@@ -40,6 +40,7 @@
           <th>Shop</th>
           <th>Product Page</th>
           <th>Status</th>
+          <th>Depth</th>
           <th>Load Time</th>
           <th>Issues</th>
           <th>Date</th>
@@ -60,6 +61,7 @@
               end %>
               <span class="badge <%= scan_badge %>"><%= scan.status.humanize %></span>
             </td>
+            <td><%= scan.scan_depth&.humanize || "Quick" %></td>
             <td><%= scan.page_load_time_ms ? "#{scan.page_load_time_ms}ms" : "-" %></td>
             <td><%= scan.issues.count %></td>
             <td><%= scan.created_at.strftime("%Y-%m-%d %H:%M") %></td>
@@ -67,7 +69,7 @@
         <% end %>
         <% if @scans.empty? %>
           <tr>
-            <td colspan="7" class="text-muted text-center py-3">No scans found.</td>
+            <td colspan="8" class="text-muted text-center py-3">No scans found.</td>
           </tr>
         <% end %>
       </tbody>

@@ -27,6 +27,9 @@
             <span class="badge <%= scan_badge %>"><%= @scan.status.humanize %></span>
           </dd>
 
+          <dt class="col-sm-5">Scan Depth</dt>
+          <dd class="col-sm-7"><%= @scan.scan_depth&.humanize || "Quick" %></dd>
+
           <dt class="col-sm-5">Page Load Time</dt>
           <dd class="col-sm-7"><%= @scan.page_load_time_ms ? "#{@scan.page_load_time_ms}ms" : "-" %></dd>
         </dl>
@@ -76,6 +79,7 @@
           <th>Issue</th>
           <th>Severity</th>
           <th>Type</th>
+          <th>AI</th>
           <th>Status</th>
         </tr>
       </thead>
@@ -92,18 +96,37 @@
               <span class="badge <%= severity_badge %>"><%= issue.severity.humanize %></span>
             </td>
             <td><%= issue.issue_type.humanize %></td>
+            <td>
+              <% if issue.ai_confirmed? %>
+                <span class="badge bg-success">Confirmed</span>
+              <% elsif issue.ai_confidence.present? %>
+                <span class="badge bg-secondary"><%= issue.ai_confidence.round(0) %>%</span>
+              <% else %>
+                -
+              <% end %>
+            </td>
             <td><%= issue.status.humanize %></td>
           </tr>
         <% end %>
         <% if @issues.empty? %>
           <tr>
-            <td colspan="4" class="text-muted text-center py-3">No issues detected in this scan.</td>
+            <td colspan="5" class="text-muted text-center py-3">No issues detected in this scan.</td>
           </tr>
         <% end %>
       </tbody>
     </table>
   </div>
 </div>
+
+<!-- Funnel Results -->
+<% if @scan.funnel_results.present? && @scan.funnel_results.any? %>
+  <div class="card mb-4">
+    <div class="card-header"><h5 class="card-title mb-0">Funnel Test Results</h5></div>
+    <div class="card-body">
+      <pre class="bg-dark text-light p-3 rounded" style="max-height: 400px; overflow-y: auto;"><%= JSON.pretty_generate(@scan.funnel_results) %></pre>
+    </div>
+  </div>
+<% end %>
 
 <!-- Raw Logs -->
 <div class="card mb-4">

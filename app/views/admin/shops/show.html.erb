@@ -48,6 +48,12 @@
 
           <dt class="col-sm-5">Timezone</dt>
           <dd class="col-sm-7"><%= @shop.iana_timezone || @shop.timezone || "-" %></dd>
+
+          <dt class="col-sm-5">Scan Frequency</dt>
+          <dd class="col-sm-7"><%= @shop.shop_setting&.scan_frequency&.humanize || "Daily" %></dd>
+
+          <dt class="col-sm-5">Max Pages</dt>
+          <dd class="col-sm-7"><%= @shop.shop_setting&.max_monitored_pages || Shop::MAX_MONITORED_PAGES %></dd>
         </dl>
       </div>
     </div>

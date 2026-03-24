@@ -13,6 +13,8 @@ class Admin::DashboardController < Admin::BaseController
       medium: Issue.where(severity: "medium").count,
       low: Issue.where(severity: "low").count
     }
+    @ai_confirmed_issues = Issue.where(ai_confirmed: true).count
+    @open_issues = Issue.where.not(status: "resolved").count
     @recent_installs = Shop.where(installed: true)
                            .order(installed_at: :desc, created_at: :desc)
                            .limit(10)

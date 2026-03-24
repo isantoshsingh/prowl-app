@@ -30,16 +30,17 @@
   <div class="col-md-3">
     <div class="card">
       <div class="card-body">
-        <div class="text-muted small">Total Issues</div>
-        <div class="fs-3 fw-bold"><%= @total_issues %></div>
+        <div class="text-muted small">Open Issues</div>
+        <div class="fs-3 fw-bold"><%= @open_issues %></div>
+        <div class="text-muted small"><%= @total_issues %> total</div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- Issues by Severity -->
+<!-- Issues by Severity + AI -->
 <div class="row g-3 mb-4">
-  <div class="col-md-4">
+  <div class="col-md-3">
     <div class="card border-danger">
       <div class="card-body">
         <div class="text-danger small fw-semibold">High Severity</div>
@@ -47,7 +48,7 @@
       </div>
     </div>
   </div>
-  <div class="col-md-4">
+  <div class="col-md-3">
     <div class="card border-warning">
       <div class="card-body">
         <div class="text-warning small fw-semibold">Medium Severity</div>
@@ -55,11 +56,19 @@
       </div>
     </div>
   </div>
-  <div class="col-md-4">
+  <div class="col-md-3">
     <div class="card border-info">
       <div class="card-body">
         <div class="text-info small fw-semibold">Low Severity</div>
         <div class="fs-4 fw-bold"><%= @issues_by_severity[:low] %></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="card border-success">
+      <div class="card-body">
+        <div class="text-success small fw-semibold">AI Confirmed</div>
+        <div class="fs-4 fw-bold"><%= @ai_confirmed_issues %></div>
       </div>
     </div>
   </div>

@@ -57,6 +57,50 @@
   </div>
 </div>
 
+<!-- AI Analysis -->
+<div class="card mb-4">
+  <div class="card-header">
+    <h5 class="card-title mb-0">
+      AI Analysis
+      <% if @issue.ai_confirmed? %>
+        <span class="badge bg-success ms-2">Confirmed</span>
+      <% elsif @issue.ai_confidence.present? %>
+        <span class="badge bg-secondary ms-2">Analyzed</span>
+      <% end %>
+    </h5>
+  </div>
+  <div class="card-body">
+    <% if @issue.ai_confidence.present? %>
+      <dl class="row mb-0">
+        <dt class="col-sm-3">Confidence</dt>
+        <dd class="col-sm-9"><%= @issue.ai_confidence.round(1) %>%</dd>
+
+        <dt class="col-sm-3">Verified At</dt>
+        <dd class="col-sm-9"><%= @issue.ai_verified_at&.strftime("%Y-%m-%d %H:%M:%S") || "-" %></dd>
+
+        <% if @issue.ai_explanation.present? %>
+          <dt class="col-sm-3">Merchant Explanation</dt>
+          <dd class="col-sm-9"><%= @issue.merchant_explanation %></dd>
+        <% end %>
+
+        <% if @issue.ai_suggested_fix.present? %>
+          <dt class="col-sm-3">Suggested Fix</dt>
+          <dd class="col-sm-9"><%= @issue.merchant_suggested_fix %></dd>
+        <% end %>
+
+        <% if @issue.ai_reasoning.present? %>
+          <dt class="col-sm-3">AI Reasoning (Debug)</dt>
+          <dd class="col-sm-9">
+            <pre class="bg-dark text-light p-3 rounded small" style="max-height: 200px; overflow-y: auto; white-space: pre-wrap;"><%= @issue.ai_reasoning %></pre>
+          </dd>
+        <% end %>
+      </dl>
+    <% else %>
+      <p class="text-muted mb-0">No AI analysis available for this issue.</p>
+    <% end %>
+  </div>
+</div>
+
 <!-- Acknowledgement Info -->
 <% if @issue.acknowledged_at.present? %>
   <div class="card mb-4">
@@ -83,6 +127,9 @@
 
       <dt class="col-sm-3">Scan Date</dt>
       <dd class="col-sm-9"><%= @scan.created_at.strftime("%Y-%m-%d %H:%M:%S") %></dd>
+
+      <dt class="col-sm-3">Scan Depth</dt>
+      <dd class="col-sm-9"><%= @scan.scan_depth&.humanize || "Quick" %></dd>
 
       <dt class="col-sm-3">Page Load Time</dt>
       <dd class="col-sm-9"><%= @scan.page_load_time_ms ? "#{@scan.page_load_time_ms}ms" : "-" %></dd>
