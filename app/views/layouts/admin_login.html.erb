@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Prowl Admin - Login</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <%= csrf_meta_tags %>
+  <%= csp_meta_tag %>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+  <div class="w-full max-w-sm">
+    <div class="bg-white rounded-lg shadow-md p-6">
+      <h4 class="text-center text-xl font-semibold mb-6">Prowl Admin</h4>
+
+      <% if notice.present? %>
+        <div class="mb-4 p-3 bg-green-50 border border-green-200 text-green-800 rounded text-sm">
+          <%= notice %>
+        </div>
+      <% end %>
+      <% if alert.present? %>
+        <div class="mb-4 p-3 bg-red-50 border border-red-200 text-red-800 rounded text-sm">
+          <%= alert %>
+        </div>
+      <% end %>
+
+      <%= yield %>
+    </div>
+  </div>
+</body>
+</html>

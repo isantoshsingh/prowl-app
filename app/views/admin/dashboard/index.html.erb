@@ -1,0 +1,79 @@
+<h2 class="text-2xl font-bold mb-6">Dashboard</h2>
+
+<!-- Summary Cards -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+  <div class="bg-white rounded-lg shadow-sm p-5">
+    <div class="text-gray-500 text-sm">Total Shops</div>
+    <div class="text-3xl font-bold mt-1"><%= @total_shops %></div>
+  </div>
+  <div class="bg-white rounded-lg shadow-sm p-5">
+    <div class="text-gray-500 text-sm">Active Shops (30d)</div>
+    <div class="text-3xl font-bold mt-1"><%= @active_shops %></div>
+  </div>
+  <div class="bg-white rounded-lg shadow-sm p-5">
+    <div class="text-gray-500 text-sm">Total Scans</div>
+    <div class="text-3xl font-bold mt-1"><%= @total_scans %></div>
+    <div class="text-gray-500 text-sm"><%= @scans_last_7_days %> in last 7 days</div>
+  </div>
+  <div class="bg-white rounded-lg shadow-sm p-5">
+    <div class="text-gray-500 text-sm">Open Issues</div>
+    <div class="text-3xl font-bold mt-1"><%= @open_issues %></div>
+    <div class="text-gray-500 text-sm"><%= @total_issues %> total</div>
+  </div>
+</div>
+
+<!-- Issues by Severity + AI -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+  <div class="bg-white rounded-lg shadow-sm p-5 border-l-4 border-red-500">
+    <div class="text-red-600 text-sm font-semibold">High Severity</div>
+    <div class="text-2xl font-bold mt-1"><%= @issues_by_severity[:high] %></div>
+  </div>
+  <div class="bg-white rounded-lg shadow-sm p-5 border-l-4 border-yellow-500">
+    <div class="text-yellow-600 text-sm font-semibold">Medium Severity</div>
+    <div class="text-2xl font-bold mt-1"><%= @issues_by_severity[:medium] %></div>
+  </div>
+  <div class="bg-white rounded-lg shadow-sm p-5 border-l-4 border-blue-400">
+    <div class="text-blue-500 text-sm font-semibold">Low Severity</div>
+    <div class="text-2xl font-bold mt-1"><%= @issues_by_severity[:low] %></div>
+  </div>
+  <div class="bg-white rounded-lg shadow-sm p-5 border-l-4 border-green-500">
+    <div class="text-green-600 text-sm font-semibold">AI Confirmed</div>
+    <div class="text-2xl font-bold mt-1"><%= @ai_confirmed_issues %></div>
+  </div>
+</div>
+
+<!-- Recent Installs -->
+<div class="bg-white rounded-lg shadow-sm">
+  <div class="px-5 py-4 border-b border-gray-200">
+    <h5 class="font-semibold text-lg">Recent Installs</h5>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50">
+        <tr>
+          <th class="text-left px-5 py-3 font-medium text-gray-600">Domain</th>
+          <th class="text-left px-5 py-3 font-medium text-gray-600">Owner</th>
+          <th class="text-left px-5 py-3 font-medium text-gray-600">Plan</th>
+          <th class="text-left px-5 py-3 font-medium text-gray-600">Country</th>
+          <th class="text-left px-5 py-3 font-medium text-gray-600">Installed At</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
+        <% @recent_installs.each do |shop| %>
+          <tr class="hover:bg-gray-50">
+            <td class="px-5 py-3"><%= link_to shop.shopify_domain, admin_shop_path(shop), class: "text-blue-600 hover:underline" %></td>
+            <td class="px-5 py-3"><%= shop.shop_owner || "-" %></td>
+            <td class="px-5 py-3"><%= shop.plan_display_name || shop.plan_name || "-" %></td>
+            <td class="px-5 py-3"><%= shop.country_code || "-" %></td>
+            <td class="px-5 py-3"><%= shop.installed_at ? shop.installed_at.strftime("%Y-%m-%d %H:%M") : shop.created_at.strftime("%Y-%m-%d %H:%M") %></td>
+          </tr>
+        <% end %>
+        <% if @recent_installs.empty? %>
+          <tr>
+            <td colspan="5" class="text-gray-400 text-center py-6">No shops installed yet.</td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>

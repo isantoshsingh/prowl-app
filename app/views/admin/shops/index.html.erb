@@ -1,0 +1,69 @@
+<div class="flex justify-between items-center mb-6">
+  <h2 class="text-2xl font-bold">Shops</h2>
+</div>
+
+<!-- Search -->
+<div class="bg-white rounded-lg shadow-sm mb-4 p-4">
+  <%= form_tag(admin_shops_path, method: :get, class: "flex gap-3 items-end") do %>
+    <div class="flex-1">
+      <%= text_field_tag :search, params[:search], class: "w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500", placeholder: "Search by domain..." %>
+    </div>
+    <div class="flex gap-2">
+      <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 font-medium">Search</button>
+      <% if params[:search].present? %>
+        <%= link_to "Clear", admin_shops_path, class: "px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50" %>
+      <% end %>
+    </div>
+  <% end %>
+</div>
+
+<!-- Shops Table -->
+<div class="bg-white rounded-lg shadow-sm">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50">
+        <tr>
+          <th class="text-left px-5 py-3 font-medium text-gray-600">Domain</th>
+          <th class="text-left px-5 py-3 font-medium text-gray-600">Plan</th>
+          <th class="text-left px-5 py-3 font-medium text-gray-600">Installed At</th>
+          <th class="text-left px-5 py-3 font-medium text-gray-600">Last Scan</th>
+          <th class="text-left px-5 py-3 font-medium text-gray-600">Issues</th>
+          <th class="text-left px-5 py-3 font-medium text-gray-600">Status</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
+        <% @shops.each do |shop| %>
+          <% last_scan = Scan.joins(:product_page).where(product_pages: { shop_id: shop.id }).order(created_at: :desc).first %>
+          <% issue_count = Issue.joins(:product_page).where(product_pages: { shop_id: shop.id }).where.not(status: "resolved").count %>
+          <tr class="hover:bg-gray-50">
+            <td class="px-5 py-3"><%= link_to shop.shopify_domain, admin_shop_path(shop), class: "text-blue-600 hover:underline" %></td>
+            <td class="px-5 py-3"><%= shop.plan_display_name || shop.plan_name || "-" %></td>
+            <td class="px-5 py-3"><%= shop.installed_at&.strftime("%Y-%m-%d") || shop.created_at.strftime("%Y-%m-%d") %></td>
+            <td class="px-5 py-3"><%= last_scan&.created_at&.strftime("%Y-%m-%d %H:%M") || "Never" %></td>
+            <td class="px-5 py-3">
+              <% if issue_count > 0 %>
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800"><%= issue_count %></span>
+              <% else %>
+                <span class="text-gray-400">0</span>
+              <% end %>
+            </td>
+            <td class="px-5 py-3">
+              <% if shop.installed? %>
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">Installed</span>
+              <% else %>
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600">Uninstalled</span>
+              <% end %>
+            </td>
+          </tr>
+        <% end %>
+        <% if @shops.empty? %>
+          <tr>
+            <td colspan="6" class="text-gray-400 text-center py-6">No shops found.</td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<%= pagy_tailwind_nav(@pagy) %>
