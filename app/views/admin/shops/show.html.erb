@@ -1,101 +1,115 @@
-<div class="d-flex justify-content-between align-items-center mb-4">
-  <h2 class="mb-0"><%= @shop.shopify_domain %></h2>
-  <%= link_to "Back to Shops", admin_shops_path, class: "btn btn-outline-secondary btn-sm" %>
+<div class="flex justify-between items-center mb-6">
+  <h2 class="text-2xl font-bold"><%= @shop.shopify_domain %></h2>
+  <%= link_to "Back to Shops", admin_shops_path, class: "text-sm px-3 py-1.5 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50" %>
 </div>
 
 <!-- Shop Metadata -->
-<div class="card mb-4">
-  <div class="card-header"><h5 class="card-title mb-0">Shop Details</h5></div>
-  <div class="card-body">
-    <div class="row">
-      <div class="col-md-6">
-        <dl class="row mb-0">
-          <dt class="col-sm-5">Domain</dt>
-          <dd class="col-sm-7"><%= @shop.shopify_domain %></dd>
-
-          <dt class="col-sm-5">Owner</dt>
-          <dd class="col-sm-7"><%= @shop.shop_owner || "-" %></dd>
-
-          <dt class="col-sm-5">Email</dt>
-          <dd class="col-sm-7"><%= @shop.email || "-" %></dd>
-
-          <dt class="col-sm-5">Plan</dt>
-          <dd class="col-sm-7"><%= @shop.plan_display_name || @shop.plan_name || "-" %></dd>
-
-          <dt class="col-sm-5">Country</dt>
-          <dd class="col-sm-7"><%= [@shop.country_name, @shop.country_code].compact.join(" / ").presence || "-" %></dd>
-        </dl>
-      </div>
-      <div class="col-md-6">
-        <dl class="row mb-0">
-          <dt class="col-sm-5">Status</dt>
-          <dd class="col-sm-7">
+<div class="bg-white rounded-lg shadow-sm mb-6">
+  <div class="px-5 py-4 border-b border-gray-200">
+    <h5 class="font-semibold text-lg">Shop Details</h5>
+  </div>
+  <div class="p-5">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <dl class="space-y-3">
+        <div class="grid grid-cols-5 gap-2">
+          <dt class="col-span-2 text-gray-500 font-medium text-sm">Domain</dt>
+          <dd class="col-span-3"><%= @shop.shopify_domain %></dd>
+        </div>
+        <div class="grid grid-cols-5 gap-2">
+          <dt class="col-span-2 text-gray-500 font-medium text-sm">Owner</dt>
+          <dd class="col-span-3"><%= @shop.shop_owner || "-" %></dd>
+        </div>
+        <div class="grid grid-cols-5 gap-2">
+          <dt class="col-span-2 text-gray-500 font-medium text-sm">Email</dt>
+          <dd class="col-span-3"><%= @shop.email || "-" %></dd>
+        </div>
+        <div class="grid grid-cols-5 gap-2">
+          <dt class="col-span-2 text-gray-500 font-medium text-sm">Plan</dt>
+          <dd class="col-span-3"><%= @shop.plan_display_name || @shop.plan_name || "-" %></dd>
+        </div>
+        <div class="grid grid-cols-5 gap-2">
+          <dt class="col-span-2 text-gray-500 font-medium text-sm">Country</dt>
+          <dd class="col-span-3"><%= [@shop.country_name, @shop.country_code].compact.join(" / ").presence || "-" %></dd>
+        </div>
+      </dl>
+      <dl class="space-y-3">
+        <div class="grid grid-cols-5 gap-2">
+          <dt class="col-span-2 text-gray-500 font-medium text-sm">Status</dt>
+          <dd class="col-span-3">
             <% if @shop.installed? %>
-              <span class="badge bg-success">Installed</span>
+              <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">Installed</span>
             <% else %>
-              <span class="badge bg-secondary">Uninstalled</span>
+              <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600">Uninstalled</span>
             <% end %>
           </dd>
-
-          <dt class="col-sm-5">Installed At</dt>
-          <dd class="col-sm-7"><%= @shop.installed_at&.strftime("%Y-%m-%d %H:%M") || "-" %></dd>
-
-          <dt class="col-sm-5">Subscription</dt>
-          <dd class="col-sm-7"><%= @shop.subscription_status.humanize %></dd>
-
-          <dt class="col-sm-5">Billing Exempt</dt>
-          <dd class="col-sm-7"><%= @shop.billing_exempt? ? "Yes" : "No" %></dd>
-
-          <dt class="col-sm-5">Timezone</dt>
-          <dd class="col-sm-7"><%= @shop.iana_timezone || @shop.timezone || "-" %></dd>
-
-          <dt class="col-sm-5">Scan Frequency</dt>
-          <dd class="col-sm-7"><%= @shop.shop_setting&.scan_frequency&.humanize || "Daily" %></dd>
-
-          <dt class="col-sm-5">Max Pages</dt>
-          <dd class="col-sm-7"><%= @shop.shop_setting&.max_monitored_pages || Shop::MAX_MONITORED_PAGES %></dd>
-        </dl>
-      </div>
+        </div>
+        <div class="grid grid-cols-5 gap-2">
+          <dt class="col-span-2 text-gray-500 font-medium text-sm">Installed At</dt>
+          <dd class="col-span-3"><%= @shop.installed_at&.strftime("%Y-%m-%d %H:%M") || "-" %></dd>
+        </div>
+        <div class="grid grid-cols-5 gap-2">
+          <dt class="col-span-2 text-gray-500 font-medium text-sm">Subscription</dt>
+          <dd class="col-span-3"><%= @shop.subscription_status.humanize %></dd>
+        </div>
+        <div class="grid grid-cols-5 gap-2">
+          <dt class="col-span-2 text-gray-500 font-medium text-sm">Billing Exempt</dt>
+          <dd class="col-span-3"><%= @shop.billing_exempt? ? "Yes" : "No" %></dd>
+        </div>
+        <div class="grid grid-cols-5 gap-2">
+          <dt class="col-span-2 text-gray-500 font-medium text-sm">Timezone</dt>
+          <dd class="col-span-3"><%= @shop.iana_timezone || @shop.timezone || "-" %></dd>
+        </div>
+        <div class="grid grid-cols-5 gap-2">
+          <dt class="col-span-2 text-gray-500 font-medium text-sm">Scan Frequency</dt>
+          <dd class="col-span-3"><%= @shop.shop_setting&.scan_frequency&.humanize || "Daily" %></dd>
+        </div>
+        <div class="grid grid-cols-5 gap-2">
+          <dt class="col-span-2 text-gray-500 font-medium text-sm">Max Pages</dt>
+          <dd class="col-span-3"><%= @shop.shop_setting&.max_monitored_pages || Shop::MAX_MONITORED_PAGES %></dd>
+        </div>
+      </dl>
     </div>
   </div>
 </div>
 
 <!-- Monitored Product Pages -->
-<div class="card mb-4">
-  <div class="card-header"><h5 class="card-title mb-0">Monitored Product Pages (<%= @product_pages.count %>)</h5></div>
-  <div class="table-responsive">
-    <table class="table table-hover mb-0">
-      <thead>
+<div class="bg-white rounded-lg shadow-sm mb-6">
+  <div class="px-5 py-4 border-b border-gray-200">
+    <h5 class="font-semibold text-lg">Monitored Product Pages (<%= @product_pages.count %>)</h5>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50">
         <tr>
-          <th>Title</th>
-          <th>Handle</th>
-          <th>Status</th>
-          <th>Last Scanned</th>
-          <th>Monitoring</th>
+          <th class="text-left px-5 py-3 font-medium text-gray-600">Title</th>
+          <th class="text-left px-5 py-3 font-medium text-gray-600">Handle</th>
+          <th class="text-left px-5 py-3 font-medium text-gray-600">Status</th>
+          <th class="text-left px-5 py-3 font-medium text-gray-600">Last Scanned</th>
+          <th class="text-left px-5 py-3 font-medium text-gray-600">Monitoring</th>
         </tr>
       </thead>
-      <tbody>
+      <tbody class="divide-y divide-gray-100">
         <% @product_pages.each do |page| %>
-          <tr>
-            <td><%= page.title %></td>
-            <td><code><%= page.handle %></code></td>
-            <td>
+          <tr class="hover:bg-gray-50">
+            <td class="px-5 py-3"><%= page.title %></td>
+            <td class="px-5 py-3"><code class="text-sm bg-gray-100 px-1.5 py-0.5 rounded"><%= page.handle %></code></td>
+            <td class="px-5 py-3">
               <% badge_class = case page.status
-                when "healthy" then "bg-success"
-                when "warning" then "bg-warning text-dark"
-                when "critical" then "bg-danger"
-                when "error" then "bg-dark"
-                else "bg-secondary"
+                when "healthy" then "bg-green-100 text-green-800"
+                when "warning" then "bg-yellow-100 text-yellow-800"
+                when "critical" then "bg-red-100 text-red-800"
+                when "error" then "bg-gray-800 text-white"
+                else "bg-gray-100 text-gray-600"
               end %>
-              <span class="badge <%= badge_class %>"><%= page.status.humanize %></span>
+              <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium <%= badge_class %>"><%= page.status.humanize %></span>
             </td>
-            <td><%= page.last_scanned_at&.strftime("%Y-%m-%d %H:%M") || "Never" %></td>
-            <td><%= page.monitoring_enabled? ? "Yes" : "No" %></td>
+            <td class="px-5 py-3"><%= page.last_scanned_at&.strftime("%Y-%m-%d %H:%M") || "Never" %></td>
+            <td class="px-5 py-3"><%= page.monitoring_enabled? ? "Yes" : "No" %></td>
           </tr>
         <% end %>
         <% if @product_pages.empty? %>
           <tr>
-            <td colspan="5" class="text-muted text-center py-3">No product pages monitored.</td>
+            <td colspan="5" class="text-gray-400 text-center py-6">No product pages monitored.</td>
           </tr>
         <% end %>
       </tbody>
@@ -104,40 +118,42 @@
 </div>
 
 <!-- Recent Scans -->
-<div class="card mb-4">
-  <div class="card-header"><h5 class="card-title mb-0">Recent Scans</h5></div>
-  <div class="table-responsive">
-    <table class="table table-hover mb-0">
-      <thead>
+<div class="bg-white rounded-lg shadow-sm mb-6">
+  <div class="px-5 py-4 border-b border-gray-200">
+    <h5 class="font-semibold text-lg">Recent Scans</h5>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50">
         <tr>
-          <th>ID</th>
-          <th>Product Page</th>
-          <th>Status</th>
-          <th>Issues Found</th>
-          <th>Date</th>
+          <th class="text-left px-5 py-3 font-medium text-gray-600">ID</th>
+          <th class="text-left px-5 py-3 font-medium text-gray-600">Product Page</th>
+          <th class="text-left px-5 py-3 font-medium text-gray-600">Status</th>
+          <th class="text-left px-5 py-3 font-medium text-gray-600">Issues Found</th>
+          <th class="text-left px-5 py-3 font-medium text-gray-600">Date</th>
         </tr>
       </thead>
-      <tbody>
+      <tbody class="divide-y divide-gray-100">
         <% @recent_scans.each do |scan| %>
-          <tr>
-            <td><%= link_to "##{scan.id}", admin_scan_path(scan) %></td>
-            <td><%= scan.product_page.title %></td>
-            <td>
+          <tr class="hover:bg-gray-50">
+            <td class="px-5 py-3"><%= link_to "##{scan.id}", admin_scan_path(scan), class: "text-blue-600 hover:underline" %></td>
+            <td class="px-5 py-3"><%= scan.product_page.title %></td>
+            <td class="px-5 py-3">
               <% scan_badge = case scan.status
-                when "completed" then "bg-success"
-                when "failed" then "bg-danger"
-                when "running" then "bg-primary"
-                else "bg-secondary"
+                when "completed" then "bg-green-100 text-green-800"
+                when "failed" then "bg-red-100 text-red-800"
+                when "running" then "bg-blue-100 text-blue-800"
+                else "bg-gray-100 text-gray-600"
               end %>
-              <span class="badge <%= scan_badge %>"><%= scan.status.humanize %></span>
+              <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium <%= scan_badge %>"><%= scan.status.humanize %></span>
             </td>
-            <td><%= scan.issues.count %></td>
-            <td><%= scan.created_at.strftime("%Y-%m-%d %H:%M") %></td>
+            <td class="px-5 py-3"><%= scan.issues.count %></td>
+            <td class="px-5 py-3"><%= scan.created_at.strftime("%Y-%m-%d %H:%M") %></td>
           </tr>
         <% end %>
         <% if @recent_scans.empty? %>
           <tr>
-            <td colspan="5" class="text-muted text-center py-3">No scans yet.</td>
+            <td colspan="5" class="text-gray-400 text-center py-6">No scans yet.</td>
           </tr>
         <% end %>
       </tbody>
@@ -146,41 +162,43 @@
 </div>
 
 <!-- Open Issues -->
-<div class="card">
-  <div class="card-header"><h5 class="card-title mb-0">Open Issues (<%= @open_issues.count %>)</h5></div>
-  <div class="table-responsive">
-    <table class="table table-hover mb-0">
-      <thead>
+<div class="bg-white rounded-lg shadow-sm">
+  <div class="px-5 py-4 border-b border-gray-200">
+    <h5 class="font-semibold text-lg">Open Issues (<%= @open_issues.count %>)</h5>
+  </div>
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50">
         <tr>
-          <th>Issue</th>
-          <th>Severity</th>
-          <th>Type</th>
-          <th>Status</th>
-          <th>Occurrences</th>
-          <th>Last Detected</th>
+          <th class="text-left px-5 py-3 font-medium text-gray-600">Issue</th>
+          <th class="text-left px-5 py-3 font-medium text-gray-600">Severity</th>
+          <th class="text-left px-5 py-3 font-medium text-gray-600">Type</th>
+          <th class="text-left px-5 py-3 font-medium text-gray-600">Status</th>
+          <th class="text-left px-5 py-3 font-medium text-gray-600">Occurrences</th>
+          <th class="text-left px-5 py-3 font-medium text-gray-600">Last Detected</th>
         </tr>
       </thead>
-      <tbody>
+      <tbody class="divide-y divide-gray-100">
         <% @open_issues.each do |issue| %>
-          <tr>
-            <td><%= link_to issue.title, admin_issue_path(issue) %></td>
-            <td>
+          <tr class="hover:bg-gray-50">
+            <td class="px-5 py-3"><%= link_to issue.title, admin_issue_path(issue), class: "text-blue-600 hover:underline" %></td>
+            <td class="px-5 py-3">
               <% severity_badge = case issue.severity
-                when "high" then "bg-danger"
-                when "medium" then "bg-warning text-dark"
-                else "bg-info"
+                when "high" then "bg-red-100 text-red-800"
+                when "medium" then "bg-yellow-100 text-yellow-800"
+                else "bg-blue-100 text-blue-800"
               end %>
-              <span class="badge <%= severity_badge %>"><%= issue.severity.humanize %></span>
+              <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium <%= severity_badge %>"><%= issue.severity.humanize %></span>
             </td>
-            <td><%= issue.issue_type.humanize %></td>
-            <td><%= issue.status.humanize %></td>
-            <td><%= issue.occurrence_count %></td>
-            <td><%= issue.last_detected_at.strftime("%Y-%m-%d %H:%M") %></td>
+            <td class="px-5 py-3"><%= issue.issue_type.humanize %></td>
+            <td class="px-5 py-3"><%= issue.status.humanize %></td>
+            <td class="px-5 py-3"><%= issue.occurrence_count %></td>
+            <td class="px-5 py-3"><%= issue.last_detected_at.strftime("%Y-%m-%d %H:%M") %></td>
           </tr>
         <% end %>
         <% if @open_issues.empty? %>
           <tr>
-            <td colspan="6" class="text-muted text-center py-3">No open issues.</td>
+            <td colspan="6" class="text-gray-400 text-center py-6">No open issues.</td>
           </tr>
         <% end %>
       </tbody>

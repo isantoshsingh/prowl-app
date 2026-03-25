@@ -1,22 +1,22 @@
-<%= form_for(resource, as: resource_name, url: session_path(resource_name), html: { class: "" }) do |f| %>
-  <div class="mb-3">
-    <%= f.label :email, class: "form-label" %>
-    <%= f.email_field :email, autofocus: true, autocomplete: "email", class: "form-control" %>
+<%= form_for(resource, as: resource_name, url: session_path(resource_name)) do |f| %>
+  <div class="mb-4">
+    <%= f.label :email, class: "block text-sm font-medium text-gray-700 mb-1" %>
+    <%= f.email_field :email, autofocus: true, autocomplete: "email", class: "w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" %>
   </div>
 
-  <div class="mb-3">
-    <%= f.label :password, class: "form-label" %>
-    <%= f.password_field :password, autocomplete: "current-password", class: "form-control" %>
+  <div class="mb-4">
+    <%= f.label :password, class: "block text-sm font-medium text-gray-700 mb-1" %>
+    <%= f.password_field :password, autocomplete: "current-password", class: "w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" %>
   </div>
 
   <% if devise_mapping.rememberable? %>
-    <div class="mb-3 form-check">
-      <%= f.check_box :remember_me, class: "form-check-input" %>
-      <%= f.label :remember_me, class: "form-check-label" %>
+    <div class="mb-4 flex items-center">
+      <%= f.check_box :remember_me, class: "h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500" %>
+      <%= f.label :remember_me, class: "ml-2 text-sm text-gray-700" %>
     </div>
   <% end %>
 
-  <div class="d-grid">
-    <%= f.submit "Log in", class: "btn btn-primary" %>
+  <div>
+    <%= f.submit "Log in", class: "w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 font-medium cursor-pointer" %>
   </div>
 <% end %>

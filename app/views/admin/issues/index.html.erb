@@ -1,82 +1,80 @@
-<div class="d-flex justify-content-between align-items-center mb-4">
-  <h2 class="mb-0">Issues</h2>
+<div class="flex justify-between items-center mb-6">
+  <h2 class="text-2xl font-bold">Issues</h2>
 </div>
 
 <!-- Filters -->
-<div class="card mb-3">
-  <div class="card-body">
-    <%= form_tag(admin_issues_path, method: :get, class: "row g-2 align-items-end") do %>
-      <div class="col-md-3">
-        <label class="form-label small">Severity</label>
-        <%= select_tag :severity, options_for_select([["All severities", ""], ["High", "high"], ["Medium", "medium"], ["Low", "low"]], params[:severity]), class: "form-select" %>
-      </div>
-      <div class="col-md-3">
-        <label class="form-label small">Issue Type</label>
-        <%= select_tag :issue_type, options_for_select([["All types", ""]] + Issue::ISSUE_TYPES.keys.map { |t| [t.humanize, t] }, params[:issue_type]), class: "form-select" %>
-      </div>
-      <div class="col-md-3">
-        <label class="form-label small">Status</label>
-        <%= select_tag :status_filter, options_for_select([["All", ""], ["Unresolved", "unresolved"], ["Resolved", "resolved"]], params[:status_filter]), class: "form-select" %>
-      </div>
-      <div class="col-md-3">
-        <button type="submit" class="btn btn-primary w-100">Filter</button>
-      </div>
-    <% end %>
-    <% if params[:severity].present? || params[:issue_type].present? || params[:status_filter].present? %>
-      <div class="mt-2">
-        <%= link_to "Clear filters", admin_issues_path, class: "btn btn-outline-secondary btn-sm" %>
-      </div>
-    <% end %>
-  </div>
+<div class="bg-white rounded-lg shadow-sm mb-4 p-4">
+  <%= form_tag(admin_issues_path, method: :get, class: "grid grid-cols-1 md:grid-cols-4 gap-3 items-end") do %>
+    <div>
+      <label class="block text-sm text-gray-600 mb-1">Severity</label>
+      <%= select_tag :severity, options_for_select([["All severities", ""], ["High", "high"], ["Medium", "medium"], ["Low", "low"]], params[:severity]), class: "w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" %>
+    </div>
+    <div>
+      <label class="block text-sm text-gray-600 mb-1">Issue Type</label>
+      <%= select_tag :issue_type, options_for_select([["All types", ""]] + Issue::ISSUE_TYPES.keys.map { |t| [t.humanize, t] }, params[:issue_type]), class: "w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" %>
+    </div>
+    <div>
+      <label class="block text-sm text-gray-600 mb-1">Status</label>
+      <%= select_tag :status_filter, options_for_select([["All", ""], ["Unresolved", "unresolved"], ["Resolved", "resolved"]], params[:status_filter]), class: "w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500" %>
+    </div>
+    <div>
+      <button type="submit" class="w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 font-medium">Filter</button>
+    </div>
+  <% end %>
+  <% if params[:severity].present? || params[:issue_type].present? || params[:status_filter].present? %>
+    <div class="mt-3">
+      <%= link_to "Clear filters", admin_issues_path, class: "text-sm px-3 py-1.5 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50" %>
+    </div>
+  <% end %>
 </div>
 
 <!-- Issues Table -->
-<div class="card">
-  <div class="table-responsive">
-    <table class="table table-hover mb-0">
-      <thead>
+<div class="bg-white rounded-lg shadow-sm">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50">
         <tr>
-          <th>Issue</th>
-          <th>Shop</th>
-          <th>Severity</th>
-          <th>Type</th>
-          <th>AI</th>
-          <th>Status</th>
-          <th>Occurrences</th>
-          <th>Last Detected</th>
+          <th class="text-left px-5 py-3 font-medium text-gray-600">Issue</th>
+          <th class="text-left px-5 py-3 font-medium text-gray-600">Shop</th>
+          <th class="text-left px-5 py-3 font-medium text-gray-600">Severity</th>
+          <th class="text-left px-5 py-3 font-medium text-gray-600">Type</th>
+          <th class="text-left px-5 py-3 font-medium text-gray-600">AI</th>
+          <th class="text-left px-5 py-3 font-medium text-gray-600">Status</th>
+          <th class="text-left px-5 py-3 font-medium text-gray-600">Occurrences</th>
+          <th class="text-left px-5 py-3 font-medium text-gray-600">Last Detected</th>
         </tr>
       </thead>
-      <tbody>
+      <tbody class="divide-y divide-gray-100">
         <% @issues.each do |issue| %>
-          <tr>
-            <td><%= link_to issue.title, admin_issue_path(issue) %></td>
-            <td><%= link_to issue.product_page.shop.shopify_domain, admin_shop_path(issue.product_page.shop) %></td>
-            <td>
+          <tr class="hover:bg-gray-50">
+            <td class="px-5 py-3"><%= link_to issue.title, admin_issue_path(issue), class: "text-blue-600 hover:underline" %></td>
+            <td class="px-5 py-3"><%= link_to issue.product_page.shop.shopify_domain, admin_shop_path(issue.product_page.shop), class: "text-blue-600 hover:underline" %></td>
+            <td class="px-5 py-3">
               <% severity_badge = case issue.severity
-                when "high" then "bg-danger"
-                when "medium" then "bg-warning text-dark"
-                else "bg-info"
+                when "high" then "bg-red-100 text-red-800"
+                when "medium" then "bg-yellow-100 text-yellow-800"
+                else "bg-blue-100 text-blue-800"
               end %>
-              <span class="badge <%= severity_badge %>"><%= issue.severity.humanize %></span>
+              <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium <%= severity_badge %>"><%= issue.severity.humanize %></span>
             </td>
-            <td><%= issue.issue_type.humanize %></td>
-            <td>
+            <td class="px-5 py-3"><%= issue.issue_type.humanize %></td>
+            <td class="px-5 py-3">
               <% if issue.ai_confirmed? %>
-                <span class="badge bg-success" title="Confidence: <%= issue.ai_confidence&.round(1) %>%">Confirmed</span>
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800" title="Confidence: <%= issue.ai_confidence&.round(1) %>%">Confirmed</span>
               <% elsif issue.ai_confidence.present? %>
-                <span class="badge bg-secondary" title="Confidence: <%= issue.ai_confidence&.round(1) %>%">Analyzed</span>
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600" title="Confidence: <%= issue.ai_confidence&.round(1) %>%">Analyzed</span>
               <% else %>
-                <span class="text-muted">-</span>
+                <span class="text-gray-400">-</span>
               <% end %>
             </td>
-            <td><%= issue.status.humanize %></td>
-            <td><%= issue.occurrence_count %></td>
-            <td><%= issue.last_detected_at.strftime("%Y-%m-%d %H:%M") %></td>
+            <td class="px-5 py-3"><%= issue.status.humanize %></td>
+            <td class="px-5 py-3"><%= issue.occurrence_count %></td>
+            <td class="px-5 py-3"><%= issue.last_detected_at.strftime("%Y-%m-%d %H:%M") %></td>
           </tr>
         <% end %>
         <% if @issues.empty? %>
           <tr>
-            <td colspan="8" class="text-muted text-center py-3">No issues found.</td>
+            <td colspan="8" class="text-gray-400 text-center py-6">No issues found.</td>
           </tr>
         <% end %>
       </tbody>

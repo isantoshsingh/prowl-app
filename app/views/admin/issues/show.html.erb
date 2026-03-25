@@ -1,153 +1,183 @@
-<div class="d-flex justify-content-between align-items-center mb-4">
-  <h2 class="mb-0"><%= @issue.title %></h2>
-  <%= link_to "Back to Issues", admin_issues_path, class: "btn btn-outline-secondary btn-sm" %>
+<div class="flex justify-between items-center mb-6">
+  <h2 class="text-2xl font-bold"><%= @issue.title %></h2>
+  <%= link_to "Back to Issues", admin_issues_path, class: "text-sm px-3 py-1.5 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50" %>
 </div>
 
 <!-- Issue Details -->
-<div class="card mb-4">
-  <div class="card-header"><h5 class="card-title mb-0">Issue Details</h5></div>
-  <div class="card-body">
-    <div class="row">
-      <div class="col-md-6">
-        <dl class="row mb-0">
-          <dt class="col-sm-5">Issue Type</dt>
-          <dd class="col-sm-7"><%= @issue.issue_type.humanize %></dd>
-
-          <dt class="col-sm-5">Severity</dt>
-          <dd class="col-sm-7">
+<div class="bg-white rounded-lg shadow-sm mb-6">
+  <div class="px-5 py-4 border-b border-gray-200">
+    <h5 class="font-semibold text-lg">Issue Details</h5>
+  </div>
+  <div class="p-5">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <dl class="space-y-3">
+        <div class="grid grid-cols-5 gap-2">
+          <dt class="col-span-2 text-gray-500 font-medium text-sm">Issue Type</dt>
+          <dd class="col-span-3"><%= @issue.issue_type.humanize %></dd>
+        </div>
+        <div class="grid grid-cols-5 gap-2">
+          <dt class="col-span-2 text-gray-500 font-medium text-sm">Severity</dt>
+          <dd class="col-span-3">
             <% severity_badge = case @issue.severity
-              when "high" then "bg-danger"
-              when "medium" then "bg-warning text-dark"
-              else "bg-info"
+              when "high" then "bg-red-100 text-red-800"
+              when "medium" then "bg-yellow-100 text-yellow-800"
+              else "bg-blue-100 text-blue-800"
             end %>
-            <span class="badge <%= severity_badge %>"><%= @issue.severity_label %></span>
+            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium <%= severity_badge %>"><%= @issue.severity_label %></span>
           </dd>
-
-          <dt class="col-sm-5">Status</dt>
-          <dd class="col-sm-7"><%= @issue.status.humanize %></dd>
-
-          <dt class="col-sm-5">Occurrences</dt>
-          <dd class="col-sm-7"><%= @issue.occurrence_count %></dd>
-        </dl>
-      </div>
-      <div class="col-md-6">
-        <dl class="row mb-0">
-          <dt class="col-sm-5">Shop</dt>
-          <dd class="col-sm-7"><%= link_to @shop.shopify_domain, admin_shop_path(@shop) %></dd>
-
-          <dt class="col-sm-5">Product Page</dt>
-          <dd class="col-sm-7"><%= @product_page.title %></dd>
-
-          <dt class="col-sm-5">First Detected</dt>
-          <dd class="col-sm-7"><%= @issue.first_detected_at.strftime("%Y-%m-%d %H:%M:%S") %></dd>
-
-          <dt class="col-sm-5">Last Detected</dt>
-          <dd class="col-sm-7"><%= @issue.last_detected_at.strftime("%Y-%m-%d %H:%M:%S") %></dd>
-        </dl>
-      </div>
+        </div>
+        <div class="grid grid-cols-5 gap-2">
+          <dt class="col-span-2 text-gray-500 font-medium text-sm">Status</dt>
+          <dd class="col-span-3"><%= @issue.status.humanize %></dd>
+        </div>
+        <div class="grid grid-cols-5 gap-2">
+          <dt class="col-span-2 text-gray-500 font-medium text-sm">Occurrences</dt>
+          <dd class="col-span-3"><%= @issue.occurrence_count %></dd>
+        </div>
+      </dl>
+      <dl class="space-y-3">
+        <div class="grid grid-cols-5 gap-2">
+          <dt class="col-span-2 text-gray-500 font-medium text-sm">Shop</dt>
+          <dd class="col-span-3"><%= link_to @shop.shopify_domain, admin_shop_path(@shop), class: "text-blue-600 hover:underline" %></dd>
+        </div>
+        <div class="grid grid-cols-5 gap-2">
+          <dt class="col-span-2 text-gray-500 font-medium text-sm">Product Page</dt>
+          <dd class="col-span-3"><%= @product_page.title %></dd>
+        </div>
+        <div class="grid grid-cols-5 gap-2">
+          <dt class="col-span-2 text-gray-500 font-medium text-sm">First Detected</dt>
+          <dd class="col-span-3"><%= @issue.first_detected_at.strftime("%Y-%m-%d %H:%M:%S") %></dd>
+        </div>
+        <div class="grid grid-cols-5 gap-2">
+          <dt class="col-span-2 text-gray-500 font-medium text-sm">Last Detected</dt>
+          <dd class="col-span-3"><%= @issue.last_detected_at.strftime("%Y-%m-%d %H:%M:%S") %></dd>
+        </div>
+      </dl>
     </div>
   </div>
 </div>
 
 <!-- Description -->
-<div class="card mb-4">
-  <div class="card-header"><h5 class="card-title mb-0">Description</h5></div>
-  <div class="card-body">
-    <p class="mb-0"><%= @issue.description || "No description available." %></p>
+<div class="bg-white rounded-lg shadow-sm mb-6">
+  <div class="px-5 py-4 border-b border-gray-200">
+    <h5 class="font-semibold text-lg">Description</h5>
+  </div>
+  <div class="p-5">
+    <p class="text-gray-700"><%= @issue.description || "No description available." %></p>
   </div>
 </div>
 
 <!-- AI Analysis -->
-<div class="card mb-4">
-  <div class="card-header">
-    <h5 class="card-title mb-0">
+<div class="bg-white rounded-lg shadow-sm mb-6">
+  <div class="px-5 py-4 border-b border-gray-200">
+    <h5 class="font-semibold text-lg inline-flex items-center gap-2">
       AI Analysis
       <% if @issue.ai_confirmed? %>
-        <span class="badge bg-success ms-2">Confirmed</span>
+        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">Confirmed</span>
       <% elsif @issue.ai_confidence.present? %>
-        <span class="badge bg-secondary ms-2">Analyzed</span>
+        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600">Analyzed</span>
       <% end %>
     </h5>
   </div>
-  <div class="card-body">
+  <div class="p-5">
     <% if @issue.ai_confidence.present? %>
-      <dl class="row mb-0">
-        <dt class="col-sm-3">Confidence</dt>
-        <dd class="col-sm-9"><%= @issue.ai_confidence.round(1) %>%</dd>
-
-        <dt class="col-sm-3">Verified At</dt>
-        <dd class="col-sm-9"><%= @issue.ai_verified_at&.strftime("%Y-%m-%d %H:%M:%S") || "-" %></dd>
-
+      <dl class="space-y-3">
+        <div class="grid grid-cols-4 gap-2">
+          <dt class="col-span-1 text-gray-500 font-medium text-sm">Confidence</dt>
+          <dd class="col-span-3"><%= @issue.ai_confidence.round(1) %>%</dd>
+        </div>
+        <div class="grid grid-cols-4 gap-2">
+          <dt class="col-span-1 text-gray-500 font-medium text-sm">Verified At</dt>
+          <dd class="col-span-3"><%= @issue.ai_verified_at&.strftime("%Y-%m-%d %H:%M:%S") || "-" %></dd>
+        </div>
         <% if @issue.ai_explanation.present? %>
-          <dt class="col-sm-3">Merchant Explanation</dt>
-          <dd class="col-sm-9"><%= @issue.merchant_explanation %></dd>
+          <div class="grid grid-cols-4 gap-2">
+            <dt class="col-span-1 text-gray-500 font-medium text-sm">Merchant Explanation</dt>
+            <dd class="col-span-3"><%= @issue.merchant_explanation %></dd>
+          </div>
         <% end %>
-
         <% if @issue.ai_suggested_fix.present? %>
-          <dt class="col-sm-3">Suggested Fix</dt>
-          <dd class="col-sm-9"><%= @issue.merchant_suggested_fix %></dd>
+          <div class="grid grid-cols-4 gap-2">
+            <dt class="col-span-1 text-gray-500 font-medium text-sm">Suggested Fix</dt>
+            <dd class="col-span-3"><%= @issue.merchant_suggested_fix %></dd>
+          </div>
         <% end %>
-
         <% if @issue.ai_reasoning.present? %>
-          <dt class="col-sm-3">AI Reasoning (Debug)</dt>
-          <dd class="col-sm-9">
-            <pre class="bg-dark text-light p-3 rounded small" style="max-height: 200px; overflow-y: auto; white-space: pre-wrap;"><%= @issue.ai_reasoning %></pre>
-          </dd>
+          <div class="grid grid-cols-4 gap-2">
+            <dt class="col-span-1 text-gray-500 font-medium text-sm">AI Reasoning (Debug)</dt>
+            <dd class="col-span-3">
+              <pre class="bg-gray-900 text-gray-100 p-4 rounded-lg text-sm overflow-y-auto whitespace-pre-wrap" style="max-height: 200px;"><%= @issue.ai_reasoning %></pre>
+            </dd>
+          </div>
         <% end %>
       </dl>
     <% else %>
-      <p class="text-muted mb-0">No AI analysis available for this issue.</p>
+      <p class="text-gray-400">No AI analysis available for this issue.</p>
     <% end %>
   </div>
 </div>
 
 <!-- Acknowledgement Info -->
 <% if @issue.acknowledged_at.present? %>
-  <div class="card mb-4">
-    <div class="card-header"><h5 class="card-title mb-0">Acknowledgement</h5></div>
-    <div class="card-body">
-      <dl class="row mb-0">
-        <dt class="col-sm-3">Acknowledged At</dt>
-        <dd class="col-sm-9"><%= @issue.acknowledged_at.strftime("%Y-%m-%d %H:%M:%S") %></dd>
-
-        <dt class="col-sm-3">Acknowledged By</dt>
-        <dd class="col-sm-9"><%= @issue.acknowledged_by || "-" %></dd>
+  <div class="bg-white rounded-lg shadow-sm mb-6">
+    <div class="px-5 py-4 border-b border-gray-200">
+      <h5 class="font-semibold text-lg">Acknowledgement</h5>
+    </div>
+    <div class="p-5">
+      <dl class="space-y-3">
+        <div class="grid grid-cols-4 gap-2">
+          <dt class="col-span-1 text-gray-500 font-medium text-sm">Acknowledged At</dt>
+          <dd class="col-span-3"><%= @issue.acknowledged_at.strftime("%Y-%m-%d %H:%M:%S") %></dd>
+        </div>
+        <div class="grid grid-cols-4 gap-2">
+          <dt class="col-span-1 text-gray-500 font-medium text-sm">Acknowledged By</dt>
+          <dd class="col-span-3"><%= @issue.acknowledged_by || "-" %></dd>
+        </div>
       </dl>
     </div>
   </div>
 <% end %>
 
 <!-- Debug: Scan Info -->
-<div class="card mb-4">
-  <div class="card-header"><h5 class="card-title mb-0">Related Scan (#<%= @scan.id %>)</h5></div>
-  <div class="card-body">
-    <dl class="row mb-0">
-      <dt class="col-sm-3">Scan Status</dt>
-      <dd class="col-sm-9"><%= @scan.status.humanize %></dd>
-
-      <dt class="col-sm-3">Scan Date</dt>
-      <dd class="col-sm-9"><%= @scan.created_at.strftime("%Y-%m-%d %H:%M:%S") %></dd>
-
-      <dt class="col-sm-3">Scan Depth</dt>
-      <dd class="col-sm-9"><%= @scan.scan_depth&.humanize || "Quick" %></dd>
-
-      <dt class="col-sm-3">Page Load Time</dt>
-      <dd class="col-sm-9"><%= @scan.page_load_time_ms ? "#{@scan.page_load_time_ms}ms" : "-" %></dd>
+<div class="bg-white rounded-lg shadow-sm mb-6">
+  <div class="px-5 py-4 border-b border-gray-200">
+    <h5 class="font-semibold text-lg">Related Scan (#<%= @scan.id %>)</h5>
+  </div>
+  <div class="p-5">
+    <dl class="space-y-3">
+      <div class="grid grid-cols-4 gap-2">
+        <dt class="col-span-1 text-gray-500 font-medium text-sm">Scan Status</dt>
+        <dd class="col-span-3"><%= @scan.status.humanize %></dd>
+      </div>
+      <div class="grid grid-cols-4 gap-2">
+        <dt class="col-span-1 text-gray-500 font-medium text-sm">Scan Date</dt>
+        <dd class="col-span-3"><%= @scan.created_at.strftime("%Y-%m-%d %H:%M:%S") %></dd>
+      </div>
+      <div class="grid grid-cols-4 gap-2">
+        <dt class="col-span-1 text-gray-500 font-medium text-sm">Scan Depth</dt>
+        <dd class="col-span-3"><%= @scan.scan_depth&.humanize || "Quick" %></dd>
+      </div>
+      <div class="grid grid-cols-4 gap-2">
+        <dt class="col-span-1 text-gray-500 font-medium text-sm">Page Load Time</dt>
+        <dd class="col-span-3"><%= @scan.page_load_time_ms ? "#{@scan.page_load_time_ms}ms" : "-" %></dd>
+      </div>
     </dl>
-    <div class="mt-2">
-      <%= link_to "View Full Scan", admin_scan_path(@scan), class: "btn btn-outline-primary btn-sm" %>
+    <div class="mt-4">
+      <%= link_to "View Full Scan", admin_scan_path(@scan), class: "text-sm px-3 py-1.5 border border-blue-500 rounded-md text-blue-600 hover:bg-blue-50" %>
     </div>
   </div>
 </div>
 
 <!-- Debug: Evidence -->
-<div class="card">
-  <div class="card-header"><h5 class="card-title mb-0">Evidence (Debug)</h5></div>
-  <div class="card-body">
+<div class="bg-white rounded-lg shadow-sm">
+  <div class="px-5 py-4 border-b border-gray-200">
+    <h5 class="font-semibold text-lg">Evidence (Debug)</h5>
+  </div>
+  <div class="p-5">
     <% if @issue.evidence.present? %>
-      <pre class="bg-dark text-light p-3 rounded" style="max-height: 400px; overflow-y: auto;"><%= JSON.pretty_generate(@issue.evidence) rescue @issue.evidence.to_s %></pre>
+      <pre class="bg-gray-900 text-gray-100 p-4 rounded-lg text-sm overflow-y-auto" style="max-height: 400px;"><%= JSON.pretty_generate(@issue.evidence) rescue @issue.evidence.to_s %></pre>
     <% else %>
-      <p class="text-muted mb-0">No evidence data available.</p>
+      <p class="text-gray-400">No evidence data available.</p>
     <% end %>
   </div>
 </div>
