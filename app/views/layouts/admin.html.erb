@@ -7,42 +7,63 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <%= csrf_meta_tags %>
   <%= csp_meta_tag %>
+  <style>
+    #sidebar { transition: width 0.2s ease; }
+    #sidebar.collapsed { width: 4rem; }
+    #sidebar.collapsed .sidebar-label { display: none; }
+    #sidebar.collapsed .sidebar-section { display: none; }
+    #sidebar.collapsed .sidebar-footer-email { display: none; }
+    #sidebar.collapsed .sidebar-footer-logout { display: none; }
+    #sidebar.collapsed .sidebar-brand-text { display: none; }
+    #sidebar.collapsed .sidebar-link { justify-content: center; padding-left: 0; padding-right: 0; }
+  </style>
 </head>
 <body class="min-h-screen bg-gray-100">
   <div class="flex min-h-screen">
     <!-- Sidebar -->
-    <nav class="w-60 bg-gray-900 flex flex-col flex-shrink-0">
-      <div class="text-white text-xl font-semibold px-4 py-4 border-b border-gray-700">
-        Prowl Admin
+    <nav id="sidebar" class="w-60 bg-gray-900 flex flex-col flex-shrink-0 relative">
+      <!-- Toggle button -->
+      <button onclick="toggleSidebar()" class="absolute -right-3 top-5 bg-gray-800 border border-gray-600 text-gray-400 hover:text-white rounded-full w-6 h-6 flex items-center justify-center text-xs z-10 focus:outline-none" title="Toggle sidebar">
+        <svg id="collapse-icon" class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+        <svg id="expand-icon" class="w-3 h-3 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+      </button>
+
+      <div class="flex items-center px-4 py-4 border-b border-gray-700">
+        <span class="text-white text-xl font-semibold">P</span>
+        <span class="sidebar-brand-text text-white text-xl font-semibold ml-1">rowl Admin</span>
       </div>
 
-      <div class="text-gray-500 text-xs uppercase tracking-wider px-4 pt-4 pb-1">Navigation</div>
+      <div class="sidebar-section text-gray-500 text-xs uppercase tracking-wider px-4 pt-4 pb-1">Navigation</div>
       <ul class="flex flex-col space-y-0.5 px-2">
         <li>
-          <a class="block px-3 py-2 rounded text-sm <%= controller_name == 'dashboard' ? 'text-white bg-blue-600/40' : 'text-gray-400 hover:text-white hover:bg-white/10' %>" href="<%= admin_root_path %>">
-            Dashboard
+          <a class="sidebar-link flex items-center px-3 py-2 rounded text-sm <%= controller_name == 'dashboard' ? 'text-white bg-blue-600/40' : 'text-gray-400 hover:text-white hover:bg-white/10' %>" href="<%= admin_root_path %>" title="Dashboard">
+            <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0h4"/></svg>
+            <span class="sidebar-label ml-3">Dashboard</span>
           </a>
         </li>
         <li>
-          <a class="block px-3 py-2 rounded text-sm <%= controller_name == 'shops' ? 'text-white bg-blue-600/40' : 'text-gray-400 hover:text-white hover:bg-white/10' %>" href="<%= admin_shops_path %>">
-            Shops
+          <a class="sidebar-link flex items-center px-3 py-2 rounded text-sm <%= controller_name == 'shops' ? 'text-white bg-blue-600/40' : 'text-gray-400 hover:text-white hover:bg-white/10' %>" href="<%= admin_shops_path %>" title="Shops">
+            <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z"/></svg>
+            <span class="sidebar-label ml-3">Shops</span>
           </a>
         </li>
         <li>
-          <a class="block px-3 py-2 rounded text-sm <%= controller_name == 'scans' ? 'text-white bg-blue-600/40' : 'text-gray-400 hover:text-white hover:bg-white/10' %>" href="<%= admin_scans_path %>">
-            Scans
+          <a class="sidebar-link flex items-center px-3 py-2 rounded text-sm <%= controller_name == 'scans' ? 'text-white bg-blue-600/40' : 'text-gray-400 hover:text-white hover:bg-white/10' %>" href="<%= admin_scans_path %>" title="Scans">
+            <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+            <span class="sidebar-label ml-3">Scans</span>
           </a>
         </li>
         <li>
-          <a class="block px-3 py-2 rounded text-sm <%= controller_name == 'issues' ? 'text-white bg-blue-600/40' : 'text-gray-400 hover:text-white hover:bg-white/10' %>" href="<%= admin_issues_path %>">
-            Issues
+          <a class="sidebar-link flex items-center px-3 py-2 rounded text-sm <%= controller_name == 'issues' ? 'text-white bg-blue-600/40' : 'text-gray-400 hover:text-white hover:bg-white/10' %>" href="<%= admin_issues_path %>" title="Issues">
+            <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
+            <span class="sidebar-label ml-3">Issues</span>
           </a>
         </li>
       </ul>
 
       <div class="mt-auto p-3 border-t border-gray-700">
-        <div class="text-gray-400 text-sm mb-2"><%= current_admin.email %></div>
-        <%= link_to "Logout", destroy_admin_session_path, data: { turbo_method: :delete }, class: "block w-full text-center text-sm px-3 py-1.5 border border-gray-500 text-gray-300 rounded hover:bg-gray-700 hover:text-white transition" %>
+        <div class="sidebar-footer-email text-gray-400 text-sm mb-2 truncate"><%= current_admin.email %></div>
+        <%= link_to "Logout", destroy_admin_session_path, data: { turbo_method: :delete }, class: "sidebar-footer-logout block w-full text-center text-sm px-3 py-1.5 border border-gray-500 text-gray-300 rounded hover:bg-gray-700 hover:text-white transition" %>
       </div>
     </nav>
 
@@ -64,5 +85,29 @@
       </div>
     </div>
   </div>
+
+  <script>
+    function toggleSidebar() {
+      var sidebar = document.getElementById('sidebar');
+      var collapseIcon = document.getElementById('collapse-icon');
+      var expandIcon = document.getElementById('expand-icon');
+      sidebar.classList.toggle('collapsed');
+      collapseIcon.classList.toggle('hidden');
+      expandIcon.classList.toggle('hidden');
+      localStorage.setItem('admin_sidebar_collapsed', sidebar.classList.contains('collapsed'));
+    }
+
+    // Restore sidebar state from localStorage
+    (function() {
+      if (localStorage.getItem('admin_sidebar_collapsed') === 'true') {
+        var sidebar = document.getElementById('sidebar');
+        var collapseIcon = document.getElementById('collapse-icon');
+        var expandIcon = document.getElementById('expand-icon');
+        sidebar.classList.add('collapsed');
+        collapseIcon.classList.add('hidden');
+        expandIcon.classList.remove('hidden');
+      }
+    })();
+  </script>
 </body>
 </html>
