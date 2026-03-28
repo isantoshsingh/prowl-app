@@ -53,6 +53,18 @@
   </s-banner>
   <% end %>
 
+  <%# Upgrade Banner for Free Plan %>
+  <% if @plan_name == "free" %>
+  <s-banner tone="info">
+    <s-stack direction="block" gap="tight">
+      <s-paragraph>
+        <strong>Get full journey monitoring</strong> — Upgrade to Monitor ($49/month) for cart + checkout monitoring, 6-hour scans, and alert escalation.
+      </s-paragraph>
+      <s-button href="<%= billing_plans_path(host: @host) %>">View Plans</s-button>
+    </s-stack>
+  </s-banner>
+  <% end %>
+
   <%# Status Indicator %>
   <% if @total_pages > 0 %>
   <s-section>
@@ -110,8 +122,8 @@
   <s-section>
     <s-stack direction="block" gap="base" align="center">
       <s-icon type="search" tone="subdued"></s-icon>
-      <s-heading>No product pages monitored yet</s-heading>
-      <s-paragraph>Add product pages to start monitoring for issues that affect your sales.</s-paragraph>
+      <s-heading>Add products to start monitoring your store</s-heading>
+      <s-paragraph>Select product pages to monitor for JavaScript errors, broken UI elements, and performance issues that silently prevent purchases.</s-paragraph>
       <s-button variant="primary" href="<%= product_pages_path(host: @host) %>">Add products</s-button>
     </s-stack>
   </s-section>

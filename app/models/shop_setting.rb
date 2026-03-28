@@ -15,8 +15,8 @@ class ShopSetting < ApplicationRecord
   belongs_to :shop
 
   # Validations
-  validates :scan_frequency, inclusion: { in: %w[daily weekly] }
-  validates :max_monitored_pages, numericality: { greater_than: 0, less_than_or_equal_to: Shop::MAX_MONITORED_PAGES }
+  validates :scan_frequency, inclusion: { in: %w[daily weekly every_6_hours] }
+  validates :max_monitored_pages, numericality: { greater_than: 0, less_than_or_equal_to: 10 }
   validates :shop_id, uniqueness: true
 
   # Default values set in migration, but ensure they're set
@@ -33,6 +33,7 @@ class ShopSetting < ApplicationRecord
   def scan_interval
     case scan_frequency
     when "weekly" then 7.days
+    when "every_6_hours" then 6.hours
     else 24.hours
     end
   end

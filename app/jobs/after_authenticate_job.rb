@@ -22,6 +22,10 @@ class AfterAuthenticateJob < ApplicationJob
     update_shop_metadata(shop)
     reinstall_if_needed(shop)
 
+    # Sync subscription from Shopify to detect existing charges (e.g. legacy $10 plan).
+    # New installs will have no active subscription and default to Free plan.
+    sync_plan(shop)
+
     Rails.logger.info("[AfterAuthenticateJob] Shop setup complete for #{shop_domain}")
   end
 
@@ -87,6 +91,24 @@ class AfterAuthenticateJob < ApplicationJob
   rescue StandardError => e
     Rails.logger.error("[AfterAuthenticateJob] Error fetching shop metadata: #{e.message}")
     # Don't fail job if metadata fetch fails
+  end
+
+  # Sync subscription state and update plan-based settings.
+  # If a subscription exists (legacy or new), the shop gets Monitor features.
+  # Otherwise defaults to Free plan settings.
+  def sync_plan(shop)
+    synced = SubscriptionSyncService.new(shop).sync
+
+    # Update shop_setting with plan-appropriate limits
+    plan = BillingPlanService.plan_for(shop.reload)
+    shop.shop_setting&.update!(
+      max_monitored_pages: plan[:max_products],
+      scan_frequency: plan[:scan_interval_hours] <= 6 ? "every_6_hours" : "daily"
+    )
+
+    Rails.logger.info("[AfterAuthenticateJob] Plan set to '#{BillingPlanService.plan_name_for(shop)}' for #{shop.shopify_domain}")
+  rescue StandardError => e
+    Rails.logger.error("[AfterAuthenticateJob] Error syncing plan: #{e.message}")
   end
 
   # Mark shop as installed if it was previously uninstalled

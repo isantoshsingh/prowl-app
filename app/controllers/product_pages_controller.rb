@@ -16,15 +16,16 @@ class ProductPagesController < AuthenticatedController
   protect_from_forgery with: :null_session, only: [:create]
 
   def index
-    # Eager load shop_setting to avoid N+1
-    @shop_setting = @shop.shop_setting
-    max_pages = @shop_setting&.max_monitored_pages || Shop::MAX_MONITORED_PAGES
+    # Plan-aware limits
+    @plan_name = BillingPlanService.plan_name_for(@shop)
+    max_pages = BillingPlanService.max_products_for(@shop)
 
     # Load product pages once
     @product_pages = @shop.product_pages.order(created_at: :desc).to_a
     @product_pages_count = @product_pages.size
 
     @can_add_more = @shop.monitored_pages_count < max_pages
+    @max_pages = max_pages
 
     # Data for the Resource Picker (used directly on index page)
     current_count = @shop.monitored_pages_count
@@ -84,11 +85,19 @@ class ProductPagesController < AuthenticatedController
     errors = []
     created_products = []
 
+    plan_name = BillingPlanService.plan_name_for(@shop)
+    max_products = BillingPlanService.max_products_for(@shop)
+
     products_params.each do |_index, product_data|
       Rails.logger.info("[ProductPagesController#create] Processing product: #{product_data}")
-      
+
       unless @shop.can_add_monitored_page?
         Rails.logger.warn("[ProductPagesController#create] Max pages reached, stopping")
+        if plan_name == "free"
+          errors << "You've reached the maximum of #{max_products} products on your Free plan. Upgrade to Monitor for up to 5 products."
+        else
+          errors << "You've reached the maximum of #{max_products} products on your #{plan_name.capitalize} plan."
+        end
         break
       end
 

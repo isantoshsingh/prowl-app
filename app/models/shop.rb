@@ -113,9 +113,14 @@ class Shop < ActiveRecord::Base
     product_pages.monitoring_enabled.count
   end
 
-  # Checks if the shop can add more monitored pages
+  # Checks if the shop can add more monitored pages (plan-aware)
   def can_add_monitored_page?
-    monitored_pages_count < (shop_setting&.max_monitored_pages || MAX_MONITORED_PAGES)
+    monitored_pages_count < BillingPlanService.max_products_for(self)
+  end
+
+  # Returns the max monitored pages for this shop's current plan
+  def max_monitored_pages
+    BillingPlanService.max_products_for(self)
   end
 
   # Returns a friendly display name for the shop

@@ -2,11 +2,11 @@
 
 # Solid Queue recurring jobs configuration
 #
-# These jobs run on a schedule. The scheduled_scan job triggers
-# daily scanning of all monitored product pages.
+# ScheduledScanJob runs hourly to check which pages need scanning.
+# Free plan shops scan daily; Monitor plan shops scan every 6 hours.
+# The per-shop interval is determined by BillingPlanService.
 
-# Daily scan at 6am UTC
 scheduled_scan:
   class: ScheduledScanJob
-  schedule: every day at 6am
-  description: "Queue daily scans for all monitored product pages"
+  schedule: every hour
+  description: "Queue scans for monitored product pages based on plan intervals"

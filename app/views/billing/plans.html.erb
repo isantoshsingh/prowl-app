@@ -1,0 +1,190 @@
+<%# Plan Comparison Page — Side-by-side Free vs Monitor %>
+
+<s-page heading="Choose your plan">
+  <s-link slot="breadcrumb-actions" href="<%= root_path(host: @host) %>">Dashboard</s-link>
+</s-page>
+
+<s-section>
+  <s-grid gridTemplateColumns="1fr 1fr" gap="base">
+
+    <%# ── Free Plan Card ── %>
+    <s-box border="base" padding="large-400" borderRadius="base">
+      <s-stack direction="block" gap="base">
+        <s-stack direction="block" gap="extra-tight">
+          <s-stack direction="inline" gap="tight" align="center">
+            <s-heading>Free</s-heading>
+            <% if @plan_name == "free" %>
+            <s-badge tone="success">Current plan</s-badge>
+            <% end %>
+          </s-stack>
+          <s-heading><strong>$0</strong><span style="font-weight: normal; font-size: 0.8em;">/month</span></s-heading>
+        </s-stack>
+
+        <s-stack direction="block" gap="small-300">
+          <s-stack direction="inline" gap="tight" align="start">
+            <s-icon type="check-circle" tone="success"></s-icon>
+            <s-paragraph>Monitor up to <strong>3 products</strong></s-paragraph>
+          </s-stack>
+
+          <s-stack direction="inline" gap="tight" align="start">
+            <s-icon type="check-circle" tone="success"></s-icon>
+            <s-paragraph><strong>Daily</strong> scans</s-paragraph>
+          </s-stack>
+
+          <s-stack direction="inline" gap="tight" align="start">
+            <s-icon type="check-circle" tone="success"></s-icon>
+            <s-paragraph><strong>PDP</strong> monitoring</s-paragraph>
+          </s-stack>
+
+          <s-stack direction="inline" gap="tight" align="start">
+            <s-icon type="check-circle" tone="success"></s-icon>
+            <s-paragraph>Email alerts</s-paragraph>
+          </s-stack>
+
+          <s-stack direction="inline" gap="tight" align="start">
+            <s-icon type="check-circle" tone="success"></s-icon>
+            <s-paragraph>Weekly health report</s-paragraph>
+          </s-stack>
+        </s-stack>
+
+        <% if @plan_name == "free" %>
+        <s-button disabled fullWidth>Current plan</s-button>
+        <% end %>
+      </s-stack>
+    </s-box>
+
+    <%# ── Monitor Plan Card ── %>
+    <s-box border="base" padding="large-400" borderRadius="base" background="subdued">
+      <s-stack direction="block" gap="base">
+        <s-stack direction="block" gap="extra-tight">
+          <s-stack direction="inline" gap="tight" align="center">
+            <s-heading>Monitor</s-heading>
+            <% if @plan_name == "monitor" %>
+            <s-badge tone="success">Current plan</s-badge>
+            <% end %>
+          </s-stack>
+          <s-heading><strong>$49</strong><span style="font-weight: normal; font-size: 0.8em;">/month</span></s-heading>
+        </s-stack>
+
+        <s-stack direction="block" gap="small-300">
+          <s-stack direction="inline" gap="tight" align="start">
+            <s-icon type="check-circle" tone="success"></s-icon>
+            <s-paragraph>Monitor up to <strong>5 products</strong></s-paragraph>
+          </s-stack>
+
+          <s-stack direction="inline" gap="tight" align="start">
+            <s-icon type="check-circle" tone="success"></s-icon>
+            <s-paragraph>Scans every <strong>6 hours</strong></s-paragraph>
+          </s-stack>
+
+          <s-stack direction="inline" gap="tight" align="start">
+            <s-icon type="check-circle" tone="success"></s-icon>
+            <s-paragraph>Full buying journey: <strong>PDP + Cart + Checkout</strong></s-paragraph>
+          </s-stack>
+
+          <s-stack direction="inline" gap="tight" align="start">
+            <s-icon type="check-circle" tone="success"></s-icon>
+            <s-paragraph>Alert escalation (immediate, 24h, 72h)</s-paragraph>
+          </s-stack>
+
+          <s-stack direction="inline" gap="tight" align="start">
+            <s-icon type="check-circle" tone="success"></s-icon>
+            <s-paragraph>On-demand <strong>"Scan Now"</strong></s-paragraph>
+          </s-stack>
+
+          <s-stack direction="inline" gap="tight" align="start">
+            <s-icon type="check-circle" tone="success"></s-icon>
+            <s-paragraph>Scan history</s-paragraph>
+          </s-stack>
+
+          <s-stack direction="inline" gap="tight" align="start">
+            <s-icon type="check-circle" tone="success"></s-icon>
+            <s-paragraph><strong>14-day free trial</strong></s-paragraph>
+          </s-stack>
+        </s-stack>
+
+        <% if @plan_name == "monitor" %>
+        <s-button disabled fullWidth>Current plan</s-button>
+        <% else %>
+        <s-button variant="primary" fullWidth id="subscribe-btn">
+          Start 14-day free trial
+        </s-button>
+        <% end %>
+      </s-stack>
+    </s-box>
+
+  </s-grid>
+</s-section>
+
+<%# Billing note %>
+<s-box paddingBlockStart="small">
+  <s-section>
+    <s-paragraph>
+      All plans are billed through Shopify. You can cancel anytime from your Shopify admin.
+      The Monitor plan includes a 14-day free trial — you won't be charged until the trial ends.
+    </s-paragraph>
+  </s-section>
+</s-box>
+
+<% if @plan_name != "monitor" %>
+<% content_for :javascript do %>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    var subscribeBtn = document.getElementById('subscribe-btn');
+    if (!subscribeBtn) return;
+
+    subscribeBtn.addEventListener('click', async function(e) {
+      e.preventDefault();
+      subscribeBtn.loading = true;
+      subscribeBtn.disabled = true;
+
+      try {
+        var csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+        var headers = {
+          'X-CSRF-Token': csrfToken,
+          'Accept': 'text/html'
+        };
+
+        try {
+          var token = await shopify.idToken();
+          if (token) headers['Authorization'] = 'Bearer ' + token;
+        } catch (tokenErr) {
+          console.warn('Could not get session token:', tokenErr);
+        }
+
+        var response = await fetch('<%= billing_subscribe_path(host: @host) %>', {
+          method: 'POST',
+          headers: headers,
+          credentials: 'same-origin',
+          redirect: 'manual'
+        });
+
+        if (response.type === 'opaqueredirect' || (response.status >= 300 && response.status < 400)) {
+          // Controller redirected to Shopify's approval URL
+          var location = response.headers.get('Location');
+          if (location) {
+            window.top.location.href = location;
+          } else {
+            window.location.reload();
+          }
+        } else if (response.ok) {
+          var text = await response.text();
+          // If the response contains a redirect URL in the body, follow it
+          window.location.reload();
+        } else {
+          throw new Error('Server returned ' + response.status);
+        }
+      } catch (error) {
+        console.error('Subscribe failed:', error);
+        subscribeBtn.loading = false;
+        subscribeBtn.disabled = false;
+        shopify.toast.show('Failed to start subscription. Please try again.', {
+          duration: 5000,
+          isError: true
+        });
+      }
+    });
+  });
+</script>
+<% end %>
+<% end %>

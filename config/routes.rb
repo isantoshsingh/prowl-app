@@ -57,7 +57,8 @@ Rails.application.routes.draw do
 
   # Billing & Pricing
   get "/pricing", to: "billing#index", as: :pricing
-
+  get "/billing/plans", to: "billing#plans", as: :billing_plans
+  post "/billing/subscribe", to: "billing#subscribe", as: :billing_subscribe
 
 
   # Email actions (public, token-based auth — no Shopify session needed)

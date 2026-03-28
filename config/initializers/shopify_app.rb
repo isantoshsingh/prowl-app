@@ -25,16 +25,9 @@ ShopifyApp.configure do |config|
   config.api_key = ENV.fetch("SHOPIFY_API_KEY", "").presence
   config.secret = ENV.fetch("SHOPIFY_API_SECRET", "").presence
 
-  # Billing configuration for Prowl
-  # $10/month with 14-day free trial
-  config.billing = ShopifyApp::BillingConfiguration.new(
-    charge_name: "Prowl Monthly",
-    amount: 10,
-    interval: ShopifyApp::BillingConfiguration::INTERVAL_EVERY_30_DAYS,
-    currency_code: "USD",
-    trial_days: 14,
-    test: !ENV["SHOPIFY_TEST_CHARGES"].nil? ? ["true", "1"].include?(ENV["SHOPIFY_TEST_CHARGES"]) : !Rails.env.production?
-  )
+  # Billing is now managed via BillingPlanService and BillingController.
+  # New installs start on the Free plan — no upfront charge required.
+  # Merchants can upgrade to Monitor ($49/month) from the plan comparison page.
 
   if defined? Rails::Server
     raise("Missing SHOPIFY_API_KEY. See https://github.com/Shopify/shopify_app#requirements") unless config.api_key
