@@ -30,23 +30,19 @@ class BillingController < AuthenticatedController
     existing_pending = @shop.subscriptions.pending.where(charge_name: plan[:charge_name]).order(created_at: :desc).first
 
     if existing_pending
-      # Check the status of the existing charge via Shopify API
-      current_status, confirmation_url = check_subscription_status(existing_pending)
+      shopify_status = fetch_subscription_status(existing_pending.subscription_charge_id)
 
-      if current_status == "PENDING" && (confirmation_url || existing_pending.confirmation_url).present?
-        # Still pending — reuse it, don't create a duplicate
-        Rails.logger.info("[BillingController#subscribe] Reusing pending subscription #{existing_pending.id} for #{@shop.shopify_domain}")
-        fullpage_redirect_to(confirmation_url || existing_pending.confirmation_url)
+      if shopify_status == "PENDING"
+        Rails.logger.info("[BillingController#subscribe] Reusing pending subscription #{existing_pending.id}")
+        fullpage_redirect_to(existing_pending.confirmation_url)
         return
-      else
-        # No longer pending — update local record to match Shopify's status
-        resolved_status = resolve_shopify_status(current_status)
-        existing_pending.update!(status: resolved_status)
-        Rails.logger.info("[BillingController#subscribe] Existing subscription #{existing_pending.id} status updated to '#{resolved_status}'")
       end
+
+      # No longer pending — sync local status and fall through to create a new one
+      existing_pending.update!(status: map_shopify_status(shopify_status))
+      Rails.logger.info("[BillingController#subscribe] Subscription #{existing_pending.id} updated to '#{existing_pending.status}'")
     end
 
-    # Create a new subscription via Shopify API
     create_new_subscription(plan)
   rescue StandardError => e
     Rails.logger.error("[BillingController#subscribe] Error: #{e.message}")
@@ -63,56 +59,43 @@ class BillingController < AuthenticatedController
     end
   end
 
-  # Calls Shopify API to check the current status of an existing subscription charge
-  def check_subscription_status(subscription)
+  def shopify_client
     session = ShopifyAPI::Auth::Session.new(
       shop: @shop.shopify_domain,
       access_token: @shop.shopify_token
     )
-    client = ShopifyAPI::Clients::Graphql::Admin.new(session: session)
+    ShopifyAPI::Clients::Graphql::Admin.new(session: session)
+  end
 
+  # Returns the Shopify status string ("PENDING", "ACTIVE", "DECLINED", etc.)
+  # for an existing subscription charge. Returns "EXPIRED" on API failure
+  # so a new subscription gets created.
+  def fetch_subscription_status(charge_gid)
     query = <<~GRAPHQL
       query($id: ID!) {
         node(id: $id) {
-          ... on AppSubscription {
-            status
-            currentPeriodEnd
-          }
+          ... on AppSubscription { status }
         }
       }
     GRAPHQL
 
-    response = client.query(query: query, variables: { id: subscription.subscription_charge_id })
-    node = response.body.dig("data", "node")
-
-    status = node&.dig("status") || "EXPIRED"
-    # Shopify doesn't return confirmationUrl from node query, so we use the stored one
-    [status, nil]
+    response = shopify_client.query(query: query, variables: { id: charge_gid })
+    response.body.dig("data", "node", "status") || "EXPIRED"
   rescue StandardError => e
-    Rails.logger.error("[BillingController] Error checking subscription status: #{e.message}")
-    # If we can't check, treat as expired so a new one gets created
-    ["EXPIRED", nil]
+    Rails.logger.error("[BillingController] Error fetching subscription status: #{e.message}")
+    "EXPIRED"
   end
 
-  # Maps Shopify subscription status to our local status values
-  def resolve_shopify_status(shopify_status)
-    case shopify_status&.upcase
+  def map_shopify_status(shopify_status)
+    case shopify_status
     when "ACTIVE" then "active"
     when "DECLINED" then "declined"
-    when "EXPIRED" then "expired"
-    when "FROZEN" then "cancelled"
-    when "CANCELLED" then "cancelled"
+    when "FROZEN", "CANCELLED" then "cancelled"
     else "expired"
     end
   end
 
   def create_new_subscription(plan)
-    session = ShopifyAPI::Auth::Session.new(
-      shop: @shop.shopify_domain,
-      access_token: @shop.shopify_token
-    )
-    client = ShopifyAPI::Clients::Graphql::Admin.new(session: session)
-
     test_mode = !ENV["SHOPIFY_TEST_CHARGES"].nil? ? ["true", "1"].include?(ENV["SHOPIFY_TEST_CHARGES"]) : !Rails.env.production?
 
     shopify_host = Base64.strict_encode64("#{@shop.shopify_domain}/admin")
@@ -127,14 +110,9 @@ class BillingController < AuthenticatedController
           trialDays: $trialDays
           test: $test
         ) {
-          appSubscription {
-            id
-          }
+          appSubscription { id }
           confirmationUrl
-          userErrors {
-            field
-            message
-          }
+          userErrors { field message }
         }
       }
     GRAPHQL
@@ -156,28 +134,25 @@ class BillingController < AuthenticatedController
       ]
     }
 
-    response = client.query(query: mutation, variables: variables)
+    response = shopify_client.query(query: mutation, variables: variables)
     result = response.body.dig("data", "appSubscriptionCreate")
 
     if result && result["confirmationUrl"].present?
-      subscription_gid = result.dig("appSubscription", "id")
-      confirmation_url = result["confirmationUrl"]
-
       @shop.subscriptions.create!(
         status: "pending",
         charge_name: plan[:charge_name],
         price: plan[:price],
         currency_code: "USD",
         trial_days: 14,
-        subscription_charge_id: subscription_gid,
-        confirmation_url: confirmation_url
+        subscription_charge_id: result.dig("appSubscription", "id"),
+        confirmation_url: result["confirmationUrl"]
       )
-      Rails.logger.info("[BillingController#subscribe] Subscription created (pending) for #{@shop.shopify_domain}, charge: #{subscription_gid}")
+      Rails.logger.info("[BillingController#subscribe] New subscription created (pending) for #{@shop.shopify_domain}")
 
-      fullpage_redirect_to(confirmation_url)
+      fullpage_redirect_to(result["confirmationUrl"])
     else
       errors = result&.dig("userErrors")&.map { |e| e["message"] }&.join(", ") || "Unknown error"
-      Rails.logger.error("[BillingController#subscribe] Failed to create subscription: #{errors}")
+      Rails.logger.error("[BillingController#subscribe] Failed: #{errors}")
       flash[:error] = "Could not start subscription. Please try again."
       redirect_to billing_plans_path(host: params[:host])
     end
