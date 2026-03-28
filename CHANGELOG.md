@@ -6,6 +6,42 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [Unreleased] — Freemium Billing + Plan Page + Onboarding
+
+### Added
+
+- **Freemium pricing model**: Two tiers — Free (3 products, daily scans, PDP only) and Monitor ($49/month with 14-day trial, 5 products, 6-hour scans, full journey).
+- **`BillingPlanService`**: Central service defining plan tiers and all plan-based lookups (limits, scan intervals, feature gates). Legacy "Prowl Monthly" ($10) subscribers are automatically mapped to Monitor features.
+- **Plan comparison page** (`/billing/plans`): Side-by-side Free vs Monitor plan cards using Polaris web components with inline subscription form.
+- **Shopify billing flow**: `appSubscriptionCreate` GraphQL mutation with 14-day trial, `fullpage_redirect_to` for iframe breakout, and `charge_id` callback sync via `SubscriptionSyncService`.
+- **Subscription deduplication**: Before creating a new subscription, checks for existing pending charges via Shopify API. Reuses pending subscriptions to prevent duplicate billing charges on repeated clicks.
+- **`confirmation_url` column on subscriptions**: Stores Shopify's confirmation URL for pending subscription reuse.
+- **Upgrade prompts**: Free plan merchants see upgrade banners on the dashboard and product pages index when they hit their product limit.
+- **Quality gate hooks** (`.claude/settings.json`): PostToolUse hook runs RuboCop on every Ruby file edit. `CLAUDE.md` documents 6 pre-commit quality gates (RuboCop, bundler-audit, importmap:audit, Brakeman, application tests, system tests).
+
+### Changed
+
+- **Removed $10 billing gate for new installs**: Removed hardcoded `ShopifyApp::BillingConfiguration` from `shopify_app.rb` initializer. New installs start on Free plan instead of hitting a payment wall.
+- **Plan-aware product limits**: `Shop#can_add_monitored_page?` and `Shop#max_monitored_pages` now delegate to `BillingPlanService` instead of using a hardcoded constant.
+- **Plan-aware scan frequency**: `ScheduledScanJob` uses `BillingPlanService.scan_interval_for(shop)` per shop. Recurring schedule changed from daily to hourly to support 6-hour Monitor intervals.
+- **Free plan shops can scan**: `ScanPdpJob` and `AlertService` now check `shop.installed?` instead of `shop.billing_active?`, allowing Free plan shops to scan and receive alerts.
+- **`ShopSetting` supports `every_6_hours` scan frequency** and raised `max_monitored_pages` validation cap from 3 to 10.
+- **`AfterAuthenticateJob`** syncs plan settings (max pages, scan frequency) on authentication.
+- **`SubscriptionSyncService`** updates shop settings after sync to match the current plan.
+- **Billing index page** is now plan-aware, showing current plan status and linking to plan comparison.
+
+### Fixed
+
+- **Billing redirect on Free plan**: Free plan shops had `subscription_status: 'none'` which failed `billing_active?` checks, blocking scans and alerts.
+- **Subscribe button not redirecting**: Fixed `fullpage_redirect_to` for Shopify iframe breakout, `request.base_url` for return URL generation, and server-side host param generation (`Base64.strict_encode64`) to avoid login redirect after payment approval.
+- **Duplicate subscriptions on repeated trial clicks**: Added check-before-create pattern with Shopify API status verification and stored confirmation URL reuse.
+
+### Database Migrations
+
+- `20260328180000_add_confirmation_url_to_subscriptions`: Adds `confirmation_url` text column to subscriptions table.
+
+---
+
 ## [Unreleased] — Scan UX Improvements
 
 ### Fixed
