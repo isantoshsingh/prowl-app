@@ -35,8 +35,10 @@ class BillingController < AuthenticatedController
 
     test_mode = !ENV["SHOPIFY_TEST_CHARGES"].nil? ? ["true", "1"].include?(ENV["SHOPIFY_TEST_CHARGES"]) : !Rails.env.production?
 
-    # Build the return URL from the current request (works with Cloudflare tunnels).
-    return_url = "#{request.base_url}/?host=#{params[:host]}"
+    # Build the return URL. For embedded apps, Shopify needs a URL with a valid host param.
+    # Generate the host param from the shop domain (base64-encoded admin URL).
+    shopify_host = Base64.strict_encode64("#{@shop.shopify_domain}/admin")
+    return_url = "#{request.base_url}/?host=#{shopify_host}"
 
     mutation = <<~GRAPHQL
       mutation appSubscriptionCreate($name: String!, $lineItems: [AppSubscriptionLineItemInput!]!, $returnUrl: URL!, $trialDays: Int, $test: Boolean) {
