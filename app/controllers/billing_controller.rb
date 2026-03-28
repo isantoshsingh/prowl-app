@@ -35,8 +35,10 @@ class BillingController < AuthenticatedController
 
     test_mode = !ENV["SHOPIFY_TEST_CHARGES"].nil? ? ["true", "1"].include?(ENV["SHOPIFY_TEST_CHARGES"]) : !Rails.env.production?
 
-    # Build the return URL — Shopify will redirect here after merchant approves/declines
-    return_url = root_url(host: params[:host])
+    # Build the return URL — Shopify will redirect here after merchant approves/declines.
+    # Use ENV["HOST"] (the app's public URL) since params[:host] is Shopify's base64-encoded admin host.
+    app_host = ENV["HOST"] || request.host_with_port
+    return_url = "https://#{app_host}/?host=#{params[:host]}"
 
     mutation = <<~GRAPHQL
       mutation appSubscriptionCreate($name: String!, $lineItems: [AppSubscriptionLineItemInput!]!, $returnUrl: URL!, $trialDays: Int, $test: Boolean) {
