@@ -80,6 +80,18 @@ class BillingController < AuthenticatedController
     result = response.body.dig("data", "appSubscriptionCreate")
 
     if result && result["confirmationUrl"].present?
+      # Record the pending subscription so we track the merchant's intent
+      subscription_gid = result.dig("appSubscription", "id")
+      @shop.subscriptions.create!(
+        status: "pending",
+        charge_name: plan[:charge_name],
+        price: plan[:price],
+        currency_code: "USD",
+        trial_days: 14,
+        subscription_charge_id: subscription_gid
+      )
+      Rails.logger.info("[BillingController#subscribe] Subscription created (pending) for #{@shop.shopify_domain}, charge: #{subscription_gid}")
+
       # Use fullpage_redirect_to to break out of the Shopify admin iframe
       fullpage_redirect_to(result["confirmationUrl"])
     else
