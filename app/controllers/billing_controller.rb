@@ -35,10 +35,8 @@ class BillingController < AuthenticatedController
 
     test_mode = !ENV["SHOPIFY_TEST_CHARGES"].nil? ? ["true", "1"].include?(ENV["SHOPIFY_TEST_CHARGES"]) : !Rails.env.production?
 
-    # Build the return URL — Shopify will redirect here after merchant approves/declines.
-    # Use ENV["HOST"] (the app's public URL) since params[:host] is Shopify's base64-encoded admin host.
-    app_host = ENV["HOST"] || request.host_with_port
-    return_url = "https://#{app_host}/?host=#{params[:host]}"
+    # Build the return URL from the current request (works with Cloudflare tunnels).
+    return_url = "#{request.base_url}/?host=#{params[:host]}"
 
     mutation = <<~GRAPHQL
       mutation appSubscriptionCreate($name: String!, $lineItems: [AppSubscriptionLineItemInput!]!, $returnUrl: URL!, $trialDays: Int, $test: Boolean) {
@@ -82,8 +80,8 @@ class BillingController < AuthenticatedController
     result = response.body.dig("data", "appSubscriptionCreate")
 
     if result && result["confirmationUrl"].present?
-      # Redirect merchant to Shopify's approval page
-      redirect_to result["confirmationUrl"], allow_other_host: true
+      # Use fullpage_redirect_to to break out of the Shopify admin iframe
+      fullpage_redirect_to(result["confirmationUrl"])
     else
       errors = result&.dig("userErrors")&.map { |e| e["message"] }&.join(", ") || "Unknown error"
       Rails.logger.error("[BillingController#subscribe] Failed to create subscription: #{errors}")

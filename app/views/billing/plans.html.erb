@@ -106,9 +106,13 @@
         <% if @plan_name == "monitor" %>
         <s-button disabled fullWidth>Current plan</s-button>
         <% else %>
-        <s-button variant="primary" fullWidth id="subscribe-btn">
-          Start 14-day free trial
-        </s-button>
+        <form action="<%= billing_subscribe_path %>" method="post" id="subscribe-form">
+          <input type="hidden" name="authenticity_token" value="<%= form_authenticity_token %>">
+          <input type="hidden" name="host" value="<%= @host %>">
+          <s-button variant="primary" fullWidth type="submit" id="subscribe-btn">
+            Start 14-day free trial
+          </s-button>
+        </form>
         <% end %>
       </s-stack>
     </s-box>
@@ -129,60 +133,33 @@
 <% if @plan_name != "monitor" %>
 <% content_for :javascript do %>
 <script>
+  // Inject session token into the subscribe form before submission.
+  // The form submits normally so fullpage_redirect_to can break out of the iframe.
   document.addEventListener('DOMContentLoaded', function() {
-    var subscribeBtn = document.getElementById('subscribe-btn');
-    if (!subscribeBtn) return;
+    var form = document.getElementById('subscribe-form');
+    if (!form) return;
 
-    subscribeBtn.addEventListener('click', async function(e) {
+    form.addEventListener('submit', async function(e) {
       e.preventDefault();
-      subscribeBtn.loading = true;
-      subscribeBtn.disabled = true;
+      var btn = document.getElementById('subscribe-btn');
+      if (btn) { btn.loading = true; btn.disabled = true; }
 
       try {
-        var csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
-        var headers = {
-          'X-CSRF-Token': csrfToken,
-          'Accept': 'text/html'
-        };
-
-        try {
-          var token = await shopify.idToken();
-          if (token) headers['Authorization'] = 'Bearer ' + token;
-        } catch (tokenErr) {
-          console.warn('Could not get session token:', tokenErr);
+        var token = await shopify.idToken();
+        if (token) {
+          var input = document.createElement('input');
+          input.type = 'hidden';
+          input.name = 'id_token';
+          input.value = token;
+          form.appendChild(input);
         }
-
-        var response = await fetch('<%= billing_subscribe_path(host: @host) %>', {
-          method: 'POST',
-          headers: headers,
-          credentials: 'same-origin',
-          redirect: 'manual'
-        });
-
-        if (response.type === 'opaqueredirect' || (response.status >= 300 && response.status < 400)) {
-          // Controller redirected to Shopify's approval URL
-          var location = response.headers.get('Location');
-          if (location) {
-            window.top.location.href = location;
-          } else {
-            window.location.reload();
-          }
-        } else if (response.ok) {
-          var text = await response.text();
-          // If the response contains a redirect URL in the body, follow it
-          window.location.reload();
-        } else {
-          throw new Error('Server returned ' + response.status);
-        }
-      } catch (error) {
-        console.error('Subscribe failed:', error);
-        subscribeBtn.loading = false;
-        subscribeBtn.disabled = false;
-        shopify.toast.show('Failed to start subscription. Please try again.', {
-          duration: 5000,
-          isError: true
-        });
+      } catch (tokenErr) {
+        console.warn('Could not get session token:', tokenErr);
       }
+
+      // Submit the form normally — the controller uses fullpage_redirect_to
+      // which renders an App Bridge page that navigates the top frame
+      form.submit();
     });
   });
 </script>
