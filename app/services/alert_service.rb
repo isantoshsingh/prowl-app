@@ -26,7 +26,7 @@ class AlertService
   # Send batched email (and admin) alerts covering all new alertable issues.
   # Issues that already have an alert for THIS scan are skipped — avoids double-sending.
   def perform
-    return unless shop.billing_active?
+    return unless shop.installed?
 
     alertable = issues.select { |i| i.should_alert? }
     return if alertable.empty?

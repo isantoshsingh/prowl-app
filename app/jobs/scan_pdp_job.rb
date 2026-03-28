@@ -30,10 +30,10 @@ class ScanPdpJob < ApplicationJob
     # If a pre-created scan exists but we're skipping, clean it up
     pre_created_scan = scan_id ? Scan.find_by(id: scan_id) : nil
 
-    # Skip if shop doesn't have active billing
-    unless shop.billing_active?
-      Rails.logger.info("[ScanPdpJob] Skipping scan for shop #{shop.id} - billing not active")
-      pre_created_scan&.fail!("Billing not active")
+    # Skip if shop is uninstalled
+    unless shop.installed?
+      Rails.logger.info("[ScanPdpJob] Skipping scan for shop #{shop.id} - not installed")
+      pre_created_scan&.fail!("Shop not installed")
       return
     end
 
