@@ -23,6 +23,7 @@ class HomeController < AuthenticatedController
     end
 
     @host = params[:host]
+    @plan_name = BillingPlanService.plan_name_for(@shop)
 
     # Onboarding state
     @show_onboarding = @shop.show_onboarding?

@@ -1,0 +1,167 @@
+<%# Plan Comparison Page — Side-by-side Free vs Monitor %>
+
+<s-page heading="Choose your plan">
+  <s-link slot="breadcrumb-actions" href="<%= root_path(host: @host) %>">Dashboard</s-link>
+</s-page>
+
+<s-section>
+  <s-grid gridTemplateColumns="1fr 1fr" gap="base">
+
+    <%# ── Free Plan Card ── %>
+    <s-box border="base" padding="large-400" borderRadius="base">
+      <s-stack direction="block" gap="base">
+        <s-stack direction="block" gap="extra-tight">
+          <s-stack direction="inline" gap="tight" align="center">
+            <s-heading>Free</s-heading>
+            <% if @plan_name == "free" %>
+            <s-badge tone="success">Current plan</s-badge>
+            <% end %>
+          </s-stack>
+          <s-heading><strong>$0</strong><span style="font-weight: normal; font-size: 0.8em;">/month</span></s-heading>
+        </s-stack>
+
+        <s-stack direction="block" gap="small-300">
+          <s-stack direction="inline" gap="tight" align="start">
+            <s-icon type="check-circle" tone="success"></s-icon>
+            <s-paragraph>Monitor up to <strong>3 products</strong></s-paragraph>
+          </s-stack>
+
+          <s-stack direction="inline" gap="tight" align="start">
+            <s-icon type="check-circle" tone="success"></s-icon>
+            <s-paragraph><strong>Daily</strong> scans</s-paragraph>
+          </s-stack>
+
+          <s-stack direction="inline" gap="tight" align="start">
+            <s-icon type="check-circle" tone="success"></s-icon>
+            <s-paragraph><strong>PDP</strong> monitoring</s-paragraph>
+          </s-stack>
+
+          <s-stack direction="inline" gap="tight" align="start">
+            <s-icon type="check-circle" tone="success"></s-icon>
+            <s-paragraph>Email alerts</s-paragraph>
+          </s-stack>
+
+          <s-stack direction="inline" gap="tight" align="start">
+            <s-icon type="check-circle" tone="success"></s-icon>
+            <s-paragraph>Weekly health report</s-paragraph>
+          </s-stack>
+        </s-stack>
+
+        <% if @plan_name == "free" %>
+        <s-button disabled fullWidth>Current plan</s-button>
+        <% end %>
+      </s-stack>
+    </s-box>
+
+    <%# ── Monitor Plan Card ── %>
+    <s-box border="base" padding="large-400" borderRadius="base" background="subdued">
+      <s-stack direction="block" gap="base">
+        <s-stack direction="block" gap="extra-tight">
+          <s-stack direction="inline" gap="tight" align="center">
+            <s-heading>Monitor</s-heading>
+            <% if @plan_name == "monitor" %>
+            <s-badge tone="success">Current plan</s-badge>
+            <% end %>
+          </s-stack>
+          <s-heading><strong>$49</strong><span style="font-weight: normal; font-size: 0.8em;">/month</span></s-heading>
+        </s-stack>
+
+        <s-stack direction="block" gap="small-300">
+          <s-stack direction="inline" gap="tight" align="start">
+            <s-icon type="check-circle" tone="success"></s-icon>
+            <s-paragraph>Monitor up to <strong>5 products</strong></s-paragraph>
+          </s-stack>
+
+          <s-stack direction="inline" gap="tight" align="start">
+            <s-icon type="check-circle" tone="success"></s-icon>
+            <s-paragraph>Scans every <strong>6 hours</strong></s-paragraph>
+          </s-stack>
+
+          <s-stack direction="inline" gap="tight" align="start">
+            <s-icon type="check-circle" tone="success"></s-icon>
+            <s-paragraph>Full buying journey: <strong>PDP + Cart + Checkout</strong></s-paragraph>
+          </s-stack>
+
+          <s-stack direction="inline" gap="tight" align="start">
+            <s-icon type="check-circle" tone="success"></s-icon>
+            <s-paragraph>Alert escalation (immediate, 24h, 72h)</s-paragraph>
+          </s-stack>
+
+          <s-stack direction="inline" gap="tight" align="start">
+            <s-icon type="check-circle" tone="success"></s-icon>
+            <s-paragraph>On-demand <strong>"Scan Now"</strong></s-paragraph>
+          </s-stack>
+
+          <s-stack direction="inline" gap="tight" align="start">
+            <s-icon type="check-circle" tone="success"></s-icon>
+            <s-paragraph>Scan history</s-paragraph>
+          </s-stack>
+
+          <s-stack direction="inline" gap="tight" align="start">
+            <s-icon type="check-circle" tone="success"></s-icon>
+            <s-paragraph><strong>14-day free trial</strong></s-paragraph>
+          </s-stack>
+        </s-stack>
+
+        <% if @plan_name == "monitor" %>
+        <s-button disabled fullWidth>Current plan</s-button>
+        <% else %>
+        <form action="<%= billing_subscribe_path %>" method="post" id="subscribe-form">
+          <input type="hidden" name="authenticity_token" value="<%= form_authenticity_token %>">
+          <input type="hidden" name="host" value="<%= @host %>">
+          <s-button variant="primary" fullWidth type="submit" id="subscribe-btn">
+            Start 14-day free trial
+          </s-button>
+        </form>
+        <% end %>
+      </s-stack>
+    </s-box>
+
+  </s-grid>
+</s-section>
+
+<%# Billing note %>
+<s-box paddingBlockStart="small">
+  <s-section>
+    <s-paragraph>
+      All plans are billed through Shopify. You can cancel anytime from your Shopify admin.
+      The Monitor plan includes a 14-day free trial — you won't be charged until the trial ends.
+    </s-paragraph>
+  </s-section>
+</s-box>
+
+<% if @plan_name != "monitor" %>
+<% content_for :javascript do %>
+<script>
+  // Inject session token into the subscribe form before submission.
+  // The form submits normally so fullpage_redirect_to can break out of the iframe.
+  document.addEventListener('DOMContentLoaded', function() {
+    var form = document.getElementById('subscribe-form');
+    if (!form) return;
+
+    form.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      var btn = document.getElementById('subscribe-btn');
+      if (btn) { btn.loading = true; btn.disabled = true; }
+
+      try {
+        var token = await shopify.idToken();
+        if (token) {
+          var input = document.createElement('input');
+          input.type = 'hidden';
+          input.name = 'id_token';
+          input.value = token;
+          form.appendChild(input);
+        }
+      } catch (tokenErr) {
+        console.warn('Could not get session token:', tokenErr);
+      }
+
+      // Submit the form normally — the controller uses fullpage_redirect_to
+      // which renders an App Bridge page that navigates the top frame
+      form.submit();
+    });
+  });
+</script>
+<% end %>
+<% end %>

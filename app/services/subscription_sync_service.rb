@@ -110,6 +110,9 @@ class SubscriptionSyncService
 
     # Update Shop Cache
     update_shop_status(name, 'active')
+
+    # Update plan-based settings (product limits, scan frequency)
+    update_plan_settings
   end
 
   def update_shop_status(plan_name, status)
@@ -117,5 +120,18 @@ class SubscriptionSyncService
       subscription_plan: plan_name,
       subscription_status: status
     )
+  end
+
+  # After syncing, update shop_setting with plan-appropriate limits
+  def update_plan_settings
+    plan = BillingPlanService.plan_for(@shop.reload)
+    return unless plan && @shop.shop_setting
+
+    @shop.shop_setting.update!(
+      max_monitored_pages: plan[:max_products],
+      scan_frequency: plan[:scan_interval_hours] <= 6 ? "every_6_hours" : "daily"
+    )
+  rescue StandardError => e
+    Rails.logger.error("[SubscriptionSyncService] Error updating plan settings: #{e.message}")
   end
 end
