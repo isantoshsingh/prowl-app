@@ -37,7 +37,9 @@ class DetectionService
     "javascript_errors" => "js_error",
     "liquid_errors" => "liquid_error",
     "price_visibility" => "missing_price",
-    "product_images" => "missing_images"
+    "product_images" => "missing_images",
+    "price_mismatch" => "price_mismatch",
+    "cart_feedback" => "cart_feedback_missing"
   }.freeze
 
   # Maps detector check names to issue severity
@@ -49,7 +51,9 @@ class DetectionService
     "javascript_errors" => "high",
     "liquid_errors" => "medium",
     "price_visibility" => "high",
-    "product_images" => "medium"
+    "product_images" => "medium",
+    "price_mismatch" => "medium",
+    "cart_feedback" => "medium"
   }.freeze
 
   attr_reader :scan, :detected_issues
