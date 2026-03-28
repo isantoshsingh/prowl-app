@@ -1,270 +1,316 @@
-# Prowl Phase 2 — Implementation Plan
+# Prowl Phase 2: Storefront Conversion Monitor
 
-_Last updated: 2026-03-26_
-
----
-
-## 1. The New Product Vision
-
-Prowl is transitioning from a **PDP diagnostic tool** to a **Storefront Conversion Monitor**.
-Old positioning: "Prowl scans your product pages for issues." ($10/month)
-New positioning: "Prowl monitors your customer's buying journey every day and alerts you the moment something breaks that's costing you sales." ($49–$249/month)
-
-The unit of monitoring is NOT individual product pages. It is **journey stages** and **product configurations**.
+> **AI Agent Instructions**
+> When working on Phase 2 tasks, you MUST:
+> 1. Maintain and reference the `PHASE2-PROGRESS.md` file after every completed step to track implementation status.
+> 2. Use the `bfs-checker` skill (`.agent/skills/bfs-checker/SKILL.md`) when checking Built for Shopify (BFS) compliance.
+> 3. Use the `shopify-polaris-design` skill (`.agent/skills/shopify-polaris-design/SKILL.md`) when building or modifying Shopify Polaris UI components.
+> 4. Use the `shopify-app-bridge` skill (`.agent/skills/shopify-app-bridge/SKILL.md`) for embedded app navigation and actions.
 
 ---
 
-## 2. New Pricing Tiers & Plan Enforcement
+## Section 1: Current State
 
-**Goal**: Introduce three pricing tiers with different journey stage coverage and scan frequencies.
+Prowl is currently a Shopify embedded app built on Rails 8.1 with PostgreSQL and Solid Queue (`app/jobs/`). It functions as a daily "PDP diagnostic tool" that scans up to 3 manually selected product pages (`app/models/product_page.rb`) for a merchant. 
 
-### 2.1 — Define the three plans
+**Scanning Capabilities:**
+Scans are initiated daily by `ScheduledScanJob`. The core scanning logic is managed by `ProductPageScanner`, which launches a headless browser using `BrowserService` (connecting to Browserless.io in production). It runs the following Tier 1 Detectors (`app/services/detectors/`):
+- `AddToCartDetector`: Checks if the ATC button is present and clickable.
+- `JavascriptErrorDetector`: Captures JS errors on page load.
+- `LiquidErrorDetector`: Looks for template rendering errors.
+- `PriceVisibilityDetector`: Ensures the price is visible.
+- `ProductImageDetector`: Verifies product images load correctly.
 
-| Plan | Price | What's Monitored | Scan Frequency | Alerts |
-|------|-------|-----------------|----------------|--------|
-| Starter | $49/month | Buying stages: PDP + Cart + Checkout handoff, across all auto-detected product configurations | Weekly (168h) | Email |
-| Growth | $129/month | Full journey: Homepage + Collections + Search + PDP + Cart + Checkout handoff | Daily (24h) | Email + Slack |
-| Pro | $249/month | Same as Growth | Every 4 hours | Email + Slack + Monthly health report PDF |
+**Detection Pipeline:**
+After the scan, `ScanPipelineService` orchestrates a 5-step process:
+1. `DetectionService` processes the detector results and creates/updates `Issue` records (`app/models/issue.rb`). Only results with a confidence score >= 0.7 (`DetectionService::CONFIDENCE_THRESHOLD`) lead to issue creation.
+2. `AiIssueAnalyzer#analyze_page` sends a captured screenshot (stored via Cloudflare R2 using `ScreenshotUploader`) and programmatic results to Gemini 2.5 Flash. It identifies AI-confirmed issues fail-open.
+3. `AiIssueAnalyzer` provides per-issue explanations and suggested fixes for merchants.
+4. `AlertService` handles alerting. It only sends alerts for High-severity issues via email (`AlertMailer`) or Shopify admin notifications. Immediate alerts are sent for AI-confirmed findings; otherwise, it waits for 2 occurrences.
+5. `ScanPdpJob` schedules a rescan in 30 minutes for unconfirmed high-severity issues.
 
-All tiers include a 14-day free trial.
-**Important**: Page count limits are REMOVED. Tiers are differentiated by journey stage coverage and scan frequency.
+**Known Technical Debt & Observations:**
+- **Double Scanning Vulnerability:** `ScanPdpJob` sets concurrency limits, but without rigorous debounce logic, concurrent webhook events/manual triggers could queue duplicate scans.
+- **Cart Funnel Interaction:** Methods like `BrowserService#select_first_variant`, `click_add_to_cart`, `read_cart_state`, and `navigate_to_checkout` exist but are not fully wired into a formal "Cart Interaction" or "Checkout Handoff" detector flow used in regular quick scans.
 
-### 2.2 — Billing Plan Service Updates
+---
 
-Update `BillingPlanService` (`app/services/billing_plan_service.rb`) to reflect the new plans:
+## Section 2: Product Vision — Phase 2
 
+Prowl is being repositioned from a "PDP diagnostic tool" to a **Storefront Conversion Monitor**.
+
+**New positioning:** *"Prowl monitors your customer's buying journey and alerts you the moment something breaks that's costing you sales."*
+
+Phase 2 transforms Prowl to:
+- Monitor the full buying journey (PDP → cart → checkout handoff), not just product pages.
+- Use an escalating alert system that respects merchant attention.
+- Offer a "fix-it" service ($199 flat rate) for merchants who want issues resolved by the Prowl team.
+- Migrate to run on self-hosted Puppeteer (DigitalOcean droplets) to reduce infrastructure costs and decrease reliance on Browserless.io.
+
+---
+
+## Section 3: Tier Structure
+
+### Free Plan
+
+- **Products monitored:** Up to 3. Selected via Shopify resource picker.
+- **Journey stages:** PDP only. Includes variant selection, ATC button presence, price visibility, image loading, JS errors, and Liquid errors.
+- **Scan frequency:** Daily (via `config/recurring.yml` & `ScheduledScanJob`).
+- **Alerts:** Single email alert per issue detected via `AlertService` with no escalation sequence.
+- **Weekly report:** Store health summary email linking to the dashboard, sent every week.
+- **Acknowledgment:** One-click acknowledge button in alert emails to mute the issue.
+- **On-demand scan:** Disabled.
+- **Default plan:** Every merchant starts on Free after installation via `AfterAuthenticateJob`.
+- **Guidance:** UI text in `app/views/home/` will guide merchants to select diverse products (e.g., one simple single-variant, one multi-variant).
+
+### Monitor Plan — $49/month (14-day free trial)
+
+- **Products monitored:** Up to 5.
+- **Journey stages:** Full buying flow (PDP + cart interaction + checkout handoff).
+- **Scan frequency:** Every 6 hours (Requires update to `ShopSetting#scan_frequency` and `ScheduledScanJob`).
+- **Alerts:** Full 3-tier escalation sequence managed by `AlertService`:
+  - Alert 1: Immediate on confirmed detection.
+  - Alert 2: 24 hours later if unacknowledged (shorter, high urgency).
+  - Alert 3: 72 hours later if unacknowledged (focusing on revenue impact).
+  - Post-Alert 3: Persists only as a dashboard banner.
+- **Acknowledgment:** Yes — stops escalation sequence.
+- **On-demand scan:** Enabled via "Scan Now" button in the dashboard.
+- **Historical scan log:** Available on the dashboard.
+- **"All clear" email:** Dispatched when a previously detected issue resolves (`status: "resolved"`).
+
+### Fix-it Service — $199 per incident
+
+- **Available to:** Free and Monitor tier users.
+- **Pricing:** Flat $199 for standard fixes via Shopify one-time application charge API (`appPurchaseOneTimeCreate`).
+- **Access:** Collaborator access requested at the point of service.
+- **Resolution target:** 4 business hours.
+- **Terms of Service:** A strict TOS checkbox outlining what constitutes a "standard fix" (e.g., excluding theme rebuilds or 3rd party app bugs) to limit liability.
+- **Accessed via:** Dedicated Support Portal.
+
+---
+
+## Section 4: Journey Stages — What Gets Scanned
+
+### PDP Stage (Free + Monitor tiers)
+
+This relies on existing logic located in `ProductPageScanner::TIER1_DETECTORS`:
+- ATC button present and clickable (`Detectors::AddToCartDetector`).
+- Variant selector functioning properly (JS errors tracked by `Detectors::JavascriptErrorDetector` and legacy fallbacks in `DetectionService#detect_variant_selector_issues`).
+- Price visibility (`Detectors::PriceVisibilityDetector`).
+- Product images loading correctly (`Detectors::ProductImageDetector`).
+- No page load JS errors (`Detectors::JavascriptErrorDetector`).
+- No Liquid errors (`Detectors::LiquidErrorDetector`).
+- Page load performance (`DetectionService#detect_slow_page_load`).
+
+### Cart Interaction Stage (Monitor tier only)
+
+Leveraging `BrowserService` methods:
+**Cart Item Verification:**
+- Perform ATC click (`click_add_to_cart`), then poll `/cart.js` via `read_cart_state`.
+- Verify: added `product_id` matches, item price > 0, quantity increments. 
+- *Failure mapping:* Log `atc_not_functional` with evidence `{ reason: "wrong_item_in_cart" }` if cart mismatch occurs.
+
+**Cart Feedback Detection:**
+- Add `BrowserService#cart_feedback_visible?` to verify if Cart Drawer DOM changes or URL redirects to `/cart`.
+- *Failure mapping:* If cart item exists in `/cart.js` but no visual feedback is triggered within 2 seconds, issue a `warning` status, escalating to failure only if `/cart.js` also fails.
+
+**Price Mismatch Detection:**
+- Compare pre-ATC price (from `PriceVisibilityDetector`) against the cart item price (`read_cart_state`).
+- *Failure mapping:* Discrepancy > 1% logs a new `price_mismatch` issue defined in `Issue::ISSUE_TYPES` as medium severity.
+
+### Checkout Handoff Stage (Monitor tier only)
+
+- Following a successful cart interaction, call `BrowserService#navigate_to_checkout`.
+- Verify response redirection to Shopify checkout domains (`checkout.shopify.com` or `shop.app`).
+- *Failure mapping:* HTTP 4xx/5xx or broken page triggers `checkout_broken` (`high` severity).
+- Cleanup: Invoke `BrowserService#clear_cart_item` to purge test data.
+
+---
+
+## Section 5: Alert Escalation System
+
+### Data Model Changes
+Require a migration for `issues` table:
 ```ruby
-PLANS = {
-  "starter" => { 
-    price: 49, 
-    journey_stages: [:pdp, :cart, :checkout_handoff],
-    interval_hours: 168,  # weekly
-    charge_name: "Prowl Starter",
-    alerts: [:email]
-  },
-  "growth" => { 
-    price: 129, 
-    journey_stages: [:homepage, :collections, :search, :pdp, :cart, :checkout_handoff],
-    interval_hours: 24,   # daily
-    charge_name: "Prowl Growth",
-    alerts: [:email, :slack]
-  },
-  "pro" => { 
-    price: 249, 
-    journey_stages: [:homepage, :collections, :search, :pdp, :cart, :checkout_handoff],
-    interval_hours: 4,    # every 4 hours
-    charge_name: "Prowl Pro",
-    alerts: [:email, :slack, :health_report]
-  }
-}.freeze
-```
-
-For Phase 2 launch, only the **Starter tier needs to be fully functional**. Growth and Pro should be visible on the plan selection page (`app/views/billing/plans.html.erb` or similar) but gated as "Coming Soon" with an optional waitlist email capture.
-
-Map existing users: In `SubscriptionSyncService`, if `charge_name` is "Prowl Monthly", map them mapping to Starter tier functionality.
-
-Remove `Shop::MAX_MONITORED_PAGES` constant entirely, as page limits are removed. Update `Shop#can_add_monitored_page?` or replace it if necessary with configuration limit logic instead.
-
----
-
-## 3. New Monitoring Model: Product Configurations
-
-### The core insight
-A "product configuration" is defined as: **product template × variant type**
-Examples:
-- Default template × single variant
-- Default template × multi-variant
-- Alternate template × single variant (`product.gift_card.json`)
-
-If a merchant has 200 products all using the same template, Prowl should automatically detect distinct product configurations and monitor one representative product from each.
-
-### 3.1 — Auto-detection flow
-
-Build a new service: `app/services/product_config_detector_service.rb`
-This service runs during onboarding and can be manually re-triggered:
-
-1. **Detect product templates**: Read the merchant's theme files via Shopify Asset API. Look for files matching `templates/product*.json` (or `.liquid`).
-2. **Find representative products per template**: Use Shopify GraphQL Admin API to query active products. Filter results by `templateSuffix` matching each template. For each template, select:
-   - One product where `hasOnlyDefaultVariant: true` (single variant representative)
-   - One product where `hasOnlyDefaultVariant: false` AND `totalVariants > 1` (multi-variant representative)
-3. **Store as Configurations**: Create or update `ProductPage` records (or a new `MonitoredConfiguration` model) for each distinct configuration.
-4. **Present to merchant**: Show the detected configurations in the dashboard.
-
-### 3.2 — Re-detection triggers
-
-Re-run `ProductConfigDetectorService`:
-- When merchant clicks "Re-scan store setup" in settings (`SettingsController`)
-- When a new theme is published (listen to `themes/publish` webhook or check on schedule)
-
-*Do NOT re-detect on every product update.*
-
----
-
-## 4. Alert Escalation System
-
-Implement escalating alerts instead of simple cooldown/suppression.
-
-### 4.1 — Alert escalation sequence
-
-**Alert 1 — Immediate on first confirmed detection:**
-- Full email with: what broke, which product configuration, when detected, AI-generated diagnosis, suggested fix.
-
-**Alert 2 — 24 hours later if still broken AND not acknowledged:**
-- Shorter email, more urgent tone. Includes duration.
-
-**Alert 3 — 72 hours later if still broken AND not acknowledged:**
-- Revenue impact framing. "This issue has been live for 3 days".
-
-**After Alert 3 — Stop emailing.** Resumes only if issue resolves and recurs, or a new issue occurs.
-
-### 4.2 — Acknowledgment Mechanism
-
-Every alert email includes a signed, one-click "I'm aware of this" link. Clicking it sets `acknowledged_at` and `acknowledged = true`, and stops the escalation sequence. Monitoring continues.
-
-### 4.3 — Data Model Changes
-
-Update `db/schema.rb` via new migration. Add to the `issues` (or `alerts`) table:
-```ruby
-add_column :issues, :acknowledged, :boolean, default: false, null: false
 add_column :issues, :acknowledged_at, :datetime
 add_column :issues, :escalation_level, :integer, default: 0, null: false
 add_column :issues, :last_alerted_at, :datetime
 add_column :issues, :acknowledgment_token, :string
-
 add_index :issues, :acknowledgment_token
 ```
 
-### 4.4 — Alert Service Logic
+*(Note: `acknowledged_at` already exists, but the others need to be added. `status` is currently used for acknowledgment (`acknowledged`), so we keep that in sync).*
 
-In `AlertService` (`app/services/alert_service.rb`):
+### Escalation Logic in `AlertService`
 
+Refactor `AlertService#perform` and `should_alert?`:
 ```ruby
-if issue.acknowledged?
-  # skip
-elsif issue.escalation_level == 0
-  # send Alert 1, set escalation_level = 1, set last_alerted_at
-elsif issue.escalation_level == 1 && issue.last_alerted_at < 24.hours.ago
-  # send Alert 2, set escalation_level = 2, set last_alerted_at
-elsif issue.escalation_level == 2 && issue.last_alerted_at < 72.hours.ago
-  # send Alert 3, set escalation_level = 3, set last_alerted_at
-elsif issue.escalation_level >= 3
-  # skip (max alerts reached)
+def send_escalation_alert(issue)
+  return if issue.status == 'acknowledged'
+
+  if issue.escalation_level == 0
+    send_alert(issue, level: 1)
+    issue.update!(escalation_level: 1, last_alerted_at: Time.current)
+  elsif issue.escalation_level == 1 && issue.last_alerted_at < 24.hours.ago
+    send_alert(issue, level: 2)
+    issue.update!(escalation_level: 2, last_alerted_at: Time.current)
+  elsif issue.escalation_level == 2 && issue.last_alerted_at < 72.hours.ago
+    send_alert(issue, level: 3)
+    issue.update!(escalation_level: 3, last_alerted_at: Time.current)
+  end
+end
+```
+Free tier accounts only progress to `escalation_level = 1`.
+
+### Acknowledgment Endpoint
+Implement a new controller action `AlertsController#acknowledge` mapped to `GET /alerts/:token/acknowledge`.
+Uses `ActiveSupport::MessageVerifier` for the signed URL generated out of `acknowledgment_token`.
+Updates issue to `status = 'acknowledged'`. Extends token expiration to 7 days.
+
+### "All Clear" Email & Weekly Report
+- **All Clear:** Invoked via `DetectionService#resolve_existing_issue` if the resolved issue previously had a `high` or `medium` severity.
+- **Weekly Report:** Create `WeeklyHealthReportJob` iterating over all installed shops, summarizing the week's scan counts and existing issues. Suggests the Monitor plan for Free tier users.
+
+---
+
+## Section 6: Support Portal
+
+### Flow & Location
+Served under Prowl's primary domain via a new `SupportPortalController` using magic link auth (`support_tickets.magic_link_token`). Bypasses Shopify OAuth for frictionless mobile access.
+
+### Data Models
+Require new migrations:
+```ruby
+# support_tickets
+create_table :support_tickets do |t|
+  t.references :shop, null: false, foreign_key: true
+  t.references :issue, null: true, foreign_key: true
+  t.string :subject
+  t.text :message
+  t.string :ticket_type # issue_support, general_enquiry, fix_request
+  t.string :status      # open, in_progress, resolved, closed
+  t.string :magic_link_token
+  t.timestamps
+end
+add_index :support_tickets, :magic_link_token, unique: true
+
+# support_messages
+create_table :support_messages do |t|
+  t.references :support_ticket, null: false, foreign_key: true
+  t.string :sender_type # merchant, admin
+  t.text :message
+  t.timestamps
 end
 ```
 
-### 4.5 — "All clear" email
-
-When an issue that was previously detected resolves (product configuration scans clean):
-- Send a single "All clear" email.
-- Reset `escalation_level` to 0.
-- Update `ScanPipelineService` post-scan logic to trigger this email regardless of acknowledgment status.
-
----
-
-## 5. New Onboarding Flow
-
-Replace the current manual page addition flow with an automated sequence.
-
-### Step 1 — Install + plan selection
-Merchant installs → lands on `/billing/plans` showing Starter / Growth (coming soon) / Pro (coming soon) → selects Starter → Shopify billing approval → redirects back.
-
-### Step 2 — Automatic store analysis
-Immediately run `ProductConfigDetectorService` in the background. Show a loading state in the UI.
-
-### Step 3 — Review detected configurations
-Show merchant the found configurations (template name, variant type, representative product). Allow swapping representatives. "Start monitoring" CTA.
-
-### Step 4 — First scan
-Trigger an immediate scan (`ScheduledScanJob` or `ScanPdpJob`) of all detected configurations upon confirmation.
-
-### Step 5 — Ongoing monitoring
-Scheduled scans run per plan frequency. 
+### Fix-it Flow
+1. Merchant visits link with pre-loaded context (e.g. `issue.ai_explanation`).
+2. Merchant selects "Fix it for me — $199".
+3. Displays required terms (TOS checkbox) and Collaborator Access instructions.
+4. Redirection to Shopify for `appPurchaseOneTimeCreate` approval checkout.
+5. On webhook approval callback (`charg_id`), Santosh gets emailed, and ticket `status` changes to `in_progress`.
 
 ---
 
-## 6. Cart Scanning + Checkout Handoff
+## Section 7: Onboarding Flow
 
-### 6.1 — Cart Verification
-`BrowserService#verify_cart_item` — verify correct product/variant in cart.
+1. Install via `shopify_app`.
+2. App runs `AfterAuthenticateJob` and lands on `HomeController#index` (Dashboard).
+3. Defaults to Free plan (`BillingPlanService`).
+4. Dashboard banner requests adding properties via Shopify Resource Picker.
+5. Limit checks enforced in `ProductPagesController#create` (`shop.shop_setting.max_monitored_pages`).
+6. After addition, the first quick scan executes synchronously or queues immmediately.
 
-### 6.2 — Cart Drawer/Feedback
-`BrowserService#cart_feedback_visible?` — check if cart drawer or `/cart` page opened.
-
-### 6.3 — Checkout Redirect
-Wire `BrowserService#navigate_to_checkout` into `AddToCartDetector` (`app/services/detectors/add_to_cart_detector.rb`) for deep scans to verify successful redirect to the checkout domain. Issue `checkout_broken` if failing.
-
-### 6.4 — Price Mismatch Detection
-Add `price_mismatch` issue type to `Issue::ISSUE_TYPES`. Compare PDP price vs cart price (`PriceVisibilityDetector` result passed into `AddToCartDetector` in `ProductPageScanner`).
+Upgrade nudges manifest in `WeeklyHealthReportJob` emails, when attempting to add > 3 products, and as sticky dashboard banners.
 
 ---
 
-## 7. Revised Build Order
+## Section 8: App Settings
 
-### Sprint 1 — Billing + Plan Selection (Week 1)
-- Implement `BillingPlanService` with 3 plans ($49/$129/$249).
-- Build plan selection UI at `/billing/plans`.
-- Wire plan selection → `appSubscriptionCreate` → `SubscriptionSyncService` sync.
-- Map existing "Prowl Monthly" subscribers to Starter tier automatically.
-- Growth and Pro show as "Coming Soon" with waitlist email capture.
-- Remove `MAX_MONITORED_PAGES` enforcement.
+Preserve existing `app/models/shop_setting.rb` variables (`email_alerts_enabled`, `admin_alerts_enabled`, `alert_email`).
 
-### Sprint 2 — Product Configuration Auto-Detection + Onboarding (Week 2)
-- Build `ProductConfigDetectorService`.
-- Build onboarding UI: loading state → configurations review → swap representative → confirm.
-- Create/update monitoring records from detected configurations.
-- Trigger first scan immediately after onboarding confirmation.
-
-### Sprint 3 — Cart Scanning + Checkout Handoff (Week 3)
-- Implement `BrowserService#verify_cart_item` and `BrowserService#cart_feedback_visible?`.
-- Wire `navigate_to_checkout` into `AddToCartDetector`.
-- Add `price_mismatch` issue type. Pass `PriceVisibilityDetector` result to `AddToCartDetector`.
-
-### Sprint 4 — Alert Escalation System (Week 4)
-- Add escalation columns (`acknowledged`, `escalation_level`, `last_alerted_at`, `acknowledgment_token`).
-- Implement 3-tier escalation logic in `AlertService`.
-- Build endpoint `GET /alerts/:token/acknowledge`.
-- Wire "All clear" email (`AlertMailer#issues_resolved`).
-- Build alert history page at `/alerts`.
-
-### Sprint 5 — Dashboard Polish + Launch Prep (Week 5)
-- Update `HomeController` dashboard to show product configurations instead of isolated pages.
-- Add scan history timeline.
-- Add "Re-scan store setup" button in settings.
-- Update Shopify app store listing.
+**New Display Sections in `SettingsController#index`:**
+- **Collaborator Access:** Instructions/links for granting access to the Prowl team to proactively fix problems.
+- **Plan Management:** Integrates directly with Shopify Billing API to surface differences between Free and Monitor plans.
+- **Alert Preferences:** Adjust base alert reception logic.
 
 ---
 
-## 8. Risks & Open Questions
+## Section 9: Infrastructure — Self-hosted Puppeteer
 
-### Risk 1 — Product configuration auto-detection accuracy
-- Page builder apps (GemPages, Shogun) might use single generic templates for wildly different pages.
-- Headless setups lack standard Liquid templates.
-- **Mitigation**: Focus on standard Liquid themes for Phase 2. Add a manual override to "add a product to monitor" if auto-detect fails to cover edge cases.
+**Current implementation:** `BrowserService#start` branches via `ENV["BROWSERLESS_URL"]` to run either via WebSocket on Browserless.io or via `Puppeteer.launch` on local Chrome. 
 
-### Risk 2 — Browserless.io cost at new pricing
-- Evaluate deep scan costs (which involve checkout navigation). Is $49/month Starter viable for deep scans? 
-- **Consideration**: Run quick scans daily, true deep scans weekly.
+**Migration to DigitalOcean:**
+1. Provision a DigitalOcean droplet (e.g. 2GB RAM / 2 vCPUs) containing a dockerized unmanaged `browserless/chrome` image or an equivalent raw Puppeteer-core WebSocket server.
+2. In production, update `ENV["BROWSERLESS_URL"]` to point to the droplet `wss://[DROPLET_IP]:[PORT]`. `BrowserService#start`'s remote condition will connect exactly as it does currently. No structural code rewrite inside Rails `BrowserService` is necessary, only an endpoint change.
+3. Recommend keeping `limits_concurrency to: 1` per droplet initially, potentially scaling to `2-3` as memory profiling concludes on a 2GB instance (Chrome memory climbs during JS-heavy Shopify page evaluations).
+4. **Fallback mechanism:** If Chrome WS refuses connection, the `start` block's rescues should abort the scan with a `ScanError` gracefully returning `success: false` up to `ProductPageScanner`, suppressing merchant alerts and retrying quietly the next cron cycle.
 
-### Risk 3 — Shopify app review with new pricing
-- **Recommendation**: Finish the current review at $10/month. Update pricing immediately after approval, before broad user acquisition.
+---
 
-### Risk 4 — Representative product selection quality
-- Detector must avoid hidden or OOS products unless intended.
-- **Mitigation**: Filter by `status: active` and `published_at: not null`. Hand off selection confirmation to merchants.
+## Section 10: Build Order
 
-### Risk 5 — Acknowledgment link security
-- Do NOT use raw DB lookups. Use `ActiveSupport::MessageVerifier` or `GlobalID`.
-- Set token expiry to 7 days. Rate limit the endpoint.
+*Assumes a 20-25 hours/week cadence. Each sprint delivers usable, deployable features.*
 
-### Risk 6 — Scan scheduling at scale
-- Solid Queue concurrency is currently 1.
-- **Action Required**: Increase concurrency when higher tiers launch, strictly ensuring Browserless concurrent session quotas are not breached.
+**Sprint 1: Billing & Onboarding (Week 1)**
+- Create `BillingPlanService` identifying Free (3 products) vs Monitor (5 products).
+- Update `config/initializers/shopify_app.rb` to default to free-tier behavior without an upfront charge screen.
+- Overhaul `ProductPagesController` constraints.
+- Build the Polaris-based plan comparison UI in `BillingController`.
 
-### Open Q 1 — Existing $10 subscribers
-Provide Starter-level functionality without changing their price. Handled via `charge_name` matching in `BillingPlanService`.
+**Sprint 2: Cart & Checkout Scanning (Week 2)**
+- Expand `BrowserService` bridging `cart_feedback_visible?` and `verify_cart_item`.
+- Integrate `BrowserService#navigate_to_checkout` within a new `CartFunnelDetector` subclassing `Detectors::BaseDetector`.
+- Introduce `price_mismatch` to `Issue::ISSUE_TYPES`.
+- Add feature flags checking `shop.plan == 'monitor'` around execution loops in `ProductPageScanner`.
 
-### Open Q 2 — Dashboard experience between scans
-Starter runs weekly. The dashboard must show value. Display last scan prominently, expected next scan, and a controlled "Scan Now" button.
+**Sprint 3: Alert Escalation & Weekly Reporting (Week 3)**
+- Add `escalation_level`, `last_alerted_at`, and `acknowledgment_token` to `Issue`.
+- Redesign `AlertService#perform` logic for staged intervals.
+- Establish `AlertsController#acknowledge` with `ActiveSupport::MessageVerifier`.
+- Compose and test `WeeklyHealthReportJob` logic + mailer views.
+- Rig `DetectionService#resolve_existing_issue` to trigger "All clear" emails.
 
-### Open Q 3 — Dual-browser confirmation
-Deferred to Phase 3. Abstract `BrowserService` heavily so swapping Puppeteer for Playwright will be straightforward.
+**Sprint 4: Support Portal + Fix-It App Flow (Week 4)**
+- Scaffold `SupportTickets` and `SupportMessages` models.
+- Set up `SupportPortalController` authenticated solely via magic link hashes.
+- Build "Fix it for me" Polaris interface.
+- Scaffold the `appPurchaseOneTimeCreate` GraphQL mutation connection for the $199 fee.
+
+**Sprint 5: Infrastructure & Launch Prep (Week 5)**
+- Spin up DigitalOcean Chrome WS Droplet. Update ENV variables.
+- Polish dashboard: Add "Scan Now" button for Monitoring tiers, format plan upgrading.
+- Ensure staging tests (`test/scripts/live_pdp_scan_test.rb`) span password-protected and headless blocking scenarios robustly.
+
+---
+
+## Section 11: Risks & Open Questions
+
+1. **Self-hosted Puppeteer reliability:** 
+   - *Risk:* Memory leaks (Zombie Chrome processes) leading to droplet OOM failure.
+   - *Likelihood/Impact:* Medium / High. 
+   - *Mitigation:* Employ `pm2` or Docker restart policies mapped to aggressive health checks endpoint. Enforce deep GC sweeps or container restarts every 24h.
+2. **Scan cost at scale on free tier:**
+   - *Risk:* Infrastructure scales linearly with user base with no revenue injection.
+   - *Likelihood/Impact:* High / Medium.
+   - *Mitigation:* Pre-compute break-even thresholds based on Fix-it conversion rates. If cost scales unbounded, we must limit Free tier accounts to a lifetime frequency limit (e.g., 60 days) or transition "Daily" scans to "Weekly" scans.
+3. **Password-protected stores:** 
+   - *Risk:* Puppeteer deadlocks or loops indefinitely.
+   - *Likelihood/Impact:* Medium / Low (Already explicitly checked in `BrowserService#password_protected_page?`).
+   - *Mitigation:* Ensure `ScanPipelineService` registers this as an inconclusive failure (no issue creation, no alerting).
+4. **Shopify storefront bot detection:** 
+   - *Risk:* Akamai/Cloudflare flags droplet IP, imposing captchas that Puppeteer cannot bypass.
+   - *Likelihood/Impact:* Medium / High.
+   - *Mitigation:* Rotating BrightData proxies if needed, and rely strictly on user agent cloaking (`BrowserService#configure_page`).
+5. **Fix-it service liability:** 
+   - *Risk:* Breaking a theme irreparably during a $199 fix.
+   - *Likelihood/Impact:* Low / High.
+   - *Mitigation:* Mandatory, undeniable TOS checkmarks isolating Prowl's liability to a refund, combined with enforced strict theme backup procedures prior to any dev edits.
+6. **Concurrent Scans on DigitalOcean:**
+   - *Risk:* Queue spikes forcing long waits or locking droplets.
+   - *Likelihood/Impact:* Medium / Medium.
+   - *Mitigation:* `ScanPdpJob` concurrency limit limits node exhaustion. Wait queue handled cleanly by `Solid Queue`'s natural load balancing. Scale droplets horizontally into an array format `wss://droplet1, wss://droplet2` round-robined if adoption scales.
+7. **Magic Link Security:**
+   - *Risk:* Support portal manipulation via leaked tokens.
+   - *Likelihood/Impact:* Low / High.
+   - *Mitigation:* `ActiveSupport::MessageVerifier` signature with a hard expiration timestamp combined with rate limiting on the `/support/:token` endpoints.
