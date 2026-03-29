@@ -129,6 +129,26 @@
   </s-section>
   <% end %>
 
+  <%# Cart + Checkout Monitoring Upsell for Free tier (shown near scan results) %>
+  <% if @plan_name == "free" && @total_pages > 0 %>
+  <s-section>
+    <s-box padding="base" border="base" borderRadius="base">
+      <s-stack direction="inline" gap="base" align="center">
+        <s-icon type="cart" tone="subdued"></s-icon>
+        <s-stack direction="block" gap="extra-tight">
+          <s-paragraph>
+            <strong>Cart + checkout monitoring available on Monitor plan</strong>
+          </s-paragraph>
+          <s-paragraph>
+            Detect cart issues, price mismatches, and broken checkout flows before they cost you sales.
+          </s-paragraph>
+        </s-stack>
+        <s-button href="<%= billing_plans_path(host: @host) %>" variant="plain">Upgrade</s-button>
+      </s-stack>
+    </s-box>
+  </s-section>
+  <% end %>
+
   <%# Open Issues — grouped by issue type %>
   <% if @open_issues_count > 0 %>
   <s-section heading="Issues requiring attention">

@@ -21,12 +21,14 @@ class ProductPageScanner
   class TimeoutError < ScanError; end
 
   # Tier 1 detectors - run on every scan
+  # PriceVisibilityDetector runs before AddToCartDetector so PDP price
+  # is available for price mismatch comparison during the cart funnel test.
   TIER1_DETECTORS = [
-    Detectors::AddToCartDetector,
     Detectors::JavascriptErrorDetector,
     Detectors::LiquidErrorDetector,
     Detectors::PriceVisibilityDetector,
-    Detectors::ProductImageDetector
+    Detectors::ProductImageDetector,
+    Detectors::AddToCartDetector
   ].freeze
 
   attr_reader :product_page, :scan, :browser_service, :detection_results, :scan_depth
@@ -159,18 +161,38 @@ class ProductPageScanner
 
   def run_detectors
     results = []
+    price_result = nil
 
     TIER1_DETECTORS.each do |detector_class|
       begin
         Rails.logger.debug("[ProductPageScanner] Running #{detector_class.name} (depth: #{@scan_depth})")
-        # AddToCartDetector needs scan_depth for funnel testing
+
         detector = if detector_class == Detectors::AddToCartDetector
-          detector_class.new(@browser_service, scan_depth: @scan_depth)
+          # Pass shop, product_id, and PDP price for extended journey checks
+          detector_class.new(
+            @browser_service,
+            scan_depth: @scan_depth,
+            shop: product_page.shop,
+            product_id: product_page.shopify_product_id,
+            pdp_price_result: price_result
+          )
         else
           detector_class.new(@browser_service)
         end
+
         result = detector.perform
         results << result if result
+
+        # Capture the PDP price result for the AddToCartDetector to use
+        if detector_class == Detectors::PriceVisibilityDetector && result
+          price_result = result
+        end
+
+        # Collect journey-stage results from AddToCartDetector (cart, checkout, price mismatch)
+        if detector_class == Detectors::AddToCartDetector && detector.respond_to?(:all_results)
+          journey_results = detector.all_results
+          results.concat(journey_results) if journey_results&.any?
+        end
       rescue StandardError => e
         # Individual detector failures should not stop other detectors
         Rails.logger.error("[ProductPageScanner] #{detector_class.name} failed: #{e.message}")

@@ -394,7 +394,7 @@ class BrowserService
       'form[action*="/cart/add"] button[type="submit"]:not([disabled])',
       'product-form button[type="submit"]:not([disabled])',
       'button[name="add"]:not([disabled])',
-      '.product-form__submit:not([disabled])'
+      ".product-form__submit:not([disabled])"
     ]
 
     selectors.each do |selector|
@@ -430,6 +430,7 @@ class BrowserService
             item_count: cart.item_count || 0,
             items: (cart.items || []).map(i => ({
               key: i.key,
+              product_id: i.product_id,
               variant_id: i.variant_id,
               title: i.title,
               quantity: i.quantity,
@@ -482,6 +483,119 @@ class BrowserService
   rescue StandardError => e
     Rails.logger.warn("[BrowserService] clear_cart_item failed: #{e.message}")
     { success: false, error: e.message }
+  end
+
+  # Verifies the last item added to cart matches the expected product.
+  # Uses read_cart_state to check product_id, price, and quantity.
+  # Returns: { verified: true/false, reason: "...", cart_state: ... }
+  def verify_cart_item(expected_product_id)
+    ensure_page_loaded!
+
+    cart = read_cart_state
+    if cart[:error].present? || cart[:items].blank?
+      return { verified: false, reason: "cart_read_failed", cart_state: cart }
+    end
+
+    last_item = cart[:items].last
+    # Shopify cart.js returns string keys
+    item_product_id = (last_item["product_id"] || last_item[:product_id]).to_s
+    item_price = (last_item["price"] || last_item[:price]).to_i
+    item_quantity = (last_item["quantity"] || last_item[:quantity]).to_i
+
+    unless item_product_id == expected_product_id.to_s
+      return {
+        verified: false,
+        reason: "wrong_item_in_cart",
+        expected_product_id: expected_product_id.to_s,
+        actual_product_id: item_product_id,
+        cart_state: cart
+      }
+    end
+
+    unless item_price > 0
+      return {
+        verified: false,
+        reason: "zero_price",
+        cart_state: cart
+      }
+    end
+
+    unless item_quantity == 1
+      return {
+        verified: false,
+        reason: "unexpected_quantity",
+        actual_quantity: item_quantity,
+        cart_state: cart
+      }
+    end
+
+    { verified: true, reason: nil, cart_state: cart, cart_price_cents: item_price }
+  rescue StandardError => e
+    Rails.logger.warn("[BrowserService] verify_cart_item failed: #{e.message}")
+    { verified: false, reason: "error: #{e.message}", cart_state: nil }
+  end
+
+  # Checks if visible cart feedback appeared after ATC click.
+  # Looks for cart drawer, URL change to /cart, or cart count badge update.
+  # Returns: { visible: true/false, feedback_type: "drawer"|"cart_page"|"count_update"|"none" }
+  def cart_feedback_visible?
+    ensure_page_loaded!
+
+    result = evaluate_script(<<~JS, timeout_ms: 3_000)
+      async () => {
+        // Give the page up to 2 seconds for feedback to appear
+        const startTime = Date.now();
+        const timeout = 2000;
+
+        while (Date.now() - startTime < timeout) {
+          // Check 1: Cart drawer visible
+          const drawerSelectors = [
+            '[id*="cart-drawer"]', '[class*="cart-drawer"]', '[data-cart-drawer]',
+            '[id*="CartDrawer"]', '[class*="mini-cart"]', '[class*="side-cart"]',
+            'drawer[open]', 'details[open][id*="cart"]'
+          ];
+          for (const sel of drawerSelectors) {
+            const el = document.querySelector(sel);
+            if (el) {
+              const style = window.getComputedStyle(el);
+              if (style.display !== 'none' && style.visibility !== 'hidden' && style.opacity !== '0') {
+                return { visible: true, feedback_type: 'drawer' };
+              }
+            }
+          }
+
+          // Check 2: URL changed to /cart
+          if (window.location.pathname === '/cart') {
+            return { visible: true, feedback_type: 'cart_page' };
+          }
+
+          // Check 3: Cart count badge updated
+          const countSelectors = [
+            '[class*="cart-count"]', '[data-cart-count]',
+            '[class*="cart-icon"] [class*="badge"]',
+            '.cart-count-bubble', '[data-cart-item-count]'
+          ];
+          for (const sel of countSelectors) {
+            const el = document.querySelector(sel);
+            if (el) {
+              const text = el.textContent.trim();
+              if (text && parseInt(text) > 0) {
+                return { visible: true, feedback_type: 'count_update' };
+              }
+            }
+          }
+
+          await new Promise(r => setTimeout(r, 200));
+        }
+
+        return { visible: false, feedback_type: 'none' };
+      }
+    JS
+
+    result&.symbolize_keys || { visible: false, feedback_type: "none" }
+  rescue StandardError => e
+    Rails.logger.warn("[BrowserService] cart_feedback_visible? failed: #{e.message}")
+    { visible: false, feedback_type: "error" }
   end
 
   # Navigates to /checkout to verify checkout accessibility.

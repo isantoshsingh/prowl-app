@@ -109,6 +109,16 @@ class Issue < ApplicationRecord
       severity: "low",
       title: "Page is loading slowly",
       description: "This page took longer than expected to load. This may affect customer experience."
+    },
+    "price_mismatch" => {
+      severity: "medium",
+      title: "Price mismatch between product page and cart",
+      description: "The price shown on the product page differs from the price in the cart. Customers may lose trust if pricing is inconsistent."
+    },
+    "cart_feedback_missing" => {
+      severity: "medium",
+      title: "No visible feedback after adding to cart",
+      description: "After clicking Add to Cart, no visible confirmation appeared (no cart drawer, page redirect, or count update). Customers may not realize the item was added."
     }
   }.freeze
 
