@@ -374,6 +374,14 @@ module Detectors
         ).merge(check: "cart_feedback")
       else
         Rails.logger.info("[AddToCartDetector] Cart feedback detected: #{feedback[:feedback_type]}")
+        @journey_results << build_result(
+          status: "pass",
+          message: "Cart feedback visible after adding item",
+          confidence: 0.9,
+          technical_details: { feedback_type: feedback[:feedback_type] },
+          evidence: { feedback_visible: true, feedback_type: feedback[:feedback_type] },
+          suggestions: []
+        ).merge(check: "cart_feedback")
       end
     rescue StandardError => e
       Rails.logger.error("[AddToCartDetector] Cart journey checks failed: #{e.message}")
@@ -412,6 +420,15 @@ module Detectors
             "Check if a discount or app is modifying the cart price",
             "Verify the displayed price matches the Shopify admin price"
           ]
+        ).merge(check: "price_mismatch")
+      else
+        @journey_results << build_result(
+          status: "pass",
+          message: "PDP price matches cart price",
+          confidence: 0.9,
+          technical_details: { pdp_price_cents: pdp_cents, cart_price_cents: cart_price_cents, difference_percent: difference_percent },
+          evidence: { pdp_price: pdp_price_text, cart_price: format_cents(cart_price_cents) },
+          suggestions: []
         ).merge(check: "price_mismatch")
       end
     rescue StandardError => e
@@ -465,6 +482,14 @@ module Detectors
         ).merge(check: "checkout")
       else
         Rails.logger.info("[AddToCartDetector] Checkout handoff verified: #{url}")
+        @journey_results << build_result(
+          status: "pass",
+          message: "Checkout handoff successful",
+          confidence: 0.95,
+          technical_details: { redirect_url: url, is_shopify_checkout: true },
+          evidence: { redirect_url: url },
+          suggestions: []
+        ).merge(check: "checkout")
       end
     rescue StandardError => e
       Rails.logger.error("[AddToCartDetector] Checkout handoff check failed: #{e.message}")

@@ -137,8 +137,12 @@ class AddToCartDetectorTest < ActiveSupport::TestCase
     assert_includes result.dig(:details, :message), "fully functional"
     assert_includes result.dig(:details, :evidence, :journey_stages), "cart"
     assert_includes result.dig(:details, :evidence, :journey_stages), "checkout_handoff"
-    # No journey issues
-    assert_empty detector.all_results
+    # Journey results should all be passes (for DetectionService to resolve prior issues)
+    journey = detector.all_results
+    assert journey.all? { |r| r[:status] == "pass" }, "All journey results should pass on happy path"
+    assert journey.any? { |r| r[:check] == "cart_feedback" }, "Expected cart_feedback pass result"
+    assert journey.any? { |r| r[:check] == "price_mismatch" }, "Expected price_mismatch pass result"
+    assert journey.any? { |r| r[:check] == "checkout" }, "Expected checkout pass result"
   end
 
   # ---------------------------------------------------------------------------
@@ -179,12 +183,12 @@ class AddToCartDetectorTest < ActiveSupport::TestCase
 
     # Primary ATC result passes (item was added)
     assert_equal "pass", result[:status]
-    # But journey results contain the cart item verification failure
+    # Journey results contain the cart item verification failure (+ checkout pass)
     journey = detector.all_results
-    assert_equal 1, journey.length
-    assert_equal "atc_funnel", journey.first[:check]
-    assert_equal "fail", journey.first[:status]
-    assert_includes journey.first.dig(:details, :evidence, :reason), "wrong_item_in_cart"
+    atc_issue = journey.find { |r| r[:check] == "atc_funnel" }
+    assert_not_nil atc_issue
+    assert_equal "fail", atc_issue[:status]
+    assert_includes atc_issue.dig(:details, :evidence, :reason), "wrong_item_in_cart"
   end
 
   # ---------------------------------------------------------------------------
@@ -245,8 +249,9 @@ class AddToCartDetectorTest < ActiveSupport::TestCase
 
     assert_equal "pass", result[:status]
     journey = detector.all_results
-    price_issue = journey.find { |r| r[:check] == "price_mismatch" }
-    assert_nil price_issue, "Should not create price_mismatch when prices match"
+    price_result = journey.find { |r| r[:check] == "price_mismatch" }
+    assert_not_nil price_result, "Expected a price_mismatch pass result for issue resolution"
+    assert_equal "pass", price_result[:status]
   end
 
   test "price mismatch skipped when PDP price not detected" do
@@ -298,8 +303,9 @@ class AddToCartDetectorTest < ActiveSupport::TestCase
 
     assert_equal "pass", result[:status]
     journey = detector.all_results
-    checkout_issue = journey.find { |r| r[:check] == "checkout" }
-    assert_nil checkout_issue, "No checkout issue expected when handoff succeeds"
+    checkout_result = journey.find { |r| r[:check] == "checkout" }
+    assert_not_nil checkout_result, "Expected a checkout pass result for issue resolution"
+    assert_equal "pass", checkout_result[:status]
   end
 
   # ---------------------------------------------------------------------------
