@@ -430,6 +430,7 @@ class BrowserService
             item_count: cart.item_count || 0,
             items: (cart.items || []).map(i => ({
               key: i.key,
+              product_id: i.product_id,
               variant_id: i.variant_id,
               title: i.title,
               quantity: i.quantity,
